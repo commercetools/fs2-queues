@@ -13,7 +13,7 @@ val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.1")
 ThisBuild / scalaVersion := Scala213
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus)
+lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, circe)
 
 val commonSettings = List(
   libraryDependencies ++= Seq(
@@ -32,14 +32,18 @@ lazy val core = crossProject(JVMPlatform)
     name := "cloud-queues-core"
   )
 
-lazy val queuesCirce = crossProject(JVMPlatform)
+lazy val circe = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("circe"))
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    name := "cloud-queues-circe"
+    name := "cloud-queues-circe",
+    libraryDependencies ++= List(
+      "io.circe" %%% "circe-parser" % Versions.circe
+    )
   )
+  .dependsOn(core)
 
 lazy val azureServiceBus = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
