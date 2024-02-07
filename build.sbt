@@ -26,6 +26,7 @@ val commonSettings = List(
 lazy val core = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "cloud-queues-core"
@@ -34,6 +35,7 @@ lazy val core = crossProject(JVMPlatform)
 lazy val queuesCirce = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("circe"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "cloud-queues-circe"
@@ -42,6 +44,7 @@ lazy val queuesCirce = crossProject(JVMPlatform)
 lazy val azureServiceBus = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("azure/service-bus"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "cloud-queues-azure-service-bus",
@@ -55,6 +58,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
 lazy val awsSQS = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("aws/sqs"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "cloud-queues-aws-sqs",
