@@ -45,13 +45,17 @@ def subscribeStream(subscriber: QueueSubscriber[String]): Stream[IO, Nothing] =
     // results are non important
     .drain
 
-def program(publisher: QueuePublisher[String], subscriber: QueueSubscriber[String]): IO[Unit] =
-  // subscribe and publish concurrently
-  subscribeStream(subscriber)
-    .concurrently(publishStream(publisher))
-    .compile
-    // runs forever
-    .drain
+def program(client: QueueClient): IO[Unit] = {
+  val queueName = "my-queue"
+  client.publisher[String](queueName).use { publisher =>
+    // subscribe and publish concurrently
+    subscribeStream(client.subscriber[String](queueName))
+      .concurrently(publishStream(publisher))
+      .compile
+      // runs forever
+      .drain
+  }
+}
 ```
 
 ## Working with Azure Service Bus queues
@@ -63,13 +67,7 @@ import com.azure.identity._
 val namespace = "{namespace}.servicebus.windows.net" // your namespace
 val credentials = new DefaultAzureCredentialBuilder().build() // however you want to authenticate
 
-ServiceBusClient(namespace, credentials).use { client =>
-  val queueName = "my-queue"
-
-  client.publisher[String](queueName).use { publisher =>
-      program(publisher, client.subscriber[String](queueName))
-    }
-}
+ServiceBusClient(namespace, credentials).use(program(_))
 ```
 
 ## Working with AWS SQS
