@@ -49,7 +49,7 @@ def program(client: QueueClient): IO[Unit] = {
   val queueName = "my-queue"
   client.publisher[String](queueName).use { publisher =>
     // subscribe and publish concurrently
-    subscribeStream(client.subscriber[String](queueName, 30.seconds))
+    subscribeStream(client.subscriber[String](queueName))
       .concurrently(publishStream(publisher))
       .compile
       // runs forever

@@ -1,7 +1,6 @@
 package de.commercetools.queue
 
 import cats.effect.{IO, Resource}
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * The entry point to using queues.
@@ -22,8 +21,7 @@ trait QueueClient {
 
   /**
    * Creates a subscriber of the queue.
-   * The `lockTTL` is used by the subscriber to renew lock and by the auto-renewal feature.
    */
-  def subscriber[T: Deserializer](name: String, lockTTL: FiniteDuration): QueueSubscriber[T]
+  def subscriber[T: Deserializer](name: String): QueueSubscriber[T]
 
 }

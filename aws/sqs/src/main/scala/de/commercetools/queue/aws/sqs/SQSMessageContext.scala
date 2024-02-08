@@ -1,19 +1,18 @@
 package de.commercetools.queue.aws.sqs
 
-import scala.concurrent.duration.FiniteDuration
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import de.commercetools.queue.MessageContext
-import java.time.Instant
 import cats.effect.IO
-import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest
-import software.amazon.awssdk.services.sqs.model.ChangeMessageVisibilityRequest
+import de.commercetools.queue.MessageContext
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityRequest, DeleteMessageRequest}
+
+import java.time.Instant
 
 class SQSMessageContext[T](
   val payload: T,
   val enqueuedAt: Instant,
   val metadata: Map[String, String],
   receiptHandle: String,
-  lockTTL: FiniteDuration,
+  lockTTL: Int,
   queueUrl: String,
   client: SqsAsyncClient)
   extends MessageContext[T] {
@@ -46,7 +45,7 @@ class SQSMessageContext[T](
             .builder()
             .queueUrl(queueUrl)
             .receiptHandle(receiptHandle)
-            .visibilityTimeout(lockTTL.toSeconds.toInt)
+            .visibilityTimeout(lockTTL)
             .build())
       }
     }.void

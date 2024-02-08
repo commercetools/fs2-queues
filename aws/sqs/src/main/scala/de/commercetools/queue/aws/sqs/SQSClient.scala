@@ -9,7 +9,6 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
 
 import java.net.URI
-import scala.concurrent.duration.FiniteDuration
 
 class SQSClient private (client: SqsAsyncClient) extends QueueClient {
 
@@ -26,8 +25,8 @@ class SQSClient private (client: SqsAsyncClient) extends QueueClient {
   override def publisher[T: Serializer](name: String): Resource[IO, QueuePublisher[T]] =
     Resource.eval(getQueueUrl(name).map(new SQSPublisher(_, client)))
 
-  override def subscriber[T: Deserializer](name: String, lockTTL: FiniteDuration): QueueSubscriber[T] =
-    new SQSSubscriber[T](lockTTL, getQueueUrl(name), client)
+  override def subscriber[T: Deserializer](name: String): QueueSubscriber[T] =
+    new SQSSubscriber[T](getQueueUrl(name), client)
 
 }
 
