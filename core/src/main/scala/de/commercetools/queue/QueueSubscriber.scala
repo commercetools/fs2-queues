@@ -1,7 +1,8 @@
 package de.commercetools.queue
 
-import fs2.Stream
 import cats.effect.IO
+import fs2.Stream
+
 import scala.concurrent.duration.FiniteDuration
 
 /**

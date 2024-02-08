@@ -67,7 +67,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "cloud-queues-aws-sqs",
     libraryDependencies ++= List(
-      "io.laserdisc" %%% "fs2-aws-sqs" % "6.1.1"
+      "software.amazon.awssdk" % "sqs" % "2.18.35"
     )
   )
   .dependsOn(core)
@@ -80,4 +80,4 @@ lazy val readme = project
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1"
     ))
-  .dependsOn(azureServiceBus.jvm)
+  .dependsOn(azureServiceBus.jvm, awsSQS.jvm)

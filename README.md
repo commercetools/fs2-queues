@@ -49,7 +49,7 @@ def program(client: QueueClient): IO[Unit] = {
   val queueName = "my-queue"
   client.publisher[String](queueName).use { publisher =>
     // subscribe and publish concurrently
-    subscribeStream(client.subscriber[String](queueName))
+    subscribeStream(client.subscriber[String](queueName, 30.seconds))
       .concurrently(publishStream(publisher))
       .compile
       // runs forever
@@ -62,7 +62,7 @@ def program(client: QueueClient): IO[Unit] = {
 
 ```scala
 import de.commercetools.queue.azure.servicebus._
-import com.azure.identity._
+import com.azure.identity.DefaultAzureCredentialBuilder
 
 val namespace = "{namespace}.servicebus.windows.net" // your namespace
 val credentials = new DefaultAzureCredentialBuilder().build() // however you want to authenticate
@@ -72,8 +72,14 @@ ServiceBusClient(namespace, credentials).use(program(_))
 
 ## Working with AWS SQS
 
-**TODO**
 
 ```scala
+import de.commercetools.queue.aws.sqs._
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
+val region = Region.US_EAST_1 // your region
+val credentials = DefaultCredentialsProvider.create() // however you want to authenticate
+
+SQSClient(region, credentials).use(program(_))
 ```

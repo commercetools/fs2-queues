@@ -33,7 +33,7 @@ class ServiceBusQueueSubscriber[Data](
         fromPublisher[IO, ServiceBusReceivedMessage](receiver.receiveMessages(), 1)
           .groupWithin(batchSize, waitingTime)
           .unchunks
-          .evalMapChunk { sbMessage =>
+          .evalMap { sbMessage =>
             deserializer.deserialize(sbMessage.getBody().toString()).map { data =>
               new ServiceBusMessageContext(data, sbMessage, receiver)
             }

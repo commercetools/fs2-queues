@@ -7,6 +7,8 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder
 import de.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueSubscriber, Serializer}
 
+import scala.concurrent.duration.FiniteDuration
+
 class ServiceBusClient private (
   clientBuilder: ServiceBusClientBuilder,
   adminBuilder: ServiceBusAdministrationClientBuilder)
@@ -20,7 +22,7 @@ class ServiceBusClient private (
       sender <- Resource.make(IO(clientBuilder.sender().queueName(name).buildAsyncClient()))(s => IO(s.close()))
     } yield new ServiceBusQueuePublisher[T](sender)
 
-  override def subscriber[T: Deserializer](name: String): QueueSubscriber[T] =
+  override def subscriber[T: Deserializer](name: String, lockTTL: FiniteDuration): QueueSubscriber[T] =
     new ServiceBusQueueSubscriber[T](name, clientBuilder)
 
 }

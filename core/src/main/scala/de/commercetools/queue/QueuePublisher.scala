@@ -25,6 +25,9 @@ trait QueuePublisher[T] {
    * produced data to the queue. The messages are published in batches, according
    * to the `batchSize` parameter.
    */
-  def sink(batchSize: Int = 10): Pipe[IO, T, Nothing]
+  def sink(batchSize: Int = 10): Pipe[IO, T, Nothing] =
+    _.chunkN(batchSize).foreach { chunk =>
+      publish(chunk.toList, None)
+    }
 
 }
