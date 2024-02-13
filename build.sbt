@@ -19,7 +19,9 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "co.fs2" %%% "fs2-core" % Versions.fs2,
     "org.scalameta" %%% "munit" % Versions.munit % Test,
-    "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect % Test
+    "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect % Test,
+    "org.typelevel" %%% "cats-collections-core" % "0.9.8" % Test,
+    "org.typelevel" %%% "cats-effect-testkit" % "3.5.3" % Test
   )
 )
 

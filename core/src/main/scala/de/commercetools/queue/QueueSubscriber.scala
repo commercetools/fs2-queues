@@ -1,13 +1,11 @@
 package de.commercetools.queue
 
-import cats.data.Chain
 import cats.effect.IO
-import fs2.{Chunk, Stream}
-
-import scala.concurrent.duration.FiniteDuration
-import fs2.Pull
 import cats.effect.kernel.Outcome
 import cats.syntax.all._
+import fs2.{Chunk, Pull, Stream}
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * The base interface to subscribe to a queue.
@@ -47,11 +45,10 @@ trait QueueSubscriber[T] {
     // to have full control over nacking things in time after a failure, and emitting
     // results up to the error, we resort to a `Pull`, which allows this fine graind control
     // over pulling/emitting/failing
-    // it keeps the chunk structure as best as it can
-    def doChunk(chunk: Chunk[MessageContext[T]], idx: Int, acc: Chain[Res]): Pull[IO, Res, Unit] =
+    def doChunk(chunk: Chunk[MessageContext[T]], idx: Int): Pull[IO, Res, Unit] =
       if (idx >= chunk.size) {
         // we are done, emit the chunk
-        Pull.output(Chunk.chain(acc))
+        Pull.done
 
       } else {
         val ctx = chunk(idx)
@@ -66,15 +63,14 @@ trait QueueSubscriber[T] {
           })
           .attempt
           .flatMap {
-            case Right(res) => doChunk(chunk, idx + 1, acc.append(res))
+            case Right(res) => Pull.output1(res) >> doChunk(chunk, idx + 1)
             case Left(t) =>
-              // one processing failed, emit everything that was processed in the chunk
-              // and fail
-              Pull.output(Chunk.chain(acc)).covary[IO] *> Pull.raiseError[IO](t)
+              // one processing failed
+              Pull.raiseError[IO](t)
           }
       }
     messages(batchSize, waitingTime).repeatPull(_.uncons.flatMap {
-      case Some((hd, tl)) => doChunk(hd, 0, Chain.empty).as(Some(tl))
+      case Some((hd, tl)) => doChunk(hd, 0).as(Some(tl))
       case None => Pull.pure(None)
     })
   }
