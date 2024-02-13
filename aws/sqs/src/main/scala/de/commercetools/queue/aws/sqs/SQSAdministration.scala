@@ -3,12 +3,10 @@ package de.commercetools.queue.aws.sqs
 import cats.effect.IO
 import de.commercetools.queue.QueueAdministration
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, QueueAttributeName}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, QueueAttributeName, QueueDoesNotExistException}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
-import software.amazon.awssdk.services.sqs.model.DeleteQueueRequest
-import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 
 class SQSAdministration(client: SqsAsyncClient, getQueueUrl: String => IO[String]) extends QueueAdministration {
 

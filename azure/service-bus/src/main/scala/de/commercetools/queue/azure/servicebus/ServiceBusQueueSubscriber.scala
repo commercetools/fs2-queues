@@ -17,7 +17,7 @@ class ServiceBusQueueSubscriber[Data](
 
   override def messages(batchSize: Int, waitingTime: FiniteDuration): Stream[IO, MessageContext[Data]] =
     Stream
-      .resource(Resource.make {
+      .resource(Resource.fromAutoCloseable {
         IO {
           builder
             .receiver()
@@ -26,8 +26,6 @@ class ServiceBusQueueSubscriber[Data](
             .disableAutoComplete()
             .buildAsyncClient()
         }
-      } { r =>
-        IO(r.close())
       })
       .flatMap { receiver =>
         fromPublisher[IO, ServiceBusReceivedMessage](receiver.receiveMessages(), 1)

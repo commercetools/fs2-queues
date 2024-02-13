@@ -4,13 +4,11 @@ import cats.effect.IO
 import de.commercetools.queue.{Deserializer, MessageContext, QueueSubscriber}
 import fs2.{Chunk, Stream}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{MessageSystemAttributeName, ReceiveMessageRequest}
+import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, MessageSystemAttributeName, QueueAttributeName, ReceiveMessageRequest}
 
 import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
-import software.amazon.awssdk.services.sqs.model.GetQueueAttributesRequest
-import software.amazon.awssdk.services.sqs.model.QueueAttributeName
 
 class SQSSubscriber[T](
   getQueueUrl: IO[String],
