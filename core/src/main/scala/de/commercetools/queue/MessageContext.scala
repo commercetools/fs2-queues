@@ -56,4 +56,9 @@ trait MessageContext[T] {
       time.Duration.between(enqueuedAt, now).toMillis().millis
     }
 
+  /**
+   * Unique message identifier
+   */
+  def messageId(): String
+
 }

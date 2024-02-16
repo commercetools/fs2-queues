@@ -59,6 +59,7 @@ class SQSSubscriber[T](
               sentTimestamp,
               message.attributesAsStrings().asScala.toMap,
               message.receiptHandle(),
+              message.messageId(),
               lockTTL,
               queueUrl,
               client)
