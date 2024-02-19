@@ -26,4 +26,9 @@ class ServiceBusMessageContext[T](
   override def extendLock(): IO[Unit] =
     fromBlockingMono(receiver.renewMessageLock(underlying)).void
 
+  /**
+   * Unique message identifier
+   */
+  override def messageId(): String = underlying.getMessageId
+
 }

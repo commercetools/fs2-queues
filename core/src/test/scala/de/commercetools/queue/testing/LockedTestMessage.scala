@@ -51,4 +51,8 @@ final case class LockedTestMessage[T](
       }
     }
 
+  /**
+   * Unique message identifier
+   */
+  override def messageId(): String = lock.toString
 }
