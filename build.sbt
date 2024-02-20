@@ -1,6 +1,6 @@
 ThisBuild / tlBaseVersion := "0.0"
 
-ThisBuild / organization := "de.commercetools"
+ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
 ThisBuild / startYear := Some(2024)
 ThisBuild / tlCiHeaderCheck := false
