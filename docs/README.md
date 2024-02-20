@@ -22,7 +22,7 @@ import cats.effect.IO
 import cats.effect.std.Random
 import scala.concurrent.duration._
 
-import de.commercetools.queue._
+import com.commercetools.queue._
 
 def publishStream(publisher: QueuePublisher[String]): Stream[IO, Nothing] =
   Stream.eval(Random.scalaUtilRandom[IO]).flatMap { random =>
@@ -41,7 +41,7 @@ def subscribeStream(subscriber: QueueSubscriber[String]): Stream[IO, Nothing] =
     // waiting max for 20 seconds
     // print every received message,
     // and ack automatically
-    .processWithAutoAck(5, 20.seconds)(IO.println(_))
+    .processWithAutoAck(5, 20.seconds)(msg => IO.println(msg.payload))
     // results are non important
     .drain
 
@@ -61,7 +61,7 @@ def program(client: QueueClient): IO[Unit] = {
 ## Working with Azure Service Bus queues
 
 ```scala mdoc:compile-only
-import de.commercetools.queue.azure.servicebus._
+import com.commercetools.queue.azure.servicebus._
 import com.azure.identity.DefaultAzureCredentialBuilder
 
 val namespace = "{namespace}.servicebus.windows.net" // your namespace
@@ -74,7 +74,7 @@ ServiceBusClient(namespace, credentials).use(program(_))
 
 
 ```scala mdoc:compile-only
-import de.commercetools.queue.aws.sqs._
+import com.commercetools.queue.aws.sqs._
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 
