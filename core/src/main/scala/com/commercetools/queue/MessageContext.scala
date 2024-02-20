@@ -3,34 +3,13 @@ package com.commercetools.queue
 import cats.effect.IO
 
 import java.time
-import java.time.Instant
 import scala.concurrent.duration._
 
 /**
  * Interface to interact with a message received from a queue.
  * The messages must be explicitly aknowledged after having been processed.
  */
-trait MessageContext[T] {
-
-  /**
-   * Unique message identifier
-   */
-  def messageId: String
-
-  /**
-   * The message payload
-   */
-  def payload: T
-
-  /**
-   * When the message was put into the queue.
-   */
-  def enqueuedAt: Instant
-
-  /**
-   * Raw message metadata (depending on the underlying queue system).
-   */
-  def metadata: Map[String, String]
+trait MessageContext[T] extends Message[T] {
 
   /**
    * Acknowledges the message. It will be removed from the queue, so that

@@ -41,7 +41,8 @@ trait QueueSubscriber[T] {
    * Messages in a batch are processed sequentially, stopping at the first error.
    * All results up to the error will be emitted downstream before failing.
    */
-  def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: T => IO[Res]): Stream[IO, Res] = {
+  def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => IO[Res])
+    : Stream[IO, Res] = {
     // to have full control over nacking things in time after a failure, and emitting
     // results up to the error, we resort to a `Pull`, which allows this fine graind control
     // over pulling/emitting/failing
@@ -53,7 +54,7 @@ trait QueueSubscriber[T] {
       } else {
         val ctx = chunk(idx)
         Pull
-          .eval(f(ctx.payload).guaranteeCase {
+          .eval(f(ctx).guaranteeCase {
             case Outcome.Succeeded(_) => ctx.ack()
             case _ =>
               // if it was cancelled or errored, let's nack this and up to the end of the chunk
@@ -86,10 +87,10 @@ trait QueueSubscriber[T] {
    * Messages in a batch are processed in parallel but result is emitted in
    * order the messages were received.
    */
-  def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: T => IO[Res])
+  def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => IO[Res])
     : Stream[IO, Either[Throwable, Res]] =
     messages(batchSize, waitingTime).parEvalMap(batchSize)(ctx =>
-      f(ctx.payload).attempt.flatTap {
+      f(ctx).attempt.flatTap {
         case Right(_) => ctx.ack()
         case Left(_) => ctx.nack()
       })
