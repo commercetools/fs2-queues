@@ -16,6 +16,8 @@ final case class LockedTestMessage[T](
   state: AtomicCell[IO, QueueState[T]])
   extends MessageContext[T] {
 
+  override def messageId: String = lock.toString
+
   override def payload: T = msg.payload
 
   override def enqueuedAt: Instant = msg.enqueuedAt
@@ -51,8 +53,4 @@ final case class LockedTestMessage[T](
       }
     }
 
-  /**
-   * Unique message identifier
-   */
-  override def messageId(): String = lock.toString
 }

@@ -13,6 +13,11 @@ import scala.concurrent.duration._
 trait MessageContext[T] {
 
   /**
+   * Unique message identifier
+   */
+  def messageId: String
+
+  /**
    * The message payload
    */
   def payload: T
@@ -55,10 +60,5 @@ trait MessageContext[T] {
     IO.realTimeInstant.map { now =>
       time.Duration.between(enqueuedAt, now).toMillis().millis
     }
-
-  /**
-   * Unique message identifier
-   */
-  def messageId(): String
 
 }

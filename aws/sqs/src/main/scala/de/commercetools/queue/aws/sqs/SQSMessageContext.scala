@@ -12,7 +12,7 @@ class SQSMessageContext[T](
   val enqueuedAt: Instant,
   val metadata: Map[String, String],
   receiptHandle: String,
-  messageId: String,
+  val messageId: String,
   lockTTL: Int,
   queueUrl: String,
   client: SqsAsyncClient)
@@ -51,6 +51,4 @@ class SQSMessageContext[T](
       }
     }.void
 
-  override def messageId(): String = messageId
-  
 }
