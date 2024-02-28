@@ -13,11 +13,11 @@ class ServiceBusClient private (
   extends QueueClient {
 
   override def administration: QueueAdministration =
-    new ServiceBusAdministration(adminBuilder.buildAsyncClient())
+    new ServiceBusAdministration(adminBuilder.buildClient())
 
   override def publisher[T: Serializer](name: String): Resource[IO, QueuePublisher[T]] =
     for {
-      sender <- Resource.make(IO(clientBuilder.sender().queueName(name).buildAsyncClient()))(s => IO(s.close()))
+      sender <- Resource.make(IO(clientBuilder.sender().queueName(name).buildClient()))(s => IO(s.close()))
     } yield new ServiceBusQueuePublisher[T](sender)
 
   override def subscriber[T: Deserializer](name: String): QueueSubscriber[T] =
@@ -26,6 +26,21 @@ class ServiceBusClient private (
 }
 
 object ServiceBusClient {
+
+  def apply(connectionString: String): Resource[IO, ServiceBusClient] =
+    for {
+      clientBuilder <- Resource.eval {
+        IO {
+          new ServiceBusClientBuilder().connectionString(connectionString)
+        }
+      }
+      adminBuilder <- Resource.eval {
+        IO {
+          new ServiceBusAdministrationClientBuilder()
+            .connectionString(connectionString)
+        }
+      }
+    } yield new ServiceBusClient(clientBuilder, adminBuilder)
 
   def apply(namespace: String, credentials: TokenCredential, options: Option[ClientOptions] = None)
     : Resource[IO, ServiceBusClient] =

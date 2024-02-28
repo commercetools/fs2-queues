@@ -1,13 +1,13 @@
 package com.commercetools.queue.azure.servicebus
-
 import cats.effect.{IO, Resource}
+import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.models.ServiceBusReceiveMode
-import com.azure.messaging.servicebus.{ServiceBusClientBuilder, ServiceBusReceivedMessage}
 import com.commercetools.queue.{Deserializer, MessageContext, QueueSubscriber}
-import fs2.Stream
-import fs2.interop.reactivestreams.fromPublisher
+import fs2.{Chunk, Stream}
 
+import java.time.Duration
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
 class ServiceBusQueueSubscriber[Data](
   name: String,
@@ -24,12 +24,17 @@ class ServiceBusQueueSubscriber[Data](
             .queueName(name)
             .receiveMode(ServiceBusReceiveMode.PEEK_LOCK)
             .disableAutoComplete()
-            .buildAsyncClient()
+            .buildClient()
         }
       })
       .flatMap { receiver =>
-        fromPublisher[IO, ServiceBusReceivedMessage](receiver.receiveMessages(), 1)
-          .groupWithin(batchSize, waitingTime)
+        Stream
+          .repeatEval(IO.blocking(Chunk.iterator(
+            receiver.receiveMessages(batchSize, Duration.ofMillis(waitingTime.toMillis)).iterator().asScala)))
+          // fromPublisher[IO, ServiceBusReceivedMessage](
+          //  receiver.receiveMessages().subscribeOn(Schedulers.boundedElastic()),
+          //  1)
+          //  .groupWithin(batchSize, waitingTime)
           .unchunks
           .evalMap { sbMessage =>
             deserializer.deserialize(sbMessage.getBody().toString()).map { data =>
