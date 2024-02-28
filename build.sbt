@@ -13,7 +13,7 @@ val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.1")
 ThisBuild / scalaVersion := Scala213
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, circe)
+lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe)
 
 val commonSettings = List(
   libraryDependencies ++= Seq(
