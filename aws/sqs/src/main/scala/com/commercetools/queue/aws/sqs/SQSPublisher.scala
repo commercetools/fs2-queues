@@ -16,15 +16,14 @@
 
 package com.commercetools.queue.aws.sqs
 
-import com.commercetools.queue.{QueuePublisher, Serializer}
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest
-
-import scala.concurrent.duration.FiniteDuration
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
 import cats.effect.Async
 import cats.syntax.functor._
+import com.commercetools.queue.{QueuePublisher, Serializer}
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry, SendMessageRequest}
+
+import scala.concurrent.duration.FiniteDuration
+import scala.jdk.CollectionConverters._
 
 class SQSPublisher[F[_], T](queueUrl: String, client: SqsAsyncClient)(implicit F: Async[F], serializer: Serializer[T])
   extends QueuePublisher[F, T] {
@@ -56,7 +55,7 @@ class SQSPublisher[F[_], T](queueUrl: String, client: SqsAsyncClient)(implicit F
                 .messageBody(serializer.serialize(message))
                 .delaySeconds(delaySeconds)
                 .build()
-            }: _*)
+            }.asJava)
             .build())
       }
     }.void

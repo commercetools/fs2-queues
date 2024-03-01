@@ -20,12 +20,12 @@ import cats.collections.Heap
 import cats.effect.IO
 import cats.effect.std.AtomicCell
 import cats.effect.testkit.TestControl
+import cats.syntax.either._
 import cats.syntax.traverse._
 import com.commercetools.queue.testing._
 import munit.CatsEffectSuite
 
 import scala.concurrent.duration._
-import cats.syntax.either._
 
 class SubscriberSuite extends CatsEffectSuite {
 

@@ -16,8 +16,9 @@
 
 package com.commercetools.queue.testing
 
-import java.time.Instant
 import cats.Order
+
+import java.time.Instant
 
 final case class TestMessage[T](payload: T, enqueuedAt: Instant)
 

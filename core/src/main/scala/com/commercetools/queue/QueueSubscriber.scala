@@ -16,13 +16,12 @@
 
 package com.commercetools.queue
 
-import cats.effect.Outcome
-import cats.syntax.all._
 import cats.effect.syntax.all._
+import cats.effect.{Concurrent, Outcome}
+import cats.syntax.all._
 import fs2.{Chunk, Pull, Stream}
 
 import scala.concurrent.duration.FiniteDuration
-import cats.effect.Concurrent
 
 /**
  * The base interface to subscribe to a queue.

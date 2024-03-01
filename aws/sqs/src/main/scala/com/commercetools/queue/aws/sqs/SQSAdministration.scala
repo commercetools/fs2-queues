@@ -56,6 +56,6 @@ class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[S
     }.void
 
   override def exists(name: String): F[Boolean] =
-    getQueueUrl(name).as(true).recover { _: QueueDoesNotExistException => false }
+    getQueueUrl(name).as(true).recover { case _: QueueDoesNotExistException => false }
 
 }
