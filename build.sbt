@@ -3,7 +3,7 @@ ThisBuild / tlBaseVersion := "0.0"
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
 ThisBuild / startYear := Some(2024)
-ThisBuild / tlCiHeaderCheck := false
+ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 ThisBuild / developers := List(
   tlGitHubDev("satabin", "Lucas Satabin")
