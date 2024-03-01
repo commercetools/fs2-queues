@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 
 import com.commercetools.queue._
 
-def publishStream(publisher: QueuePublisher[String]): Stream[IO, Nothing] =
+def publishStream(publisher: QueuePublisher[IO, String]): Stream[IO, Nothing] =
   Stream.eval(Random.scalaUtilRandom[IO]).flatMap { random =>
     Stream
      // repeatedly emit a random string of length 10
@@ -35,7 +35,7 @@ def publishStream(publisher: QueuePublisher[String]): Stream[IO, Nothing] =
      .through(publisher.sink(batchSize = 10))
   }
 
-def subscribeStream(subscriber: QueueSubscriber[String]): Stream[IO, Nothing] =
+def subscribeStream(subscriber: QueueSubscriber[IO, String]): Stream[IO, Nothing] =
   subscriber
     // receives messages in batches of 5,
     // waiting max for 20 seconds
@@ -45,7 +45,7 @@ def subscribeStream(subscriber: QueueSubscriber[String]): Stream[IO, Nothing] =
     // results are non important
     .drain
 
-def program(client: QueueClient): IO[Unit] = {
+def program(client: QueueClient[IO]): IO[Unit] = {
   val queueName = "my-queue"
   client.publisher[String](queueName).use { publisher =>
     // subscribe and publish concurrently
@@ -67,7 +67,7 @@ import com.azure.identity.DefaultAzureCredentialBuilder
 val namespace = "{namespace}.servicebus.windows.net" // your namespace
 val credentials = new DefaultAzureCredentialBuilder().build() // however you want to authenticate
 
-ServiceBusClient(namespace, credentials).use(program(_))
+ServiceBusClient[IO](namespace, credentials).use(program(_))
 ```
 
 ## Working with AWS SQS
@@ -81,5 +81,5 @@ import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider
 val region = Region.US_EAST_1 // your region
 val credentials = DefaultCredentialsProvider.create() // however you want to authenticate
 
-SQSClient(region, credentials).use(program(_))
+SQSClient[IO](region, credentials).use(program(_))
 ```

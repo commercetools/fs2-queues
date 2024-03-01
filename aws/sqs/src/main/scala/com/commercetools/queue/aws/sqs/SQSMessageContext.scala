@@ -1,13 +1,14 @@
 package com.commercetools.queue.aws.sqs
 
-import cats.effect.IO
+import cats.effect.Async
+import cats.syntax.functor._
 import com.commercetools.queue.MessageContext
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityRequest, DeleteMessageRequest}
 
 import java.time.Instant
 
-class SQSMessageContext[T](
+class SQSMessageContext[F[_], T](
   val payload: T,
   val enqueuedAt: Instant,
   val metadata: Map[String, String],
@@ -15,19 +16,20 @@ class SQSMessageContext[T](
   val messageId: String,
   lockTTL: Int,
   queueUrl: String,
-  client: SqsAsyncClient)
-  extends MessageContext[T] {
+  client: SqsAsyncClient
+)(implicit F: Async[F])
+  extends MessageContext[F, T] {
 
-  override def ack(): IO[Unit] =
-    IO.fromCompletableFuture {
-      IO {
+  override def ack(): F[Unit] =
+    F.fromCompletableFuture {
+      F.delay {
         client.deleteMessage(DeleteMessageRequest.builder().queueUrl(queueUrl).receiptHandle(receiptHandle).build())
       }
     }.void
 
-  override def nack(): IO[Unit] =
-    IO.fromCompletableFuture {
-      IO {
+  override def nack(): F[Unit] =
+    F.fromCompletableFuture {
+      F.delay {
         client.changeMessageVisibility(
           ChangeMessageVisibilityRequest
             .builder()
@@ -38,9 +40,9 @@ class SQSMessageContext[T](
       }
     }.void
 
-  override def extendLock(): IO[Unit] =
-    IO.fromCompletableFuture {
-      IO {
+  override def extendLock(): F[Unit] =
+    F.fromCompletableFuture {
+      F.delay {
         client.changeMessageVisibility(
           ChangeMessageVisibilityRequest
             .builder()

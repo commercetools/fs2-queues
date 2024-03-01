@@ -5,7 +5,7 @@ import com.commercetools.queue.QueuePublisher
 
 import scala.concurrent.duration.FiniteDuration
 
-class TestQueuePublisher[T](queue: TestQueue[T]) extends QueuePublisher[T] {
+class TestQueuePublisher[T](queue: TestQueue[T]) extends QueuePublisher[IO, T] {
 
   override def publish(message: T, delay: Option[FiniteDuration]): IO[Unit] =
     queue.enqeueMessages(message :: Nil, delay)

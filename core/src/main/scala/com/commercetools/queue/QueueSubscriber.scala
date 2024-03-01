@@ -1,16 +1,17 @@
 package com.commercetools.queue
 
-import cats.effect.IO
-import cats.effect.kernel.Outcome
+import cats.effect.Outcome
 import cats.syntax.all._
+import cats.effect.syntax.all._
 import fs2.{Chunk, Pull, Stream}
 
 import scala.concurrent.duration.FiniteDuration
+import cats.effect.Concurrent
 
 /**
  * The base interface to subscribe to a queue.
  */
-trait QueueSubscriber[T] {
+abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
 
   /**
    * The stream of messages published in the subscribed queue.
@@ -26,7 +27,7 @@ trait QueueSubscriber[T] {
    * If you have simpler workflows, please refer to the other subscriber
    * methods.
    */
-  def messages(batchSize: Int, waitingTime: FiniteDuration): Stream[IO, MessageContext[T]]
+  def messages(batchSize: Int, waitingTime: FiniteDuration): Stream[F, MessageContext[F, T]]
 
   /**
    * Processes the messages with the provided processing function.
@@ -41,12 +42,11 @@ trait QueueSubscriber[T] {
    * Messages in a batch are processed sequentially, stopping at the first error.
    * All results up to the error will be emitted downstream before failing.
    */
-  def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => IO[Res])
-    : Stream[IO, Res] = {
+  def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => F[Res]): Stream[F, Res] = {
     // to have full control over nacking things in time after a failure, and emitting
     // results up to the error, we resort to a `Pull`, which allows this fine graind control
     // over pulling/emitting/failing
-    def doChunk(chunk: Chunk[MessageContext[T]], idx: Int): Pull[IO, Res, Unit] =
+    def doChunk(chunk: Chunk[MessageContext[F, T]], idx: Int): Pull[F, Res, Unit] =
       if (idx >= chunk.size) {
         // we are done, emit the chunk
         Pull.done
@@ -67,7 +67,7 @@ trait QueueSubscriber[T] {
             case Right(res) => Pull.output1(res) >> doChunk(chunk, idx + 1)
             case Left(t) =>
               // one processing failed
-              Pull.raiseError[IO](t)
+              Pull.raiseError[F](t)
           }
       }
     messages(batchSize, waitingTime).repeatPull(_.uncons.flatMap {
@@ -87,8 +87,8 @@ trait QueueSubscriber[T] {
    * Messages in a batch are processed in parallel but result is emitted in
    * order the messages were received.
    */
-  def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => IO[Res])
-    : Stream[IO, Either[Throwable, Res]] =
+  def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => F[Res])
+    : Stream[F, Either[Throwable, Res]] =
     messages(batchSize, waitingTime).parEvalMap(batchSize)(ctx =>
       f(ctx).attempt.flatTap {
         case Right(_) => ctx.ack()

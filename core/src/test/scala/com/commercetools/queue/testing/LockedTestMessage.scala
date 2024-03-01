@@ -14,7 +14,7 @@ final case class LockedTestMessage[T](
   lockedUntil: Instant,
   lockTTL: FiniteDuration,
   state: AtomicCell[IO, QueueState[T]])
-  extends MessageContext[T] {
+  extends MessageContext[IO, T] {
 
   override def messageId: String = lock.toString
 

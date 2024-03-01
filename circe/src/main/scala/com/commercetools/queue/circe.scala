@@ -1,7 +1,5 @@
 package com.commercetools.queue
 
-import cats.effect.IO
-import cats.syntax.either._
 import io.circe.parser.parse
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -12,6 +10,6 @@ object circe {
     _.asJson.noSpaces
 
   implicit def deserializerForDecoder[T: Decoder]: Deserializer[T] =
-    parse(_).flatMap(_.as[T]).liftTo[IO]
+    parse(_).flatMap(_.as[T])
 
 }

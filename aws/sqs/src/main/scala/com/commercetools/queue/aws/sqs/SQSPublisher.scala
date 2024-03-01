@@ -1,6 +1,5 @@
 package com.commercetools.queue.aws.sqs
 
-import cats.effect.IO
 import com.commercetools.queue.{QueuePublisher, Serializer}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
@@ -8,13 +7,15 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest
 import scala.concurrent.duration.FiniteDuration
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry
+import cats.effect.Async
+import cats.syntax.functor._
 
-class SQSPublisher[T](queueUrl: String, client: SqsAsyncClient)(implicit serializer: Serializer[T])
-  extends QueuePublisher[T] {
+class SQSPublisher[F[_], T](queueUrl: String, client: SqsAsyncClient)(implicit F: Async[F], serializer: Serializer[T])
+  extends QueuePublisher[F, T] {
 
-  override def publish(message: T, delay: Option[FiniteDuration]): IO[Unit] =
-    IO.fromCompletableFuture {
-      IO {
+  override def publish(message: T, delay: Option[FiniteDuration]): F[Unit] =
+    F.fromCompletableFuture {
+      F.delay {
         client.sendMessage(
           SendMessageRequest
             .builder()
@@ -25,9 +26,9 @@ class SQSPublisher[T](queueUrl: String, client: SqsAsyncClient)(implicit seriali
       }
     }.void
 
-  override def publish(messages: List[T], delay: Option[FiniteDuration]): IO[Unit] =
-    IO.fromCompletableFuture {
-      IO {
+  override def publish(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
+    F.fromCompletableFuture {
+      F.delay {
         val delaySeconds = delay.fold(0)(_.toSeconds.toInt)
         client.sendMessageBatch(
           SendMessageBatchRequest
