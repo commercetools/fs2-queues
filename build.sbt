@@ -3,14 +3,14 @@ ThisBuild / tlBaseVersion := "0.0"
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
 ThisBuild / startYear := Some(2024)
-ThisBuild / tlCiHeaderCheck := false
+ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 ThisBuild / developers := List(
   tlGitHubDev("satabin", "Lucas Satabin")
 )
 
 val Scala213 = "2.13.12"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.1")
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
 ThisBuild / scalaVersion := Scala213
 
 lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe)
@@ -22,7 +22,11 @@ val commonSettings = List(
     "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect % Test,
     "org.typelevel" %%% "cats-collections-core" % "0.9.8" % Test,
     "org.typelevel" %%% "cats-effect-testkit" % "3.5.3" % Test
-  )
+  ),
+  scalacOptions += (scalaVersion.value match {
+    case Scala213 => "-Wunused"
+    case _ => "-Wunused:all"
+  })
 )
 
 lazy val core = crossProject(JVMPlatform)
