@@ -32,12 +32,10 @@ class ServiceBusClient[F[_]] private (
   override def administration: QueueAdministration[F] =
     new ServiceBusAdministration(adminBuilder.buildClient())
 
-  override def publisher[T: Serializer](name: String): Resource[F, QueuePublisher[F, T]] =
-    for {
-      sender <- Resource.make(F.delay(clientBuilder.sender().queueName(name).buildClient()))(s => F.delay(s.close()))
-    } yield new ServiceBusQueuePublisher[F, T](sender)
+  override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
+    new ServiceBusQueuePublisher[F, T](clientBuilder, name)
 
-  override def subscriber[T: Deserializer](name: String): QueueSubscriber[F, T] =
+  override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new ServiceBusQueueSubscriber[F, T](name, clientBuilder)
 
 }

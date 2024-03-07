@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package com.commercetools.queue.testing
+package com.commercetools.queue
 
-import cats.effect.{IO, Resource}
-import com.commercetools.queue.{QueuePublisher, QueuePusher}
+import scala.concurrent.duration.FiniteDuration
 
-class TestQueuePublisher[T](queue: TestQueue[T]) extends QueuePublisher[IO, T] {
+/**
+ * A queue pusher allows for pushing elements into a queue either on at a time
+ * or in batch.
+ */
+trait QueuePusher[F[_], T] {
 
-  override def pusher: Resource[IO, QueuePusher[IO, T]] = Resource.pure(new TestQueuePusher(queue))
+  /**
+   * Publishes a single message to the queue, with an optional delay.
+   */
+  def push(message: T, delay: Option[FiniteDuration]): F[Unit]
+
+  /**
+   * Publishes a bunch of messages to the queue, with an optional delay.
+   */
+  def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit]
 
 }
