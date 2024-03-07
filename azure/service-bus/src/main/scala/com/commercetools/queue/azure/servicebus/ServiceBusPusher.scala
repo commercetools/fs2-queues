@@ -30,14 +30,22 @@ class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit seri
 
   override def push(message: Data, delay: Option[FiniteDuration]): F[Unit] = {
     val sbMessage = new ServiceBusMessage(serializer.serialize(message))
-    delay.traverse_(delay =>
+    delay.traverse_ { delay =>
       F.realTimeInstant
-        .map(now => sbMessage.setScheduledEnqueueTime(now.plusMillis(delay.toMillis).atOffset(ZoneOffset.UTC)))) *>
+        .map(now => sbMessage.setScheduledEnqueueTime(now.plusMillis(delay.toMillis).atOffset(ZoneOffset.UTC)))
+    } *>
       F.blocking(sender.sendMessage(sbMessage)).void
   }
 
   override def push(messages: List[Data], delay: Option[FiniteDuration]): F[Unit] = {
     val sbMessages = messages.map(msg => new ServiceBusMessage(serializer.serialize(msg)))
+    delay.traverse_ { delay =>
+      F.realTimeInstant.map { now =>
+        sbMessages.foreach { msg =>
+          msg.setScheduledEnqueueTime(now.plusMillis(delay.toMillis).atOffset(ZoneOffset.UTC))
+        }
+      }
+    }
     F.blocking(sender.sendMessages(sbMessages.asJava)).void
   }
 
