@@ -28,7 +28,7 @@ import scala.jdk.CollectionConverters._
 class SQSPusher[F[_], T](client: SqsAsyncClient, queueUrl: String)(implicit serializer: Serializer[T], F: Async[F])
   extends QueuePusher[F, T] {
 
-  override def publish(message: T, delay: Option[FiniteDuration]): F[Unit] =
+  override def push(message: T, delay: Option[FiniteDuration]): F[Unit] =
     F.fromCompletableFuture {
       F.delay {
         client.sendMessage(
@@ -41,7 +41,7 @@ class SQSPusher[F[_], T](client: SqsAsyncClient, queueUrl: String)(implicit seri
       }
     }.void
 
-  override def publish(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
+  override def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
     F.fromCompletableFuture {
       F.delay {
         val delaySeconds = delay.fold(0)(_.toSeconds.toInt)

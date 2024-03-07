@@ -28,7 +28,7 @@ import scala.jdk.CollectionConverters._
 class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit serializer: Serializer[Data], F: Async[F])
   extends QueuePusher[F, Data] {
 
-  override def publish(message: Data, delay: Option[FiniteDuration]): F[Unit] = {
+  override def push(message: Data, delay: Option[FiniteDuration]): F[Unit] = {
     val sbMessage = new ServiceBusMessage(serializer.serialize(message))
     delay.traverse_(delay =>
       F.realTimeInstant
@@ -36,7 +36,7 @@ class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit seri
       F.blocking(sender.sendMessage(sbMessage)).void
   }
 
-  override def publish(messages: List[Data], delay: Option[FiniteDuration]): F[Unit] = {
+  override def push(messages: List[Data], delay: Option[FiniteDuration]): F[Unit] = {
     val sbMessages = messages.map(msg => new ServiceBusMessage(serializer.serialize(msg)))
     F.blocking(sender.sendMessages(sbMessages.asJava)).void
   }

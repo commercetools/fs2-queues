@@ -41,7 +41,7 @@ abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
   def sink(batchSize: Int = 10)(upstream: Stream[F, T]): Stream[F, Nothing] =
     Stream.resource(pusher).flatMap { pusher =>
       upstream.chunkN(batchSize).foreach { chunk =>
-        pusher.publish(chunk.toList, None)
+        pusher.push(chunk.toList, None)
       }
     }
 

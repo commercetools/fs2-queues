@@ -27,11 +27,11 @@ trait QueuePusher[F[_], T] {
   /**
    * Publishes a single message to the queue, with an optional delay.
    */
-  def publish(message: T, delay: Option[FiniteDuration]): F[Unit]
+  def push(message: T, delay: Option[FiniteDuration]): F[Unit]
 
   /**
    * Publishes a bunch of messages to the queue, with an optional delay.
    */
-  def publish(messages: List[T], delay: Option[FiniteDuration]): F[Unit]
+  def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit]
 
 }
