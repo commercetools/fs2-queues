@@ -45,8 +45,8 @@ class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit seri
           msg.setScheduledEnqueueTime(now.plusMillis(delay.toMillis).atOffset(ZoneOffset.UTC))
         }
       }
-    }
-    F.blocking(sender.sendMessages(sbMessages.asJava)).void
+    } *>
+      F.blocking(sender.sendMessages(sbMessages.asJava)).void
   }
 
 }
