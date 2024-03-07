@@ -16,11 +16,15 @@
 
 package com.commercetools.queue.testing
 
-import cats.effect.{IO, Resource}
-import com.commercetools.queue.{QueuePuller, QueueSubscriber}
+import cats.effect.IO
+import com.commercetools.queue.{MessageContext, QueuePuller}
+import fs2.Chunk
 
-class TestQueueSubscriber[T](queue: TestQueue[T]) extends QueueSubscriber[IO, T] {
+import scala.concurrent.duration.FiniteDuration
 
-  override def puller: Resource[IO, QueuePuller[IO, T]] = Resource.pure(new TestQueuePuller(queue))
+class TestQueuePuller[T](queue: TestQueue[T]) extends QueuePuller[IO, T] {
+
+  override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): IO[Chunk[MessageContext[IO, T]]] =
+    IO.sleep(waitingTime) *> queue.lockMessages(batchSize)
 
 }

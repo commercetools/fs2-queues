@@ -17,7 +17,7 @@
 package com.commercetools.queue
 
 import cats.effect.syntax.all._
-import cats.effect.{Concurrent, Outcome}
+import cats.effect.{Concurrent, Outcome, Resource}
 import cats.syntax.all._
 import fs2.{Chunk, Pull, Stream}
 
@@ -27,6 +27,15 @@ import scala.concurrent.duration.FiniteDuration
  * The base interface to subscribe to a queue.
  */
 abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
+
+  /**
+   * Returns a way to pull batches from the queue.
+   * This is a low-level construct mainly aiming at integrating with existing
+   * code bases that require to pull explicitly.
+   *
+   * '''Note:''' Prefer using one of the `process` variant below when possible.
+   */
+  def puller: Resource[F, QueuePuller[F, T]]
 
   /**
    * The stream of messages published in the subscribed queue.
@@ -42,7 +51,10 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * If you have simpler workflows, please refer to the other subscriber
    * methods.
    */
-  def messages(batchSize: Int, waitingTime: FiniteDuration): Stream[F, MessageContext[F, T]]
+  final def messages(batchSize: Int, waitingTime: FiniteDuration): Stream[F, MessageContext[F, T]] =
+    Stream.resource(puller).flatMap { puller =>
+      Stream.repeatEval(puller.pullBatch(batchSize, waitingTime)).unchunks
+    }
 
   /**
    * Processes the messages with the provided processing function.
@@ -57,7 +69,8 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed sequentially, stopping at the first error.
    * All results up to the error will be emitted downstream before failing.
    */
-  def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => F[Res]): Stream[F, Res] = {
+  final def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => F[Res])
+    : Stream[F, Res] = {
     // to have full control over nacking things in time after a failure, and emitting
     // results up to the error, we resort to a `Pull`, which allows this fine graind control
     // over pulling/emitting/failing
@@ -102,7 +115,7 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed in parallel but result is emitted in
    * order the messages were received.
    */
-  def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => F[Res])
+  final def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[T] => F[Res])
     : Stream[F, Either[Throwable, Res]] =
     messages(batchSize, waitingTime).parEvalMap(batchSize)(ctx =>
       f(ctx).attempt.flatTap {
