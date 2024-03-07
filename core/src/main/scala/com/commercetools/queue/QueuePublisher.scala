@@ -16,33 +16,33 @@
 
 package com.commercetools.queue
 
-import fs2.Pipe
-
-import scala.concurrent.duration.FiniteDuration
+import cats.effect.{MonadCancel, Resource}
+import fs2.Stream
 
 /**
  * The interface to publish to a queue.
  */
-trait QueuePublisher[F[_], T] {
+abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
 
   /**
-   * Publishes a single message to the queue, with an optional delay.
+   * Returns a way to bush messages into the queue.
+   * This is a low-level construct, mainly aiming at integrating existing
+   * code bases that require to push explicitly.
+   *
+   * '''Note:''' Prefer using the sinks below when possible.
    */
-  def publish(message: T, delay: Option[FiniteDuration]): F[Unit]
-
-  /**
-   * Publishes a bunch of messages to the queue, with an optional delay.
-   */
-  def publish(messages: List[T], delay: Option[FiniteDuration]): F[Unit]
+  def pusher: Resource[F, QueuePusher[F, T]]
 
   /**
    * Sink to pipe your [[fs2.Stream Stream]] into, in order to publish
    * produced data to the queue. The messages are published in batches, according
    * to the `batchSize` parameter.
    */
-  def sink(batchSize: Int = 10): Pipe[F, T, Nothing] =
-    _.chunkN(batchSize).foreach { chunk =>
-      publish(chunk.toList, None)
+  def sink(batchSize: Int = 10)(upstream: Stream[F, T]): Stream[F, Nothing] =
+    Stream.resource(pusher).flatMap { pusher =>
+      upstream.chunkN(batchSize).foreach { chunk =>
+        pusher.publish(chunk.toList, None)
+      }
     }
 
 }

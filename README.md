@@ -47,14 +47,13 @@ def subscribeStream(subscriber: QueueSubscriber[IO, String]): Stream[IO, Nothing
 
 def program(client: QueueClient[IO]): IO[Unit] = {
   val queueName = "my-queue"
-  client.publisher[String](queueName).use { publisher =>
-    // subscribe and publish concurrently
-    subscribeStream(client.subscriber[String](queueName))
-      .concurrently(publishStream(publisher))
-      .compile
-      // runs forever
-      .drain
-  }
+  // subscribe and publish concurrently
+  subscribeStream(client.subscribe[String](queueName))
+    // concurrently publish messages
+    .concurrently(publishStream(client.publish[String](queueName)))
+    .compile
+    // runs forever
+    .drain
 }
 ```
 
