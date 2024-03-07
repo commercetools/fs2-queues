@@ -19,7 +19,7 @@ package com.commercetools.queue
 import scala.concurrent.duration.FiniteDuration
 
 /**
- * A queue puller allows for pushing elements into a queue either on at a time
+ * A queue pusher allows for pushing elements into a queue either on at a time
  * or in batch.
  */
 trait QueuePusher[F[_], T] {
