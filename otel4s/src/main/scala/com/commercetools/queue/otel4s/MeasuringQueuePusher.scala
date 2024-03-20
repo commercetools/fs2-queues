@@ -1,0 +1,52 @@
+/*
+ * Copyright 2024 Commercetools GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.commercetools.queue.otel4s
+
+import cats.effect.MonadCancel
+import cats.effect.syntax.monadCancel._
+import com.commercetools.queue.QueuePusher
+import org.typelevel.otel4s.metrics.Counter
+import org.typelevel.otel4s.trace.Tracer
+
+import scala.concurrent.duration.FiniteDuration
+
+class MeasuringQueuePusher[F[_], T](
+  underlying: QueuePusher[F, T],
+  requestCounter: Counter[F, Long],
+  tracer: Tracer[F]
+)(implicit F: MonadCancel[F, Throwable])
+  extends QueuePusher[F, T] {
+
+  override def push(message: T, delay: Option[FiniteDuration]): F[Unit] =
+    tracer
+      .span("queue.pushMessage")
+      .surround {
+        underlying
+          .push(message, delay)
+      }
+      .guaranteeCase(handleOutcome(Attributes.send, requestCounter))
+
+  override def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
+    tracer
+      .span("queue.pushMessages")
+      .surround {
+        underlying
+          .push(messages, delay)
+      }
+      .guaranteeCase(handleOutcome(Attributes.send, requestCounter))
+
+}
