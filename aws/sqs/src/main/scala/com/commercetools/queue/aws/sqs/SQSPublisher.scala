@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 class SQSPublisher[F[_], T](
   client: SqsAsyncClient,
+  queueName: String,
   getQueueUrl: F[String]
 )(implicit
   F: Async[F],
@@ -29,6 +30,6 @@ class SQSPublisher[F[_], T](
   extends QueuePublisher[F, T] {
 
   override def pusher: Resource[F, QueuePusher[F, T]] =
-    Resource.eval(getQueueUrl).map(new SQSPusher(client, _))
+    Resource.eval(getQueueUrl).map(new SQSPusher(client, queueName, _))
 
 }

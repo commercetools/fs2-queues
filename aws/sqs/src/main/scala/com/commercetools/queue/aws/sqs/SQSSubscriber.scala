@@ -23,8 +23,9 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 
 class SQSSubscriber[F[_], T](
-  getQueueUrl: F[String],
-  client: SqsAsyncClient
+  client: SqsAsyncClient,
+  queueName: String,
+  getQueueUrl: F[String]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
@@ -41,13 +42,14 @@ class SQSSubscriber[F[_], T](
             .build())
       }
     }.map(_.attributes().get(QueueAttributeName.VISIBILITY_TIMEOUT).toInt)
+      .adaptError(makeQueueException(_, queueName))
 
   override def puller: Resource[F, QueuePuller[F, T]] =
     Resource.eval {
       for {
         queueUrl <- getQueueUrl
         lockTTL <- getLockTTL(queueUrl)
-      } yield new SQSPuller(client, queueUrl, lockTTL)
+      } yield new SQSPuller(client, queueName, queueUrl, lockTTL)
     }
 
 }
