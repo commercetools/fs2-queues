@@ -35,6 +35,6 @@ class ServiceBusQueuePublisher[F[_], Data](
       } { s =>
         F.delay(s.close())
       }
-      .map(new ServiceBusPusher(_))
+      .map(new ServiceBusPusher(_, queueName))
 
 }
