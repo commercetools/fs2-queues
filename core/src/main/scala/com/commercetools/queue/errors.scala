@@ -41,4 +41,4 @@ case class CannotSettleException(msgId: String, action: Settlement, inner: Throw
   extends QueueException(show"Cannot $action message $msgId", inner)
 
 case class UnknownQueueException(name: String, inner: Throwable)
-  extends QueueException(show"Something wrong happened when interacting with queue $name", inner)
+  extends QueueException(show"Something went wrong when interacting with queue $name", inner)
