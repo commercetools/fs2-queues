@@ -37,7 +37,7 @@ case class CannotPushException(name: String, inner: Throwable)
 case class CannotPullException(name: String, inner: Throwable)
   extends QueueException(show"Cannot pull messages from queue $name", inner)
 
-case class CannotSettleException(msgId: String, action: Settlement, inner: Throwable)
+case class MessageException(msgId: String, action: Action, inner: Throwable)
   extends QueueException(show"Cannot $action message $msgId", inner)
 
 case class UnknownQueueException(name: String, inner: Throwable)

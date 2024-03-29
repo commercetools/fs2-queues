@@ -18,14 +18,14 @@ package com.commercetools.queue
 
 import cats.Show
 
-sealed trait Settlement
+sealed trait Action
 
-object Settlement {
-  case object Ack extends Settlement
-  case object Nack extends Settlement
-  case object ExtendLock extends Settlement
+object Action {
+  case object Ack extends Action
+  case object Nack extends Action
+  case object ExtendLock extends Action
 
-  implicit val show: Show[Settlement] = Show.show {
+  implicit val show: Show[Action] = Show.show {
     case Ack => "ack"
     case Nack => "nack"
     case ExtendLock => "extend lock"
