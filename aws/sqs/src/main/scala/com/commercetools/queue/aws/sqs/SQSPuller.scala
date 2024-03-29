@@ -28,6 +28,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
 class SQSPuller[F[_], T](
+  val queueName: String,
   client: SqsAsyncClient,
   queueUrl: String,
   lockTTL: Int

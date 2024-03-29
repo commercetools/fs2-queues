@@ -19,17 +19,18 @@ package com.commercetools.queue.otel4s
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
 import com.commercetools.queue.QueuePusher
-import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.FiniteDuration
 
 class MeasuringQueuePusher[F[_], T](
   underlying: QueuePusher[F, T],
-  requestCounter: Counter[F, Long],
+  metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: MonadCancel[F, Throwable])
   extends QueuePusher[F, T] {
+
+  override def queueName: String = underlying.queueName
 
   override def push(message: T, delay: Option[FiniteDuration]): F[Unit] =
     tracer
@@ -38,7 +39,7 @@ class MeasuringQueuePusher[F[_], T](
         underlying
           .push(message, delay)
       }
-      .guaranteeCase(handleOutcome(Attributes.send, requestCounter))
+      .guaranteeCase(metrics.send)
 
   override def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
     tracer
@@ -47,6 +48,6 @@ class MeasuringQueuePusher[F[_], T](
         underlying
           .push(messages, delay)
       }
-      .guaranteeCase(handleOutcome(Attributes.send, requestCounter))
+      .guaranteeCase(metrics.send)
 
 }

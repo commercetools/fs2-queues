@@ -24,6 +24,8 @@ import scala.concurrent.duration.FiniteDuration
 
 class TestQueuePuller[T](queue: TestQueue[T]) extends QueuePuller[IO, T] {
 
+  override val queueName: String = queue.name
+
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): IO[Chunk[MessageContext[IO, T]]] =
     IO.sleep(waitingTime) *> queue.lockMessages(batchSize)
 

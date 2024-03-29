@@ -33,7 +33,7 @@ class ServiceBusClient[F[_]] private (
     new ServiceBusAdministration(adminBuilder.buildClient())
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new ServiceBusQueuePublisher[F, T](clientBuilder, name)
+    new ServiceBusQueuePublisher[F, T](name, clientBuilder)
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new ServiceBusQueueSubscriber[F, T](name, clientBuilder)

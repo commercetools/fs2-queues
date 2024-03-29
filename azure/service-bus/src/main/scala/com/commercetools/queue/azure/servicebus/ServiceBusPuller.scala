@@ -27,6 +27,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
 class ServiceBusPuller[F[_], Data](
+  val queueName: String,
   receiver: ServiceBusReceiverClient
 )(implicit
   F: Async[F],

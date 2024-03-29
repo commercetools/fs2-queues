@@ -25,7 +25,13 @@ import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendM
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class SQSPusher[F[_], T](client: SqsAsyncClient, queueUrl: String)(implicit serializer: Serializer[T], F: Async[F])
+class SQSPusher[F[_], T](
+  val queueName: String,
+  client: SqsAsyncClient,
+  queueUrl: String
+)(implicit
+  serializer: Serializer[T],
+  F: Async[F])
   extends QueuePusher[F, T] {
 
   override def push(message: T, delay: Option[FiniteDuration]): F[Unit] =

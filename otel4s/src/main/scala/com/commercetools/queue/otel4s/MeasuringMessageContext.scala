@@ -19,14 +19,13 @@ package com.commercetools.queue.otel4s
 import cats.effect.Temporal
 import cats.effect.syntax.monadCancel._
 import com.commercetools.queue.MessageContext
-import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
 import java.time.Instant
 
 class MeasuringMessageContext[F[_], T](
   underlying: MessageContext[F, T],
-  requestCounter: Counter[F, Long],
+  metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
   extends MessageContext[F, T] {
@@ -45,7 +44,7 @@ class MeasuringMessageContext[F[_], T](
       .surround {
         underlying.ack()
       }
-      .guaranteeCase(handleOutcome(Attributes.ack, requestCounter))
+      .guaranteeCase(metrics.ack)
 
   override def nack(): F[Unit] =
     tracer
@@ -53,7 +52,7 @@ class MeasuringMessageContext[F[_], T](
       .surround {
         underlying.nack()
       }
-      .guaranteeCase(handleOutcome(Attributes.nack, requestCounter))
+      .guaranteeCase(metrics.nack)
 
   override def extendLock(): F[Unit] =
     tracer
@@ -61,6 +60,6 @@ class MeasuringMessageContext[F[_], T](
       .surround {
         underlying.extendLock()
       }
-      .guaranteeCase(handleOutcome(Attributes.extendLock, requestCounter))
+      .guaranteeCase(metrics.extendLock)
 
 }

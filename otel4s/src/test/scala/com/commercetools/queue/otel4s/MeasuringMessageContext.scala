@@ -20,17 +20,27 @@ import cats.data.Chain
 import cats.effect.IO
 import com.commercetools.queue.testing.TestingMessageContext
 import munit.CatsEffectSuite
+import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.trace.Tracer
 
 class MeasuringMessageContextSuite extends CatsEffectSuite {
 
+  val queueName = "test-queue"
+
+  val queueAttribute = Attribute("queue", queueName)
+
   test("Succesfully acking a message should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
-      val context = new MeasuringMessageContext[IO, String](TestingMessageContext("").noop, counter, Tracer.noop)
+      val context = new MeasuringMessageContext[IO, String](
+        TestingMessageContext("").noop,
+        new QueueMetrics(queueName, counter),
+        Tracer.noop)
       for {
         fiber <- context.ack().start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.ack, Attributes.success))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.ack, QueueMetrics.success))))
       } yield ()
     }
   }
@@ -38,33 +48,48 @@ class MeasuringMessageContextSuite extends CatsEffectSuite {
   test("Failing to ack a message should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
       val context =
-        new MeasuringMessageContext[IO, String](TestingMessageContext("").failing(new Exception), counter, Tracer.noop)
+        new MeasuringMessageContext[IO, String](
+          TestingMessageContext("").failing(new Exception),
+          new QueueMetrics(queueName, counter),
+          Tracer.noop)
       for {
         fiber <- context.ack().start
         _ <- assertIO(fiber.join.map(_.isError), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.ack, Attributes.failure))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.ack, QueueMetrics.failure))))
       } yield ()
     }
   }
 
   test("Cancelling acking a message should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
-      val context = new MeasuringMessageContext[IO, String](TestingMessageContext("").canceled, counter, Tracer.noop)
+      val context = new MeasuringMessageContext[IO, String](
+        TestingMessageContext("").canceled,
+        new QueueMetrics(queueName, counter),
+        Tracer.noop)
       for {
         fiber <- context.ack().start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.ack, Attributes.cancelation))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.ack, QueueMetrics.cancelation))))
       } yield ()
     }
   }
 
   test("Succesfully nacking a message should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
-      val context = new MeasuringMessageContext[IO, String](TestingMessageContext("").noop, counter, Tracer.noop)
+      val context = new MeasuringMessageContext[IO, String](
+        TestingMessageContext("").noop,
+        new QueueMetrics(queueName, counter),
+        Tracer.noop)
       for {
         fiber <- context.nack().start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.nack, Attributes.success))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.nack, QueueMetrics.success))))
       } yield ()
     }
   }
@@ -72,33 +97,48 @@ class MeasuringMessageContextSuite extends CatsEffectSuite {
   test("Failing to nack a message should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
       val context =
-        new MeasuringMessageContext[IO, String](TestingMessageContext("").failing(new Exception), counter, Tracer.noop)
+        new MeasuringMessageContext[IO, String](
+          TestingMessageContext("").failing(new Exception),
+          new QueueMetrics(queueName, counter),
+          Tracer.noop)
       for {
         fiber <- context.nack().start
         _ <- assertIO(fiber.join.map(_.isError), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.nack, Attributes.failure))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.nack, QueueMetrics.failure))))
       } yield ()
     }
   }
 
   test("Cancelling nacking a message should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
-      val context = new MeasuringMessageContext[IO, String](TestingMessageContext("").canceled, counter, Tracer.noop)
+      val context = new MeasuringMessageContext[IO, String](
+        TestingMessageContext("").canceled,
+        new QueueMetrics(queueName, counter),
+        Tracer.noop)
       for {
         fiber <- context.nack().start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.nack, Attributes.cancelation))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.nack, QueueMetrics.cancelation))))
       } yield ()
     }
   }
 
   test("Succesfully extending a message lock should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
-      val context = new MeasuringMessageContext[IO, String](TestingMessageContext("").noop, counter, Tracer.noop)
+      val context = new MeasuringMessageContext[IO, String](
+        TestingMessageContext("").noop,
+        new QueueMetrics(queueName, counter),
+        Tracer.noop)
       for {
         fiber <- context.extendLock().start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.extendLock, Attributes.success))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.extendLock, QueueMetrics.success))))
       } yield ()
     }
   }
@@ -106,22 +146,32 @@ class MeasuringMessageContextSuite extends CatsEffectSuite {
   test("Failing to extend a message lock should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
       val context =
-        new MeasuringMessageContext[IO, String](TestingMessageContext("").failing(new Exception), counter, Tracer.noop)
+        new MeasuringMessageContext[IO, String](
+          TestingMessageContext("").failing(new Exception),
+          new QueueMetrics(queueName, counter),
+          Tracer.noop)
       for {
         fiber <- context.extendLock().start
         _ <- assertIO(fiber.join.map(_.isError), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.extendLock, Attributes.failure))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.extendLock, QueueMetrics.failure))))
       } yield ()
     }
   }
 
   test("Cancelling a message extension should increment the request counter") {
     NaiveCounter.create.flatMap { counter =>
-      val context = new MeasuringMessageContext[IO, String](TestingMessageContext("").canceled, counter, Tracer.noop)
+      val context = new MeasuringMessageContext[IO, String](
+        TestingMessageContext("").canceled,
+        new QueueMetrics(queueName, counter),
+        Tracer.noop)
       for {
         fiber <- context.extendLock().start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.extendLock, Attributes.cancelation))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.extendLock, QueueMetrics.cancelation))))
       } yield ()
     }
   }

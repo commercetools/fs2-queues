@@ -16,22 +16,11 @@
 
 package com.commercetools.queue
 
-import cats.effect.{Outcome, Temporal}
-import org.typelevel.otel4s.Attribute
-import org.typelevel.otel4s.metrics.{Counter, Meter}
+import cats.effect.Temporal
+import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.trace.Tracer
 
 package object otel4s {
-
-  private[otel4s] def handleOutcome[F[_], T](method: Attribute[String], counter: Counter[F, Long])
-    : Outcome[F, Throwable, T] => F[Unit] = {
-    case Outcome.Succeeded(_) =>
-      counter.inc(method, Attributes.success)
-    case Outcome.Errored(_) =>
-      counter.inc(method, Attributes.failure)
-    case Outcome.Canceled() =>
-      counter.inc(method, Attributes.cancelation)
-  }
 
   implicit class ClientOps[F[_]](val client: QueueClient[F]) extends AnyVal {
 

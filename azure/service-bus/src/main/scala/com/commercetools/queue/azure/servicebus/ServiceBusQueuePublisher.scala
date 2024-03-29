@@ -21,8 +21,8 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
 
 class ServiceBusQueuePublisher[F[_], Data](
-  clientBuilder: ServiceBusClientBuilder,
-  queueName: String
+  val queueName: String,
+  clientBuilder: ServiceBusClientBuilder
 )(implicit
   F: Async[F],
   serializer: Serializer[Data])
@@ -35,6 +35,6 @@ class ServiceBusQueuePublisher[F[_], Data](
       } { s =>
         F.delay(s.close())
       }
-      .map(new ServiceBusPusher(_))
+      .map(new ServiceBusPusher(queueName, _))
 
 }

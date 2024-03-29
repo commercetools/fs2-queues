@@ -25,6 +25,9 @@ import scala.concurrent.duration.FiniteDuration
  */
 trait QueuePuller[F[_], T] {
 
+  /** The queue name from which this puller is pulling. */
+  def queueName: String
+
   /**
    * Pulls one batch of messages from the underlying queue system.
    *

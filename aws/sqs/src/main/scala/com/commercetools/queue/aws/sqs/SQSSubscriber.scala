@@ -23,8 +23,9 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 
 class SQSSubscriber[F[_], T](
-  getQueueUrl: F[String],
-  client: SqsAsyncClient
+  val queueName: String,
+  client: SqsAsyncClient,
+  getQueueUrl: F[String]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
@@ -47,7 +48,7 @@ class SQSSubscriber[F[_], T](
       for {
         queueUrl <- getQueueUrl
         lockTTL <- getLockTTL(queueUrl)
-      } yield new SQSPuller(client, queueUrl, lockTTL)
+      } yield new SQSPuller(queueName, client, queueUrl, lockTTL)
     }
 
 }

@@ -28,7 +28,9 @@ class MeasuringQueueSubscriber[F[_], T](
 )(implicit F: Temporal[F])
   extends QueueSubscriber[F, T] {
 
+  override def queueName: String = underlying.queueName
+
   override def puller: Resource[F, QueuePuller[F, T]] =
-    underlying.puller.map(new MeasuringQueuePuller(_, requestCounter, tracer))
+    underlying.puller.map(new MeasuringQueuePuller(_, new QueueMetrics[F](queueName, requestCounter), tracer))
 
 }

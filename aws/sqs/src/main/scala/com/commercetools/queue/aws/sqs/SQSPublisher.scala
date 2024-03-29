@@ -21,6 +21,7 @@ import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
 class SQSPublisher[F[_], T](
+  val queueName: String,
   client: SqsAsyncClient,
   getQueueUrl: F[String]
 )(implicit
@@ -29,6 +30,6 @@ class SQSPublisher[F[_], T](
   extends QueuePublisher[F, T] {
 
   override def pusher: Resource[F, QueuePusher[F, T]] =
-    Resource.eval(getQueueUrl).map(new SQSPusher(client, _))
+    Resource.eval(getQueueUrl).map(new SQSPusher(queueName, client, _))
 
 }

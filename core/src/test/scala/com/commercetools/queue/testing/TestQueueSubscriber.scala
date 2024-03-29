@@ -21,6 +21,8 @@ import com.commercetools.queue.{QueuePuller, QueueSubscriber}
 
 class TestQueueSubscriber[T](queue: TestQueue[T]) extends QueueSubscriber[IO, T] {
 
+  override val queueName: String = queue.name
+
   override def puller: Resource[IO, QueuePuller[IO, T]] = Resource.pure(new TestQueuePuller(queue))
 
 }

@@ -19,6 +19,7 @@ package com.commercetools.queue.otel4s
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
 import com.commercetools.queue.QueueAdministration
+import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
@@ -37,7 +38,7 @@ class MeasuringQueueAdministration[F[_]](
       .surround {
         underlying.create(name, messageTTL, lockTTL)
       }
-      .guaranteeCase(handleOutcome(Attributes.create, requestCounter))
+      .guaranteeCase(QueueMetrics.increment(Attribute("queue", name), QueueMetrics.create, requestCounter))
 
   override def delete(name: String): F[Unit] =
     tracer
@@ -45,7 +46,7 @@ class MeasuringQueueAdministration[F[_]](
       .surround {
         underlying.delete(name)
       }
-      .guaranteeCase(handleOutcome(Attributes.delete, requestCounter))
+      .guaranteeCase(QueueMetrics.increment(Attribute("queue", name), QueueMetrics.delete, requestCounter))
 
   override def exists(name: String): F[Boolean] =
     tracer
@@ -53,5 +54,5 @@ class MeasuringQueueAdministration[F[_]](
       .surround {
         underlying.exists(name)
       }
-      .guaranteeCase(handleOutcome(Attributes.exist, requestCounter))
+      .guaranteeCase(QueueMetrics.increment(Attribute("queue", name), QueueMetrics.exist, requestCounter))
 }

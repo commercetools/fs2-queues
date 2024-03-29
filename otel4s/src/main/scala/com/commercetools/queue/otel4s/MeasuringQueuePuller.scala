@@ -21,17 +21,18 @@ import cats.effect.syntax.monadCancel._
 import cats.syntax.functor._
 import com.commercetools.queue.{MessageContext, QueuePuller}
 import fs2.Chunk
-import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.FiniteDuration
 
 class MeasuringQueuePuller[F[_], T](
   underlying: QueuePuller[F, T],
-  requestCounter: Counter[F, Long],
+  metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
   extends QueuePuller[F, T] {
+
+  override def queueName: String = underlying.queueName
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
     tracer
@@ -39,8 +40,8 @@ class MeasuringQueuePuller[F[_], T](
       .surround {
         underlying
           .pullBatch(batchSize, waitingTime)
-          .map(_.map(new MeasuringMessageContext[F, T](_, requestCounter, tracer)).widen[MessageContext[F, T]])
+          .map(_.map(new MeasuringMessageContext[F, T](_, metrics, tracer)).widen[MessageContext[F, T]])
       }
-      .guaranteeCase(handleOutcome(Attributes.receive, requestCounter))
+      .guaranteeCase(metrics.receive)
 
 }

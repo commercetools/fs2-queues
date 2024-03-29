@@ -23,6 +23,8 @@ import scala.concurrent.duration.FiniteDuration
 
 class TestQueuePusher[T](queue: TestQueue[T]) extends QueuePusher[IO, T] {
 
+  override val queueName: String = queue.name
+
   override def push(message: T, delay: Option[FiniteDuration]): IO[Unit] =
     queue.enqeueMessages(message :: Nil, delay)
 

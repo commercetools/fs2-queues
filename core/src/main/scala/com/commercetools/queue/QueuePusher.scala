@@ -24,6 +24,9 @@ import scala.concurrent.duration.FiniteDuration
  */
 trait QueuePusher[F[_], T] {
 
+  /** The queue name to which this pusher is pushing. */
+  def queueName: String
+
   /**
    * Publishes a single message to the queue, with an optional delay.
    */

@@ -25,7 +25,12 @@ import java.time.ZoneOffset
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit serializer: Serializer[Data], F: Async[F])
+class ServiceBusPusher[F[_], Data](
+  val queueName: String,
+  sender: ServiceBusSenderClient
+)(implicit
+  serializer: Serializer[Data],
+  F: Async[F])
   extends QueuePusher[F, Data] {
 
   override def push(message: Data, delay: Option[FiniteDuration]): F[Unit] = {

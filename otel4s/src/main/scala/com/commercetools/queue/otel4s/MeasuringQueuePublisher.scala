@@ -28,7 +28,9 @@ class MeasuringQueuePublisher[F[_], T](
 )(implicit F: MonadCancel[F, Throwable])
   extends QueuePublisher[F, T] {
 
+  override def queueName: String = underlying.queueName
+
   def pusher: Resource[F, QueuePusher[F, T]] =
-    underlying.pusher.map(new MeasuringQueuePusher(_, requestCounter, tracer))
+    underlying.pusher.map(new MeasuringQueuePusher(_, new QueueMetrics[F](queueName, requestCounter), tracer))
 
 }

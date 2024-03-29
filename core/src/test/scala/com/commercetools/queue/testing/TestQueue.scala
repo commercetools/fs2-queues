@@ -27,6 +27,7 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
 class TestQueue[T](
+  val name: String,
   state: AtomicCell[IO, QueueState[T]],
   val messageTTL: FiniteDuration,
   val lockTTL: FiniteDuration) {

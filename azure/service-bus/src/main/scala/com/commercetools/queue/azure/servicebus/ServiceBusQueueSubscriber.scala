@@ -21,7 +21,7 @@ import com.azure.messaging.servicebus.models.ServiceBusReceiveMode
 import com.commercetools.queue.{Deserializer, QueuePuller, QueueSubscriber}
 
 class ServiceBusQueueSubscriber[F[_], Data](
-  name: String,
+  val queueName: String,
   builder: ServiceBusClientBuilder
 )(implicit
   F: Async[F],
@@ -33,14 +33,14 @@ class ServiceBusQueueSubscriber[F[_], Data](
       F.delay {
         builder
           .receiver()
-          .queueName(name)
+          .queueName(queueName)
           .receiveMode(ServiceBusReceiveMode.PEEK_LOCK)
           .disableAutoComplete()
           .buildClient()
       }
     }
     .map { receiver =>
-      new ServiceBusPuller(receiver)
+      new ServiceBusPuller(queueName, receiver)
     }
 
 }

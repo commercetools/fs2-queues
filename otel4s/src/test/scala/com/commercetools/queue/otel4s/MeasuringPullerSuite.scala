@@ -22,12 +22,22 @@ import com.commercetools.queue.testing.TestingMessageContext
 import com.commercetools.queue.{MessageContext, QueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
+import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
 class MeasuringPullerSuite extends CatsEffectSuite {
+  self =>
+
+  val queueName = "test-queue"
+
+  val queueAttribute = Attribute("queue", queueName)
+
   def puller(batch: IO[Chunk[MessageContext[IO, String]]]) = new QueuePuller[IO, String] {
+
+    override def queueName: String = self.queueName
+
     override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): IO[Chunk[MessageContext[IO, String]]] =
       batch
   }
@@ -43,13 +53,15 @@ class MeasuringPullerSuite extends CatsEffectSuite {
                 TestingMessageContext("second").noop,
                 TestingMessageContext("third").noop,
                 TestingMessageContext("forth").noop)))),
-        counter,
+        new QueueMetrics(queueName, counter),
         Tracer.noop
       )
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.receive, Attributes.success))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.success))))
       } yield ()
     }
   }
@@ -57,11 +69,16 @@ class MeasuringPullerSuite extends CatsEffectSuite {
   test("Failed pulling results in incrementing the counter") {
     NaiveCounter.create.flatMap { counter =>
       val measuringPuller =
-        new MeasuringQueuePuller[IO, String](puller(IO.raiseError(new Exception)), counter, Tracer.noop)
+        new MeasuringQueuePuller[IO, String](
+          puller(IO.raiseError(new Exception)),
+          new QueueMetrics(queueName, counter),
+          Tracer.noop)
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isError), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.receive, Attributes.failure))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.failure))))
       } yield ()
     }
   }
@@ -69,11 +86,16 @@ class MeasuringPullerSuite extends CatsEffectSuite {
   test("Cancelled pulling results in incrementing the counter") {
     NaiveCounter.create.flatMap { counter =>
       val measuringPuller =
-        new MeasuringQueuePuller[IO, String](puller(IO.canceled.as(Chunk.empty)), counter, Tracer.noop)
+        new MeasuringQueuePuller[IO, String](
+          puller(IO.canceled.as(Chunk.empty)),
+          new QueueMetrics(queueName, counter),
+          Tracer.noop)
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(counter.records.get, Chain.one((1L, List(Attributes.receive, Attributes.cancelation))))
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.cancelation))))
       } yield ()
     }
   }
