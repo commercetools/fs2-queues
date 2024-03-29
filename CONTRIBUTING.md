@@ -1,6 +1,6 @@
-# Contributing to `cloud-queues`
+# Contributing to `fs2-queues`
 
-There a several ways you can contribute to `cloud-queues`:
+There a several ways you can contribute to `fs2-queues`:
  - You found a bug? You can [open an issue][open-issue].
  - If you have an idea, found something missing, or just a question, you can also [open an issue][open-issue].
  - Code contributions are also welcome, you can [open a pull request][open-pr].
@@ -28,7 +28,7 @@ $ sbt readme/mdoc
 
 ## Code formatting
 
-`cloud-queues` uses [scalafmt][scalafmt] to format its code and defines some [scalafix][scalafix] rules. Before submitting code contribution, be sure to have proper formatting by running
+`fs2-queues` uses [scalafmt][scalafmt] to format its code and defines some [scalafix][scalafix] rules. Before submitting code contribution, be sure to have proper formatting by running
 
 ```shell
 $ sbt prePR
@@ -38,10 +38,10 @@ and check the result.
 
 ## Licensing
 
-`cloud-queues` is licensed under the Apache Software License 2.0. Opening a pull request is to be considered affirmative consent to incorporate your changes into the project, granting an unrestricted license to the Commercetools GmbH to distribute and derive new work from your changes, as per the contribution terms of ASL 2.0. You also affirm that you own the rights to the code you are contributing. All contributors retain the copyright to their own work.
+`fs2-queues` is licensed under the Apache Software License 2.0. Opening a pull request is to be considered affirmative consent to incorporate your changes into the project, granting an unrestricted license to the Commercetools GmbH to distribute and derive new work from your changes, as per the contribution terms of ASL 2.0. You also affirm that you own the rights to the code you are contributing. All contributors retain the copyright to their own work.
 
-[open-issue]: https://github.com/commercetools/cloud-queues/issues/new/choose
-[open-pr]: https://github.com/commercetools/cloud-queues/pull/new/main
+[open-issue]: https://github.com/commercetools/fs2-queues/issues/new/choose
+[open-pr]: https://github.com/commercetools/fs2-queues/pull/new/main
 [scalafmt]: https://scalameta.org/scalafmt/
 [scalafix]: https://scalacenter.github.io/scalafix/
 [mdoc]: https://scalameta.org/mdoc/

@@ -78,4 +78,11 @@ object ServiceBusClient {
       }
     } yield new ServiceBusClient(clientBuilder, adminBuilder)
 
+  def unmanaged[F[_]](
+    clientBuilder: ServiceBusClientBuilder,
+    adminBuilder: ServiceBusAdministrationClientBuilder
+  )(implicit F: Async[F]
+  ): ServiceBusClient[F] =
+    new ServiceBusClient(clientBuilder, adminBuilder)
+
 }
