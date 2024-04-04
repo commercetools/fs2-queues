@@ -18,7 +18,8 @@ package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
 import cats.syntax.functor._
-import com.commercetools.queue.MessageContext
+import cats.syntax.monadError._
+import com.commercetools.queue.{Action, MessageContext}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityRequest, DeleteMessageRequest}
 
@@ -31,6 +32,7 @@ class SQSMessageContext[F[_], T](
   receiptHandle: String,
   val messageId: String,
   lockTTL: Int,
+  queueName: String,
   queueUrl: String,
   client: SqsAsyncClient
 )(implicit F: Async[F])
@@ -42,6 +44,7 @@ class SQSMessageContext[F[_], T](
         client.deleteMessage(DeleteMessageRequest.builder().queueUrl(queueUrl).receiptHandle(receiptHandle).build())
       }
     }.void
+      .adaptError(makeMessageException(_, queueName, messageId, Action.Ack))
 
   override def nack(): F[Unit] =
     F.fromCompletableFuture {
@@ -55,6 +58,7 @@ class SQSMessageContext[F[_], T](
             .build())
       }
     }.void
+      .adaptError(makeMessageException(_, queueName, messageId, Action.Nack))
 
   override def extendLock(): F[Unit] =
     F.fromCompletableFuture {
@@ -68,5 +72,6 @@ class SQSMessageContext[F[_], T](
             .build())
       }
     }.void
+      .adaptError(makeMessageException(_, queueName, messageId, Action.ExtendLock))
 
 }

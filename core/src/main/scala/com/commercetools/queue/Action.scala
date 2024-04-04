@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package com.commercetools.queue.aws.sqs
+package com.commercetools.queue
 
-import cats.effect.{Async, Resource}
-import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import cats.Show
 
-class SQSPublisher[F[_], T](
-  client: SqsAsyncClient,
-  queueName: String,
-  getQueueUrl: F[String]
-)(implicit
-  F: Async[F],
-  serializer: Serializer[T])
-  extends QueuePublisher[F, T] {
+sealed trait Action
 
-  override def pusher: Resource[F, QueuePusher[F, T]] =
-    Resource.eval(getQueueUrl).map(new SQSPusher(client, queueName, _))
+object Action {
+  case object Ack extends Action
+  case object Nack extends Action
+  case object ExtendLock extends Action
 
+  implicit val show: Show[Action] = Show.show {
+    case Ack => "ack"
+    case Nack => "nack"
+    case ExtendLock => "extend lock"
+  }
 }

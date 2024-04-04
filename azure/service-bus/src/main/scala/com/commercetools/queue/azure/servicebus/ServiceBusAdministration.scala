@@ -18,6 +18,7 @@ package com.commercetools.queue.azure.servicebus
 
 import cats.effect.Async
 import cats.syntax.functor._
+import cats.syntax.monadError._
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClient
 import com.azure.messaging.servicebus.administration.models.CreateQueueOptions
 import com.commercetools.queue.QueueAdministration
@@ -36,11 +37,16 @@ class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(imp
           .setDefaultMessageTimeToLive(Duration.ofMillis(messageTTL.toMillis))
           .setLockDuration(Duration.ofMillis(lockTTL.toMillis))))
       .void
+      .adaptError(makeQueueException(_, name))
 
   override def delete(name: String): F[Unit] =
-    F.blocking(client.deleteQueue(name)).void
+    F.blocking(client.deleteQueue(name))
+      .void
+      .adaptError(makeQueueException(_, name))
 
   override def exists(name: String): F[Boolean] =
-    F.blocking(client.getQueueExists(name)).map(_.booleanValue)
+    F.blocking(client.getQueueExists(name))
+      .map(_.booleanValue)
+      .adaptError(makeQueueException(_, name))
 
 }

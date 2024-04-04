@@ -40,7 +40,7 @@ class ServiceBusQueueSubscriber[F[_], Data](
       }
     }
     .map { receiver =>
-      new ServiceBusPuller(receiver)
+      new ServiceBusPuller(receiver, name)
     }
 
 }

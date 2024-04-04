@@ -16,8 +16,11 @@
 
 package com.commercetools.queue.azure.servicebus
 
-import cats.effect.kernel.Async
-import cats.syntax.all._
+import cats.effect.Async
+import cats.syntax.either._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import cats.syntax.monadError._
 import com.azure.messaging.servicebus.ServiceBusReceiverClient
 import com.commercetools.queue.{Deserializer, MessageContext, QueuePuller}
 import fs2.Chunk
@@ -27,7 +30,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
 class ServiceBusPuller[F[_], Data](
-  receiver: ServiceBusReceiverClient
+  receiver: ServiceBusReceiverClient,
+  queueName: String
 )(implicit
   F: Async[F],
   deserializer: Deserializer[Data])
@@ -44,5 +48,7 @@ class ServiceBusPuller[F[_], Data](
           new ServiceBusMessageContext(data, sbMessage, receiver)
         })
     }
+    .widen[Chunk[MessageContext[F, Data]]]
+    .adaptError(makePullQueueException(_, queueName))
 
 }

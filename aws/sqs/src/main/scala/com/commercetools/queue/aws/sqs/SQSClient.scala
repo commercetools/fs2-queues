@@ -18,6 +18,7 @@ package com.commercetools.queue.aws.sqs
 
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
+import cats.syntax.monadError._
 import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueSubscriber, Serializer}
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
@@ -35,15 +36,16 @@ class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) ext
         client.getQueueUrl(GetQueueUrlRequest.builder().queueName(name).build())
       }
     }.map(_.queueUrl)
+      .adaptError(makeQueueException(_, name))
 
   override def administration: QueueAdministration[F] =
     new SQSAdministration(client, getQueueUrl(_))
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new SQSPublisher(client, getQueueUrl(name))
+    new SQSPublisher(client, name, getQueueUrl(name))
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
-    new SQSSubscriber[F, T](getQueueUrl(name), client)
+    new SQSSubscriber[F, T](client, name, getQueueUrl(name))
 
 }
 

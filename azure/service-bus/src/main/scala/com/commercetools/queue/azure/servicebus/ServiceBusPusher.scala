@@ -25,7 +25,12 @@ import java.time.ZoneOffset
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit serializer: Serializer[Data], F: Async[F])
+class ServiceBusPusher[F[_], Data](
+  sender: ServiceBusSenderClient,
+  queueName: String
+)(implicit
+  serializer: Serializer[Data],
+  F: Async[F])
   extends QueuePusher[F, Data] {
 
   override def push(message: Data, delay: Option[FiniteDuration]): F[Unit] = {
@@ -34,7 +39,9 @@ class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit seri
       F.realTimeInstant
         .map(now => sbMessage.setScheduledEnqueueTime(now.plusMillis(delay.toMillis).atOffset(ZoneOffset.UTC)))
     } *>
-      F.blocking(sender.sendMessage(sbMessage)).void
+      F.blocking(sender.sendMessage(sbMessage))
+        .void
+        .adaptError(makePushQueueException(_, queueName))
   }
 
   override def push(messages: List[Data], delay: Option[FiniteDuration]): F[Unit] = {
@@ -46,7 +53,9 @@ class ServiceBusPusher[F[_], Data](sender: ServiceBusSenderClient)(implicit seri
         }
       }
     } *>
-      F.blocking(sender.sendMessages(sbMessages.asJava)).void
+      F.blocking(sender.sendMessages(sbMessages.asJava))
+        .void
+        .adaptError(makePushQueueException(_, queueName))
   }
 
 }
