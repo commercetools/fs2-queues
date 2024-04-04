@@ -42,6 +42,7 @@ class SQSSubscriber[F[_], T](
             .build())
       }
     }.map(_.attributes().get(QueueAttributeName.VISIBILITY_TIMEOUT).toInt)
+      .adaptError(makeQueueException(_, queueName))
 
   override def puller: Resource[F, QueuePuller[F, T]] =
     Resource.eval {

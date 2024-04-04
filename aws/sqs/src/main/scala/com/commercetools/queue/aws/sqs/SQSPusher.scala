@@ -18,6 +18,7 @@ package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
 import cats.syntax.functor._
+import cats.syntax.monadError._
 import com.commercetools.queue.{QueuePusher, Serializer}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry, SendMessageRequest}
@@ -46,6 +47,7 @@ class SQSPusher[F[_], T](
             .build())
       }
     }.void
+      .adaptError(makePushQueueException(_, queueName))
 
   override def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
     F.fromCompletableFuture {
@@ -65,5 +67,6 @@ class SQSPusher[F[_], T](
             .build())
       }
     }.void
+      .adaptError(makePushQueueException(_, queueName))
 
 }

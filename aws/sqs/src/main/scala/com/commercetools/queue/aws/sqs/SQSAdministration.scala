@@ -41,21 +41,28 @@ class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[S
             .build())
       }
     }.void
+      .adaptError(makeQueueException(_, name))
 
   override def delete(name: String): F[Unit] =
-    getQueueUrl(name).flatMap { queueUrl =>
-      F.fromCompletableFuture {
-        F.delay {
-          client.deleteQueue(
-            DeleteQueueRequest
-              .builder()
-              .queueUrl(queueUrl)
-              .build())
+    getQueueUrl(name)
+      .flatMap { queueUrl =>
+        F.fromCompletableFuture {
+          F.delay {
+            client.deleteQueue(
+              DeleteQueueRequest
+                .builder()
+                .queueUrl(queueUrl)
+                .build())
+          }
         }
       }
-    }.void
+      .void
+      .adaptError(makeQueueException(_, name))
 
   override def exists(name: String): F[Boolean] =
-    getQueueUrl(name).as(true).recover { case _: QueueDoesNotExistException => false }
+    getQueueUrl(name)
+      .as(true)
+      .recover { case _: QueueDoesNotExistException => false }
+      .adaptError(makeQueueException(_, name))
 
 }
