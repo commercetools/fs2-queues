@@ -14,22 +14,23 @@
  * limitations under the License.
  */
 
-package com.commercetools.queue.aws.sqs
+package com.commercetools.queue.otel4s
 
-import cats.effect.{Async, Resource}
-import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import cats.effect.{MonadCancel, Resource}
+import com.commercetools.queue.{QueuePublisher, QueuePusher}
+import org.typelevel.otel4s.metrics.Counter
+import org.typelevel.otel4s.trace.Tracer
 
-class SQSPublisher[F[_], T](
-  val queueName: String,
-  client: SqsAsyncClient,
-  getQueueUrl: F[String]
-)(implicit
-  F: Async[F],
-  serializer: Serializer[T])
+class MeasuringQueuePublisher[F[_], T](
+  underlying: QueuePublisher[F, T],
+  requestCounter: Counter[F, Long],
+  tracer: Tracer[F]
+)(implicit F: MonadCancel[F, Throwable])
   extends QueuePublisher[F, T] {
 
-  override def pusher: Resource[F, QueuePusher[F, T]] =
-    Resource.eval(getQueueUrl).map(new SQSPusher(queueName, client, _))
+  override def queueName: String = underlying.queueName
+
+  def pusher: Resource[F, QueuePusher[F, T]] =
+    underlying.pusher.map(new MeasuringQueuePusher(_, new QueueMetrics[F](queueName, requestCounter), tracer))
 
 }

@@ -27,8 +27,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
 class SQSPusher[F[_], T](
+  val queueName: String,
   client: SqsAsyncClient,
-  queueName: String,
   queueUrl: String
 )(implicit
   serializer: Serializer[T],

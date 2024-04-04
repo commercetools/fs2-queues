@@ -26,8 +26,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
 class ServiceBusPusher[F[_], Data](
-  sender: ServiceBusSenderClient,
-  queueName: String
+  val queueName: String,
+  sender: ServiceBusSenderClient
 )(implicit
   serializer: Serializer[Data],
   F: Async[F])

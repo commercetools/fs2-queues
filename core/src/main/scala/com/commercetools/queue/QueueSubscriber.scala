@@ -28,6 +28,9 @@ import scala.concurrent.duration.FiniteDuration
  */
 abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
 
+  /** The queue name to which this subscriber subscribes. */
+  def queueName: String
+
   /**
    * Returns a way to pull batches from the queue.
    * This is a low-level construct mainly aiming at integrating with existing

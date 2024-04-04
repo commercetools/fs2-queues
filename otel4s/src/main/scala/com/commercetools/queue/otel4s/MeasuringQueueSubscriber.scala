@@ -14,15 +14,23 @@
  * limitations under the License.
  */
 
-package com.commercetools.queue.testing
+package com.commercetools.queue.otel4s
 
-import cats.effect.{IO, Resource}
+import cats.effect.{Resource, Temporal}
 import com.commercetools.queue.{QueuePuller, QueueSubscriber}
+import org.typelevel.otel4s.metrics.Counter
+import org.typelevel.otel4s.trace.Tracer
 
-class TestQueueSubscriber[T](queue: TestQueue[T]) extends QueueSubscriber[IO, T] {
+class MeasuringQueueSubscriber[F[_], T](
+  underlying: QueueSubscriber[F, T],
+  requestCounter: Counter[F, Long],
+  tracer: Tracer[F]
+)(implicit F: Temporal[F])
+  extends QueueSubscriber[F, T] {
 
-  override val queueName: String = queue.name
+  override def queueName: String = underlying.queueName
 
-  override def puller: Resource[IO, QueuePuller[IO, T]] = Resource.pure(new TestQueuePuller(queue))
+  override def puller: Resource[F, QueuePuller[F, T]] =
+    underlying.puller.map(new MeasuringQueuePuller(_, new QueueMetrics[F](queueName, requestCounter), tracer))
 
 }

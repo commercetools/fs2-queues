@@ -24,6 +24,9 @@ import fs2.Stream
  */
 abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
 
+  /** The queue name to which this publisher publishes. */
+  def queueName: String
+
   /**
    * Returns a way to bush messages into the queue.
    * This is a low-level construct, mainly aiming at integrating existing

@@ -42,10 +42,10 @@ class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) ext
     new SQSAdministration(client, getQueueUrl(_))
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new SQSPublisher(client, name, getQueueUrl(name))
+    new SQSPublisher(name, client, getQueueUrl(name))
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
-    new SQSSubscriber[F, T](client, name, getQueueUrl(name))
+    new SQSSubscriber[F, T](name, client, getQueueUrl(name))
 
 }
 

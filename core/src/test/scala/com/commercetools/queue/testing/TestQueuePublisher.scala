@@ -21,6 +21,8 @@ import com.commercetools.queue.{QueuePublisher, QueuePusher}
 
 class TestQueuePublisher[T](queue: TestQueue[T]) extends QueuePublisher[IO, T] {
 
+  override val queueName = queue.name
+
   override def pusher: Resource[IO, QueuePusher[IO, T]] = Resource.pure(new TestQueuePusher(queue))
 
 }

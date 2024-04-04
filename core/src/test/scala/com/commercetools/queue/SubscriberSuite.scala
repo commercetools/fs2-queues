@@ -33,7 +33,8 @@ class SubscriberSuite extends CatsEffectSuite {
     AtomicCell[IO]
       .of(testing.QueueState[String](Heap.empty, List.empty, Map.empty))
       .map { state =>
-        val queue = new TestQueue[String](state = state, messageTTL = 15.minutes, lockTTL = 1.minute)
+        val queue =
+          new TestQueue[String](name = "test-queue", state = state, messageTTL = 15.minutes, lockTTL = 1.minute)
         (queue, new TestQueueSubscriber(queue))
       }
       .toResource)

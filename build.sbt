@@ -13,7 +13,7 @@ val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
 ThisBuild / scalaVersion := Scala213
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe)
+lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe, otel4s)
 
 val commonSettings = List(
   libraryDependencies ++= Seq(
@@ -37,6 +37,20 @@ lazy val core = crossProject(JVMPlatform)
   .settings(
     name := "cloud-queues-core"
   )
+
+lazy val otel4s = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("otel4s"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "cloud-queues-otel4s",
+    description := "Support for metrics and tracing using otel4s",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "otel4s-core" % "0.4.0"
+    )
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val circe = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
