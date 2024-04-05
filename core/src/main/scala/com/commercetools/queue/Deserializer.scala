@@ -16,11 +16,18 @@
 
 package com.commercetools.queue
 
+import cats.MonadThrow
+import cats.syntax.either._
+import cats.syntax.monadError._
+
 /**
  * Abstraction over how to deserialize data from string.
  */
 trait Deserializer[T] {
   def deserialize(s: String): Either[Throwable, T]
+
+  def deserializeF[F[_]: MonadThrow](s: String): F[T] =
+    deserialize(s).liftTo[F].adaptError(DeserializationException(s, _))
 }
 
 object Deserializer {
