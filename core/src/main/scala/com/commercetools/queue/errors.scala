@@ -25,6 +25,9 @@ import cats.syntax.show._
  */
 sealed abstract class QueueException(msg: String, inner: Throwable) extends Exception(msg, inner)
 
+case class DeserializationException(body: String, inner: Throwable)
+  extends QueueException(show"Something went wrong when deserializing '$body'", inner)
+
 case class QueueDoesNotExistException(name: String, inner: Throwable)
   extends QueueException(show"Queue $name does not exist", inner)
 

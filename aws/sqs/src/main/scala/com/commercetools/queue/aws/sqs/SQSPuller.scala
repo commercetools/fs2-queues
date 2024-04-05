@@ -17,7 +17,6 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
-import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
@@ -57,20 +56,22 @@ class SQSPuller[F[_], T](
       Chunk
         .iterator(response.messages().iterator().asScala)
         .traverse { message =>
-          deserializer.deserialize(message.body()).liftTo[F].map { payload =>
-            new SQSMessageContext(
-              payload = payload,
-              enqueuedAt =
-                Instant.ofEpochMilli(message.attributes().get(MessageSystemAttributeName.SENT_TIMESTAMP).toLong),
-              metadata = message.attributesAsStrings().asScala.toMap,
-              receiptHandle = message.receiptHandle(),
-              messageId = message.messageId(),
-              lockTTL = lockTTL,
-              queueName = queueName,
-              queueUrl = queueUrl,
-              client = client
-            )
-          }
+          deserializer
+            .deserializeF(message.body())
+            .map { payload =>
+              new SQSMessageContext(
+                payload = payload,
+                enqueuedAt =
+                  Instant.ofEpochMilli(message.attributes().get(MessageSystemAttributeName.SENT_TIMESTAMP).toLong),
+                metadata = message.attributesAsStrings().asScala.toMap,
+                receiptHandle = message.receiptHandle(),
+                messageId = message.messageId(),
+                lockTTL = lockTTL,
+                queueName = queueName,
+                queueUrl = queueUrl,
+                client = client
+              )
+            }
         }
     }.widen[Chunk[MessageContext[F, T]]]
       .adaptError(makePullQueueException(_, queueName))

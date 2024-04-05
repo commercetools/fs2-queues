@@ -17,7 +17,6 @@
 package com.commercetools.queue.azure.servicebus
 
 import cats.effect.Async
-import cats.syntax.either._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
@@ -43,10 +42,13 @@ class ServiceBusPuller[F[_], Data](
         .iterator(receiver.receiveMessages(batchSize, Duration.ofMillis(waitingTime.toMillis)).iterator().asScala)
     }
     .flatMap { chunk =>
-      chunk.traverse(sbMessage =>
-        deserializer.deserialize(sbMessage.getBody().toString()).liftTo[F].map { data =>
-          new ServiceBusMessageContext(data, sbMessage, receiver)
-        })
+      chunk.traverse { sbMessage =>
+        deserializer
+          .deserializeF(sbMessage.getBody().toString())
+          .map { data =>
+            new ServiceBusMessageContext(data, sbMessage, receiver)
+          }
+      }
     }
     .widen[Chunk[MessageContext[F, Data]]]
     .adaptError(makePullQueueException(_, queueName))

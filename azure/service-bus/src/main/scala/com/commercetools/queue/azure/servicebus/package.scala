@@ -33,9 +33,15 @@ package object servicebus {
     new CannotPushException(queueName, makeQueueException(t, queueName))
 
   def makePullQueueException(t: Throwable, queueName: String): QueueException =
-    new CannotPullException(queueName, makeQueueException(t, queueName))
+    t match {
+      case t: QueueException => t
+      case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
+    }
 
   def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action): QueueException =
-    new MessageException(msgId = msgId, action = action, inner = makeQueueException(t, queueName))
+    t match {
+      case t: QueueException => t
+      case _ => new MessageException(msgId = msgId, action = action, inner = makeQueueException(t, queueName))
+    }
 
 }
