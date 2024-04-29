@@ -1,6 +1,7 @@
 import laika.config.PrettyURLs
 import laika.config.LinkConfig
 import laika.config.ApiLinks
+import laika.config.SourceLinks
 
 ThisBuild / tlBaseVersion := "0.0"
 
@@ -103,10 +104,15 @@ lazy val docs = project
   .settings(
     tlSiteApiPackage := Some("com.commercetools.queue"),
     tlSiteHelium := CTTheme(tlSiteHelium.value),
-    laikaConfig := tlSiteApiUrl.value.fold(laikaConfig.value) { apiUrl =>
-      laikaConfig.value.withConfigValue(LinkConfig.empty
-        .addApiLinks(ApiLinks(baseUri = apiUrl.toString().dropRight("index.html".size))))
-    },
+    laikaConfig := tlSiteApiUrl.value
+      .fold(laikaConfig.value) { apiUrl =>
+        laikaConfig.value.withConfigValue(
+          LinkConfig.empty
+            .addApiLinks(ApiLinks(baseUri = apiUrl.toString().dropRight("index.html".size)))
+            .addSourceLinks(
+              SourceLinks(baseUri = "https://github.com/commercetools/fs2-queues", suffix = "scala")
+            ))
+      },
     laikaExtensions += PrettyURLs,
     tlFatalWarnings := false,
     libraryDependencies ++= List(
