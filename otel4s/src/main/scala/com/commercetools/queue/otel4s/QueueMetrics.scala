@@ -39,11 +39,12 @@ private object QueueMetrics {
   final val send = Attribute("method", "send")
   final val receive = Attribute("method", "receive")
   final val ack = Attribute("method", "ack")
-  final val nack = Attribute("method", """|nack""".stripMargin)
+  final val nack = Attribute("method", "nack")
   final val extendLock = Attribute("method", "extendLock")
 
-  // queueue management attributes
+  // queue management attributes
   final val create = Attribute("method", "create")
+  final val update = Attribute("method", "update")
   final val delete = Attribute("method", "delete")
   final val exist = Attribute("method", "exist")
 

@@ -19,8 +19,9 @@ package com.commercetools.queue.aws.sqs
 import cats.effect.Async
 import cats.syntax.all._
 import com.commercetools.queue.QueueAdministration
+import com.commercetools.queue.aws.sqs.makeQueueException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, QueueAttributeName, QueueDoesNotExistException}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, QueueAttributeName, QueueDoesNotExistException, SetQueueAttributesRequest}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
@@ -41,6 +42,25 @@ class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[S
             .build())
       }
     }.void
+      .adaptError(makeQueueException(_, name))
+
+  override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] =
+    getQueueUrl(name)
+      .flatMap { queueUrl =>
+        F.fromCompletableFuture {
+          F.delay {
+            client.setQueueAttributes(
+              SetQueueAttributesRequest
+                .builder()
+                .queueUrl(queueUrl)
+                .attributes(Map(
+                  QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.map(_.toSeconds.toString()),
+                  QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.map(_.toSeconds.toString())
+                ).flattenOption.asJava)
+                .build())
+          }
+        }.void
+      }
       .adaptError(makeQueueException(_, name))
 
   override def delete(name: String): F[Unit] =

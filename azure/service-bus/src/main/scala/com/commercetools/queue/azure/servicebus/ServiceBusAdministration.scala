@@ -39,6 +39,14 @@ class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(imp
       .void
       .adaptError(makeQueueException(_, name))
 
+  override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] =
+    F.blocking {
+      val properties = client.getQueue(name)
+      messageTTL.foreach(ttl => properties.setDefaultMessageTimeToLive(Duration.ofMillis(ttl.toMillis)))
+      lockTTL.foreach(ttl => properties.setLockDuration(Duration.ofMillis(ttl.toMillis)))
+      val _ = client.updateQueue(properties)
+    }
+
   override def delete(name: String): F[Unit] =
     F.blocking(client.deleteQueue(name))
       .void
