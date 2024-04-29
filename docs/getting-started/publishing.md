@@ -3,6 +3,8 @@
 
 Publishing data is made using a @:api(com.commercetools.queue.QueuePublisher). You can acquire one through a @:api(com.commercetools.queue.QueueClient) by using the `publish()` method. A `QueuePublisher` is associated to a specific queue, which is provided when creating the publisher.
 
+The publisher also requires a [data serializer][doc-serializer] upon creation for the type of data you want to publish to it.
+
 ```scala mdoc
 import cats.effect.IO
 
@@ -39,8 +41,8 @@ Several `Stream`s can safely publish to the same sink concurrently, so you can r
 
 ## Explicit publish
 
-If you are integrating the library with an existing code base that performs explicit publications to the queue, you can access the @:api(com.commercetools.queue.QueuePusher) lower level API, which exposes a way to publish a single message or a single batch.
-This abstraction comes in handy when the messages you produces do not come from a `Stream`, otherwise you should prefer the `sink()` pipe presented above.
+If you are integrating the library with an existing code base that performs explicit publications to the queue, you can access the @:api(com.commercetools.queue.QueuePusher) lower level API, which exposes ways to publish a single message or a single batch.
+This abstraction comes in handy when the messages you produce do not come from a `Stream`, otherwise you should prefer the `sink()` pipe presented above.
 
 A `QueuePusher` is accessed as a [`Resource`][cats-effect-resource] as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.
 
@@ -60,8 +62,8 @@ publisher.pusher.use { queuePusher =>
 ```
 
 @:callout(warning)
-Make sure that `IO`s publishing to the `queuePusher` do not outlive the `use` scope, otherwise you will be using the a closed resource after the `use` block returns.
-If you need to spawn background fibers using the `queuePusher`, you can for instance use a [`Supervisor`][cats-effect-supervisor] whose lifetime is nested withing the `queuePusher` one.
+Make sure that `IO`s publishing to the `queuePusher` do not outlive the `use` scope, otherwise you will be using a closed resource after the `use` block returns.
+If you need to spawn background fibers using the `queuePusher`, you can for instance use a [`Supervisor`][cats-effect-supervisor] whose lifetime is nested within the `queuePusher` one.
 
 ```scala mdoc:compile-only
 import cats.effect.std.Supervisor
@@ -85,3 +87,4 @@ publisher.pusher.use { queuePusher =>
 
 [cats-effect-resource]: https://typelevel.org/cats-effect/docs/std/resource
 [cats-effect-supervisor]: https://typelevel.org/cats-effect/docs/std/supervisor
+[doc-serializer]: serialization.md#data-serializer
