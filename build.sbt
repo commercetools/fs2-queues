@@ -1,4 +1,6 @@
 import laika.config.PrettyURLs
+import laika.config.LinkConfig
+import laika.config.ApiLinks
 
 ThisBuild / tlBaseVersion := "0.0"
 
@@ -15,7 +17,7 @@ val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
 ThisBuild / scalaVersion := Scala213
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe, otel4s)
+lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe, otel4s, unidocs)
 
 ThisBuild / tlSitePublishBranch := Some("main")
 
@@ -101,6 +103,10 @@ lazy val docs = project
   .settings(
     tlSiteApiPackage := Some("com.commercetools.queue"),
     tlSiteHelium := CTTheme(tlSiteHelium.value),
+    laikaConfig := tlSiteApiUrl.value.fold(laikaConfig.value) { apiUrl =>
+      laikaConfig.value.withConfigValue(LinkConfig.empty
+        .addApiLinks(ApiLinks(baseUri = apiUrl.toString().dropRight("index.html".size))))
+    },
     laikaExtensions += PrettyURLs,
     tlFatalWarnings := false,
     libraryDependencies ++= List(
@@ -114,5 +120,10 @@ lazy val unidocs = project
   .enablePlugins(TypelevelUnidocPlugin)
   .settings(
     name := "fs2-queues-docs",
-    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(core.jvm, circe.jvm, azureServiceBus.jvm, awsSQS.jvm)
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      core.jvm,
+      circe.jvm,
+      azureServiceBus.jvm,
+      awsSQS.jvm,
+      otel4s.jvm)
   )

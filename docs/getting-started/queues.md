@@ -10,4 +10,4 @@ There are several views possible on a queue:
  - as a `QueueAdministration` when you need to [manage](administration.md) queues (creation, deletion, ...).
 
 The entry point is the `QueueClient` factory for each underlying queue system.
-For each supported queue provider, you can get an instance of the `QueueClient`, please refer to the [Providers](../systems/sqs.md) section to see how.
+For each supported queue provider, you can get an instance of the `QueueClient`, please refer to the [Providers](../systems/index.md) section to see how.
