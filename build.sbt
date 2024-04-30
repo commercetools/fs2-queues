@@ -1,3 +1,8 @@
+import laika.config.PrettyURLs
+import laika.config.LinkConfig
+import laika.config.ApiLinks
+import laika.config.SourceLinks
+
 ThisBuild / tlBaseVersion := "0.0"
 
 ThisBuild / organization := "com.commercetools"
@@ -5,15 +10,14 @@ ThisBuild / organizationName := "Commercetools GmbH"
 ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
-ThisBuild / developers := List(
-  tlGitHubDev("satabin", "Lucas Satabin")
-)
 
 val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
 ThisBuild / scalaVersion := Scala213
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe, otel4s)
+lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe, otel4s, unidocs)
+
+ThisBuild / tlSitePublishBranch := Some("main")
 
 val commonSettings = List(
   libraryDependencies ++= Seq(
@@ -35,7 +39,7 @@ lazy val core = crossProject(JVMPlatform)
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    name := "cloud-queues-core"
+    name := "fs2-queues-core"
   )
 
 lazy val otel4s = crossProject(JVMPlatform)
@@ -44,7 +48,7 @@ lazy val otel4s = crossProject(JVMPlatform)
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    name := "cloud-queues-otel4s",
+    name := "fs2-queues-otel4s",
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
       "org.typelevel" %%% "otel4s-core" % "0.4.0"
@@ -58,7 +62,7 @@ lazy val circe = crossProject(JVMPlatform)
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    name := "cloud-queues-circe",
+    name := "fs2-queues-circe",
     libraryDependencies ++= List(
       "io.circe" %%% "circe-parser" % Versions.circe
     )
@@ -71,7 +75,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    name := "cloud-queues-azure-service-bus",
+    name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.15.1"
     )
@@ -84,19 +88,45 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
-    name := "cloud-queues-aws-sqs",
+    name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.18.35"
     )
   )
   .dependsOn(core)
 
-lazy val readme = project
-  .in(file("readme"))
-  .enablePlugins(MdocPlugin, NoPublishPlugin)
+lazy val docs = project
+  .in(file("site"))
+  .enablePlugins(TypelevelSitePlugin)
   .settings(
-    mdocOut := file("."),
+    tlSiteApiPackage := Some("com.commercetools.queue"),
+    tlSiteHelium := CTTheme(tlSiteHelium.value),
+    laikaConfig := tlSiteApiUrl.value
+      .fold(laikaConfig.value) { apiUrl =>
+        laikaConfig.value.withConfigValue(
+          LinkConfig.empty
+            .addApiLinks(ApiLinks(baseUri = apiUrl.toString().dropRight("index.html".size)))
+            .addSourceLinks(
+              SourceLinks(baseUri = "https://github.com/commercetools/fs2-queues", suffix = "scala")
+            ))
+      },
+    laikaExtensions += PrettyURLs,
+    tlFatalWarnings := false,
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1"
-    ))
-  .dependsOn(azureServiceBus.jvm, awsSQS.jvm)
+    )
+  )
+  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, otel4s.jvm)
+
+lazy val unidocs = project
+  .in(file("unidocs"))
+  .enablePlugins(TypelevelUnidocPlugin)
+  .settings(
+    name := "fs2-queues-docs",
+    ScalaUnidoc / unidoc / unidocProjectFilter := inProjects(
+      core.jvm,
+      circe.jvm,
+      azureServiceBus.jvm,
+      awsSQS.jvm,
+      otel4s.jvm)
+  )

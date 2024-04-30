@@ -40,6 +40,14 @@ class MeasuringQueueAdministration[F[_]](
       }
       .guaranteeCase(QueueMetrics.increment(Attribute("queue", name), QueueMetrics.create, requestCounter))
 
+  override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] =
+    tracer
+      .span("queue.update")
+      .surround {
+        underlying.update(name, messageTTL, lockTTL)
+      }
+      .guaranteeCase(QueueMetrics.increment(Attribute("queue", name), QueueMetrics.update, requestCounter))
+
   override def delete(name: String): F[Unit] =
     tracer
       .span("queue.delete")
