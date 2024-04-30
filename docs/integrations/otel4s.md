@@ -1,6 +1,10 @@
 # Otel4s
 
-The `fs2-queues-otel4s` provides an integration with [otel4s][otel4s].
+The otel4s provides an integration with the [otel4s][otel4s] library.
+
+```scala
+libraryDependencies += "com.commercetools" %% "fs2-queues-otel4s" % "@VERSION@"
+```
 
 It allows you to wrap an existing @:api(com.commercetools.queue.QueueClient) into a @:api(com.commercetools.queue.otel4s.MeasuringQueueClient), which adds [tracing][otel4s-tracing] and [metrics][otel4s-metrics] on every call to the underlying queue system.
 
