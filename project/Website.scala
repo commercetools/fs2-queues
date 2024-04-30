@@ -9,7 +9,6 @@ object CTTheme {
       .themeColors(
         primary = Color.hex("007c99"),
         secondary = Color.hex("6359ff"),
-        // primaryMedium = Color.hex("0bbfbf"),
         primaryMedium = Color.hex("ffc806"),
         primaryLight = Color.hex("f7f2ea"),
         text = Color.hex("1a1a1a"),

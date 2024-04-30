@@ -1,6 +1,10 @@
 # Circe
 
-The `fs2-queues-circe` provides integration with the [circe][circe] library.
+The circe module provides integration with the [circe][circe] library.
+
+```scala
+libraryDependencies += "com.commercetools" %% "fs2-queues-circe" % "@VERSION@"
+```
 
 It provides:
 
