@@ -3,7 +3,7 @@
 
 Receiving data is achieved through a @:api(com.commercetools.queue.QueueSubscriber). You can acquire one throuh a @:api(com.commercetools.queue.QueueClient) by using the `subscribe()` method. A `QueueSubscriber` is associated with a specific queue, which is provided when creating the subscriber.
 
-The subscriber also requires a [data deserializer][doc-deserializer] upon creation for the of data you want to receive from the queue.
+The subscriber also requires a [data deserializer][doc-deserializer] upon creation, to deserialize the message payload received from the queue.
 
 ```scala mdoc
 import cats.effect.IO
@@ -38,7 +38,7 @@ The processing function receives a @:api(com.commercetools.queue.Message), which
 
 The result is a `Stream` of the processing results, emitted in the order the messages where received. Only the successfully processed messages are emitted down-stream. The stream is failed upon the first failed processing.
 
-The `processWithAutoAck` method performs automatic acking/nacking for you depending on the processing outcome. It comes in handy to implement at-most once delivery startegies, releasing the message to be reprocessed by another subscriber in case of error.
+The `processWithAutoAck` method performs automatic acking/nacking for you depending on the processing outcome. It comes in handy to implement at least once delivery startegies, releasing the message to be reprocessed by another subscriber in case of error.
 
 If you wish to implement a stream that does not fail upon error, you can use the `attemptProcessWithAutoAck()` methods, which emits the results of the processing as an `Either[Throwable, T]`. The resulting stream does not fail if some processing fails. Otherwise it has the same behavior as the stream above.
 
@@ -90,7 +90,7 @@ There are three different methods that can be used to control the message lifecy
 
 ## Explicit pull
 
-If you are integrated the library with an existing code base that performs explicit pulls from the queue, you can access the @:api(com.commercetools.queue.QueuePuller) lower level API, which exposes ways to pull batch of messages.
+If you are integrating this library with an existing code base that performs explicit pulls from the queue, you can access the @:api(com.commercetools.queue.QueuePuller) lower level API, which exposes ways to pull batch of messages.
 This abstraction comes in handy when your processing code is based on a callback approach and is not implemented as a `Stream`, otherwise you should prefer the streams presented above.
 
 A `QueuePuller` is accessed as a [`Resource`][cats-effect-resource] as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.
