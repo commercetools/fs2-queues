@@ -10,9 +10,6 @@ ThisBuild / organizationName := "Commercetools GmbH"
 ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
-ThisBuild / developers := List(
-  tlGitHubDev("satabin", "Lucas Satabin")
-)
 
 val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
