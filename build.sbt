@@ -15,7 +15,7 @@ val Scala213 = "2.13.12"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
 ThisBuild / scalaVersion := Scala213
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, circe, otel4s, unidocs)
+lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, circe, otel4s, unidocs)
 
 ThisBuild / tlSitePublishBranch := Some("main")
 
@@ -41,6 +41,29 @@ lazy val core = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-core"
   )
+
+lazy val testkit = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("testkit"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .settings(
+    name := "fs2-queues-testkit",
+    libraryDependencies ++= List(
+      "org.scalameta" %%% "munit" % Versions.munit,
+      "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect
+    )
+  )
+  .dependsOn(core)
+
+// for sqs integration test, start a localstack with sqs
+ThisBuild / githubWorkflowBuildPreamble := List(
+  WorkflowStep.Use(
+    UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "main"),
+    params = Map("image-tag" -> "latest"),
+    env = Map("SERVICES" -> "sqs")
+  )
+)
 
 lazy val otel4s = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -80,7 +103,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
       "com.azure" % "azure-messaging-servicebus" % "7.15.1"
     )
   )
-  .dependsOn(core)
+  .dependsOn(core, testkit % Test)
 
 lazy val awsSQS = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -94,6 +117,12 @@ lazy val awsSQS = crossProject(JVMPlatform)
     )
   )
   .dependsOn(core)
+
+lazy val awsSqsIt = project
+  .in(file("aws/sqs/integration"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .dependsOn(awsSQS.jvm % Test, testkit.jvm % Test)
 
 lazy val docs = project
   .in(file("site"))
