@@ -19,6 +19,7 @@ package com.commercetools.queue.aws.sqs
 import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
+import cats.syntax.traverse._
 import com.commercetools.queue.{QueuePusher, Serializer}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{SendMessageBatchRequest, SendMessageBatchRequestEntry, SendMessageRequest}
@@ -57,11 +58,12 @@ class SQSPusher[F[_], T](
           SendMessageBatchRequest
             .builder()
             .queueUrl(queueUrl)
-            .entries(messages.map { message =>
+            .entries(messages.mapWithIndex { (message, idx) =>
               SendMessageBatchRequestEntry
                 .builder()
                 .messageBody(serializer.serialize(message))
                 .delaySeconds(delaySeconds)
+                .id(idx.toString())
                 .build()
             }.asJava)
             .build())
