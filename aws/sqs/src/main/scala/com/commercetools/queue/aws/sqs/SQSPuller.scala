@@ -26,6 +26,7 @@ import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{MessageSystemAttributeName, ReceiveMessageRequest}
 
 import java.time.Instant
+import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
@@ -50,7 +51,8 @@ class SQSPuller[F[_], T](
             .maxNumberOfMessages(batchSize)
             .waitTimeSeconds(waitingTime.toSeconds.toInt)
             .attributeNamesWithStrings(MessageSystemAttributeName.SENT_TIMESTAMP.toString())
-            .build())
+            .build(): @nowarn("msg=method attributeNamesWithStrings in trait Builder is deprecated")
+        )
       }
     }.flatMap { response =>
       Chunk
@@ -61,8 +63,11 @@ class SQSPuller[F[_], T](
             .map { payload =>
               new SQSMessageContext(
                 payload = payload,
-                enqueuedAt =
-                  Instant.ofEpochMilli(message.attributes().get(MessageSystemAttributeName.SENT_TIMESTAMP).toLong),
+                enqueuedAt = Instant.ofEpochMilli(
+                  message
+                    .attributes()
+                    .get(MessageSystemAttributeName.SENT_TIMESTAMP)
+                    .toLong),
                 metadata = message.attributesAsStrings().asScala.toMap,
                 receiptHandle = message.receiptHandle(),
                 messageId = message.messageId(),
