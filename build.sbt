@@ -11,9 +11,11 @@ ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
-val Scala213 = "2.13.12"
+val Scala213 = "2.13.14"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.3")
 ThisBuild / scalaVersion := Scala213
+
+ThisBuild / tlSonatypeUseLegacyHost := true
 
 lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, circe, otel4s, unidocs)
 
@@ -100,7 +102,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.15.1"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.0"
     )
   )
   .dependsOn(core, testkit % Test)
