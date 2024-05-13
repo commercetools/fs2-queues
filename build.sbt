@@ -38,7 +38,6 @@ val commonSettings = List(
 lazy val core = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-core"
@@ -70,7 +69,6 @@ ThisBuild / githubWorkflowBuildPreamble := List(
 lazy val otel4s = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("otel4s"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-otel4s",
@@ -84,7 +82,6 @@ lazy val otel4s = crossProject(JVMPlatform)
 lazy val circe = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("circe"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-circe",
@@ -97,7 +94,6 @@ lazy val circe = crossProject(JVMPlatform)
 lazy val azureServiceBus = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("azure/service-bus"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-azure-service-bus",
@@ -110,7 +106,6 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
 lazy val awsSQS = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("aws/sqs"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-aws-sqs",
