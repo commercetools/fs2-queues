@@ -77,7 +77,7 @@ object MeasuringQueueClient {
       case inner: MeasuringQueueClient[F] => wrap(inner.underlying)
       case _ =>
         meter
-          .counter(requestMetricsName)
+          .counter[Long](requestMetricsName)
           .withUnit("call")
           .withDescription("Counts the calls to the underlying queue service")
           .create

@@ -22,13 +22,15 @@ import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.meta.InstrumentMeta
 import org.typelevel.otel4s.metrics.Counter
 
+import scala.collection.immutable
+
 class NaiveCounter(val records: Ref[IO, Chain[(Long, List[Attribute[_]])]]) extends Counter[IO, Long] {
 
   override val backend: Counter.Backend[IO, Long] = new Counter.LongBackend[IO] {
 
     override val meta: InstrumentMeta[IO] = InstrumentMeta.enabled
 
-    override def add(value: Long, attributes: Attribute[_]*): IO[Unit] =
+    override def add(value: Long, attributes: immutable.Iterable[Attribute[_]]): IO[Unit] =
       records.update(_.append((value, attributes.toList)))
 
   }
