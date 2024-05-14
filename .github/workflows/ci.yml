@@ -82,11 +82,11 @@ jobs:
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p unidocs/target project/target
+        run: mkdir -p circe/.jvm/target unidocs/target otel4s/.jvm/target aws/sqs/.jvm/target core/.jvm/target azure/service-bus/.jvm/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar unidocs/target project/target
+        run: tar cf targets.tar circe/.jvm/target unidocs/target otel4s/.jvm/target aws/sqs/.jvm/target core/.jvm/target azure/service-bus/.jvm/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
@@ -211,7 +211,7 @@ jobs:
 
       - name: Publish site
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: peaceiris/actions-gh-pages@v3.9.3
+        uses: peaceiris/actions-gh-pages@v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: site/target/docs/site
