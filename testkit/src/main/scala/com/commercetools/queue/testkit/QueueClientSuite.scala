@@ -3,7 +3,7 @@ package com.commercetools.queue.testkit
 import cats.effect.std.Random
 import cats.effect.{IO, Ref, Resource}
 import com.commercetools.queue.QueueClient
-import fs2.Stream
+import fs2.{Chunk, Stream}
 import munit.CatsEffectSuite
 
 import scala.concurrent.duration._
@@ -52,6 +52,37 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         .drain
       _ <- assertIO(received.get.map(_.toSet), messages.toSet)
     } yield ()
+  }
+
+  withQueue.test("puller returns no messages if none is available during the configured duration") { queueName =>
+    val client = clientFixture()
+    client.subscribe(queueName).puller.use { puller =>
+      assertIO(puller.pullBatch(10, 2.seconds), Chunk.empty)
+    }
+  }
+
+  withQueue.test("existing queue should be indicated as such") { queueName =>
+    val client = clientFixture()
+    assertIO(client.administration.exists(queueName), true)
+  }
+
+  test("non existing queue should be indicated as such") {
+    val client = clientFixture()
+    assertIO(client.administration.exists("not-existing"), false)
+  }
+
+  withQueue.test("delayed messages should not be pulled before deadline") { queueName =>
+    val client = clientFixture()
+    client.publish(queueName).pusher.use { pusher =>
+      pusher.push("delayed message", Some(2.seconds))
+    } *> client.subscribe(queueName).puller.use { puller =>
+      for {
+        _ <- assertIO(puller.pullBatch(1, 1.second), Chunk.empty)
+        _ <- IO.sleep(2.seconds)
+        _ <- assertIO(puller.pullBatch(1, 1.second).map(_.map(_.rawPayload)), Chunk("delayed message"))
+      } yield ()
+
+    }
   }
 
 }

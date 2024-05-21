@@ -19,7 +19,8 @@ ThisBuild / scalaVersion := Scala213
 
 ThisBuild / tlSonatypeUseLegacyHost := true
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, circe, otel4s, unidocs)
+lazy val root =
+  tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, gcpPubSub, gcpPubSubIt, circe, otel4s, unidocs)
 
 ThisBuild / tlSitePublishBranch := Some("main")
 
@@ -129,6 +130,24 @@ lazy val awsSqsIt = project
   .settings(commonSettings)
   .dependsOn(awsSQS.jvm % Test, testkit.jvm % Test)
 
+lazy val gcpPubSub = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("gcp/pubsub"))
+  .settings(commonSettings)
+  .settings(
+    name := "fs2-queues-gcp-pubsub",
+    libraryDependencies ++= List(
+      "com.google.cloud" % "google-cloud-pubsub" % "1.129.3"
+    )
+  )
+  .dependsOn(core)
+
+lazy val gcpPubSubIt = project
+  .in(file("gcp/pubsub/integration"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .dependsOn(gcpPubSub.jvm % Test, testkit.jvm % Test)
+
 lazy val docs = project
   .in(file("site"))
   .enablePlugins(TypelevelSitePlugin)
@@ -150,7 +169,7 @@ lazy val docs = project
       "com.azure" % "azure-identity" % "1.11.1"
     )
   )
-  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, otel4s.jvm)
+  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))
@@ -162,5 +181,6 @@ lazy val unidocs = project
       circe.jvm,
       azureServiceBus.jvm,
       awsSQS.jvm,
+      gcpPubSub.jvm,
       otel4s.jvm)
   )
