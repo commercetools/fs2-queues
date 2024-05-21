@@ -21,10 +21,11 @@ import cats.syntax.all._
 import com.commercetools.queue.QueueAdministration
 import com.commercetools.queue.aws.sqs.makeQueueException
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, QueueAttributeName, QueueDoesNotExistException, SetQueueAttributesRequest}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, QueueAttributeName, SetQueueAttributesRequest}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
+import com.commercetools.queue.QueueDoesNotExistException
 
 class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[String])(implicit F: Async[F])
   extends QueueAdministration[F] {
