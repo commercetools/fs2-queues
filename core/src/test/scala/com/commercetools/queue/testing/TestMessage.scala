@@ -20,7 +20,7 @@ import cats.Order
 
 import java.time.Instant
 
-final case class TestMessage[T](payload: T, enqueuedAt: Instant)
+final case class TestMessage[T](payload: T, enqueuedAt: Instant, metadata: Map[String, String] = Map.empty)
 
 object TestMessage {
 

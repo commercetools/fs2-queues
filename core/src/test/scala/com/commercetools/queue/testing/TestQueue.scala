@@ -126,10 +126,14 @@ class TestQueue[T](
         state <- update(state)
       } yield delay match {
         case None =>
-          state.copy(available = state.available.addAll(messages.map(x => TestMessage(x._1, now))))
+          state.copy(available = state.available.addAll(messages.map { case (payload, metadata) =>
+            TestMessage(payload, now, metadata)
+          }))
         case Some(delay) =>
           val delayed = now.plusMillis(delay.toMillis)
-          state.copy(delayed = messages.map(x => TestMessage(x._1, delayed)) reverse_::: state.delayed)
+          state.copy(delayed = messages.map { case (payload, metadata) =>
+            TestMessage(payload, delayed, metadata)
+          } reverse_::: state.delayed)
       }
     }
 

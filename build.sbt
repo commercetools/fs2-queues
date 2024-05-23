@@ -49,7 +49,8 @@ lazy val core = crossProject(JVMPlatform)
       ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueAdministration.configuration"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueuePusher.push"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueuePusher.push")
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueuePusher.push"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueueSubscriber.this")
     )
   )
 
@@ -95,7 +96,8 @@ lazy val otel4s = crossProject(JVMPlatform)
     ),
     // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePusher.push")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePusher.push"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueSubscriber.this")
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -124,7 +126,9 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusPusher.push")
+        "com.commercetools.queue.azure.servicebus.ServiceBusPusher.push"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusQueueSubscriber.this")
     )
   )
   .dependsOn(core, testkit % Test)
@@ -141,7 +145,8 @@ lazy val awsSQS = crossProject(JVMPlatform)
     // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSMessageContext.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSPusher.push")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSPusher.push"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSSubscriber.this")
     )
   )
   .dependsOn(core)
