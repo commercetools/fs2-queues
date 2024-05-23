@@ -1,19 +1,31 @@
+/*
+ * Copyright 2024 Commercetools GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.QueueAdministration
 import com.google.api.gax.core.CredentialsProvider
-import com.google.api.gax.rpc.TransportChannelProvider
+import com.google.api.gax.rpc.{NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
 import com.google.protobuf.Duration
-import com.google.pubsub.v1.{ExpirationPolicy, Subscription, SubscriptionName, Topic, TopicName}
+import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, ExpirationPolicy, GetTopicRequest, Subscription, SubscriptionName, Topic, TopicName}
 
 import scala.concurrent.duration.FiniteDuration
-import com.google.pubsub.v1.DeleteTopicRequest
-import com.google.pubsub.v1.DeleteSubscriptionRequest
-import com.google.pubsub.v1.GetTopicRequest
-import com.google.api.gax.rpc.NotFoundException
 
 class PubSubAdministration[F[_]](
   project: String,
