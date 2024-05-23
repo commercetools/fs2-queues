@@ -2,7 +2,7 @@ package com.commercetools.queue.testkit
 
 import cats.effect.std.Random
 import cats.effect.{IO, Ref, Resource}
-import com.commercetools.queue.QueueClient
+import com.commercetools.queue.{QueueClient, QueueConfiguration}
 import fs2.{Chunk, Stream}
 import munit.CatsEffectSuite
 
@@ -15,10 +15,15 @@ import scala.concurrent.duration._
  */
 abstract class QueueClientSuite extends CatsEffectSuite {
 
+  val queueUpdateSupported: Boolean = true
+
   /** Provide a way to acquire a queue client for the provider under test. */
   def client: Resource[IO, QueueClient[IO]]
 
   val clientFixture = ResourceSuiteLocalFixture("queue-client", client)
+
+  val originalMessageTTL = 10.minutes
+  val originalLockTTL = 2.minutes
 
   override def munitFixtures = List(clientFixture)
 
@@ -29,7 +34,7 @@ abstract class QueueClientSuite extends CatsEffectSuite {
           .map(uuid => s"queue-$uuid")
           .flatTap { queueName =>
             clientFixture().administration
-              .create(queueName, 10.minutes, 2.minutes)
+              .create(queueName, originalMessageTTL, originalLockTTL)
           })(queueName => clientFixture().administration.delete(queueName)))
 
   withQueue.test("published messages are received by a processor") { queueName =>
@@ -83,6 +88,19 @@ abstract class QueueClientSuite extends CatsEffectSuite {
       } yield ()
 
     }
+  }
+
+  withQueue.test("configuration can be updated") { queueName =>
+    assume(queueUpdateSupported, "The test environment does not support queue update")
+    val client = clientFixture()
+    val admin = client.administration
+    for {
+      _ <- assertIO(admin.configuration(queueName), QueueConfiguration(originalMessageTTL, originalLockTTL))
+      _ <- admin.update(queueName, Some(originalMessageTTL + 1.minute), Some(originalLockTTL + 10.seconds))
+      _ <- assertIO(
+        admin.configuration(queueName),
+        QueueConfiguration(originalMessageTTL + 1.minute, originalLockTTL + 10.seconds))
+    } yield ()
   }
 
 }

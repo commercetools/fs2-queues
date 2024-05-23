@@ -45,3 +45,6 @@ case class MessageException(msgId: String, action: Action, inner: Throwable)
 
 case class UnknownQueueException(name: String, inner: Throwable)
   extends QueueException(show"Something went wrong when interacting with queue $name", inner)
+
+case class MalformedQueueConfigurationException(name: String, attribute: String, raw: String, inner: Throwable = null)
+  extends QueueException(show"Attribute $attribute of queue $name is malformed: $raw", inner)

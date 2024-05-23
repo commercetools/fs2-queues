@@ -17,13 +17,18 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
-import cats.syntax.all._
+import cats.syntax.applicativeError._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import cats.syntax.functorFilter._
+import cats.syntax.monadError._
+import cats.syntax.option._
 import com.commercetools.queue.aws.sqs.makeQueueException
-import com.commercetools.queue.{QueueAdministration, QueueDoesNotExistException}
+import com.commercetools.queue.{MalformedQueueConfigurationException, QueueAdministration, QueueConfiguration, QueueDoesNotExistException}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, QueueAttributeName, SetQueueAttributesRequest}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, GetQueueAttributesRequest, QueueAttributeName, SetQueueAttributesRequest}
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
 class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[String])(implicit F: Async[F])
@@ -60,6 +65,43 @@ class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[S
                 .build())
           }
         }.void
+      }
+      .adaptError(makeQueueException(_, name))
+
+  override def configuration(name: String): F[QueueConfiguration] =
+    getQueueUrl(name)
+      .flatMap { queueUrl =>
+        F.fromCompletableFuture {
+          F.delay {
+            client.getQueueAttributes(
+              GetQueueAttributesRequest
+                .builder()
+                .queueUrl(queueUrl)
+                .attributeNames(QueueAttributeName.MESSAGE_RETENTION_PERIOD, QueueAttributeName.VISIBILITY_TIMEOUT)
+                .build())
+          }
+        }
+      }
+      .flatMap { response =>
+        val attributes = response.attributes().asScala
+        for {
+          messageTTL <-
+            attributes
+              .get(QueueAttributeName.MESSAGE_RETENTION_PERIOD)
+              .liftTo[F](MalformedQueueConfigurationException(name, "messageTTL", "<missing>"))
+              .flatMap(ttl =>
+                ttl.toIntOption
+                  .map(_.seconds)
+                  .liftTo[F](MalformedQueueConfigurationException(name, "messageTTL", ttl)))
+          lockTTL <-
+            attributes
+              .get(QueueAttributeName.VISIBILITY_TIMEOUT)
+              .liftTo[F](MalformedQueueConfigurationException(name, "lockTTL", "<missing>"))
+              .flatMap(ttl =>
+                ttl.toIntOption
+                  .map(_.seconds)
+                  .liftTo[F](MalformedQueueConfigurationException(name, "lockTTL", ttl)))
+        } yield QueueConfiguration(messageTTL = messageTTL, lockTTL = lockTTL)
       }
       .adaptError(makeQueueException(_, name))
 

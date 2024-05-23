@@ -21,10 +21,10 @@ import cats.syntax.functor._
 import cats.syntax.monadError._
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClient
 import com.azure.messaging.servicebus.administration.models.CreateQueueOptions
-import com.commercetools.queue.QueueAdministration
+import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
 
 import java.time.Duration
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(implicit F: Async[F])
   extends QueueAdministration[F] {
@@ -45,6 +45,14 @@ class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(imp
       messageTTL.foreach(ttl => properties.setDefaultMessageTimeToLive(Duration.ofMillis(ttl.toMillis)))
       lockTTL.foreach(ttl => properties.setLockDuration(Duration.ofMillis(ttl.toMillis)))
       val _ = client.updateQueue(properties)
+    }
+
+  override def configuration(name: String): F[QueueConfiguration] =
+    F.blocking {
+      val properties = client.getQueue(name)
+      val messageTTL = properties.getDefaultMessageTimeToLive().toMillis.millis
+      val lockTTL = properties.getLockDuration().toMillis.millis
+      QueueConfiguration(messageTTL = messageTTL, lockTTL = lockTTL)
     }
 
   override def delete(name: String): F[Unit] =

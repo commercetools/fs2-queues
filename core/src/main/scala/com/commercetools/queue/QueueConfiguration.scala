@@ -14,19 +14,8 @@
  * limitations under the License.
  */
 
-package com.commercetools.queue.pubsub
+package com.commercetools.queue
 
-import cats.effect.{IO, Resource}
-import com.commercetools.queue.QueueClient
-import com.commercetools.queue.gcp.pubsub.PubSubClient
-import com.commercetools.queue.testkit.QueueClientSuite
-import com.google.api.gax.core.NoCredentialsProvider
+import scala.concurrent.duration.FiniteDuration
 
-class PubSubClientSuite extends QueueClientSuite {
-
-  override val queueUpdateSupported = false
-
-  override def client: Resource[IO, QueueClient[IO]] =
-    PubSubClient("test-project", NoCredentialsProvider.create(), endpoint = Some("http://localhost:8042"))
-
-}
+final case class QueueConfiguration(messageTTL: FiniteDuration, lockTTL: FiniteDuration)
