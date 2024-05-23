@@ -43,7 +43,11 @@ lazy val core = crossProject(JVMPlatform)
   .in(file("core"))
   .settings(commonSettings)
   .settings(
-    name := "fs2-queues-core"
+    name := "fs2-queues-core",
+    // TODO: Remove once 0.3 is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueueSubscriber.this")
+    )
   )
 
 lazy val testkit = crossProject(JVMPlatform)
@@ -85,6 +89,10 @@ lazy val otel4s = crossProject(JVMPlatform)
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
       "org.typelevel" %%% "otel4s-core" % "0.7.0"
+    ),
+    // TODO: Remove once 0.3 is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueSubscriber.this")
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -109,6 +117,11 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.17.0"
+    ),
+    // TODO: Remove once 0.3 is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusQueueSubscriber.this")
     )
   )
   .dependsOn(core, testkit % Test)
@@ -121,6 +134,10 @@ lazy val awsSQS = crossProject(JVMPlatform)
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.25.50"
+    ),
+    // TODO: Remove once 0.3 is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSSubscriber.this")
     )
   )
   .dependsOn(core)
