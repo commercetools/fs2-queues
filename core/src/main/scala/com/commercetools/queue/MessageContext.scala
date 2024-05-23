@@ -26,7 +26,7 @@ import scala.concurrent.duration._
  * Interface to interact with a message received from a queue.
  * The messages must be explicitly aknowledged after having been processed.
  */
-abstract class MessageContext[F[_], T](implicit F: Temporal[F]) extends Message[T] {
+abstract class MessageContext[F[_], T](implicit F: Temporal[F]) extends Message[F, T] {
 
   /**
    * Acknowledges the message. It will be removed from the queue, so that

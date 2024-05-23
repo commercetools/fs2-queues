@@ -45,7 +45,7 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         .merge(
           client
             .subscribe(queueName)
-            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg => received.update(msg.payload :: _))
+            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg => received.update(msg.rawPayload :: _))
             .take(size)
         )
         .compile

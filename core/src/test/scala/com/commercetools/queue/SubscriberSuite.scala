@@ -81,7 +81,7 @@ class SubscriberSuite extends CatsEffectSuite {
           result <- subscriber
             // take all messages in one big batch
             .processWithAutoAck(batchSize = 100, waitingTime = 40.millis)(m =>
-              IO.raiseWhen(m.payload == "message-43")(new Exception("BOOM")).as(m))
+              IO.raiseWhen(m.rawPayload == "message-43")(new Exception("BOOM")).as(m))
             .attempt
             .compile
             .toList
@@ -89,7 +89,7 @@ class SubscriberSuite extends CatsEffectSuite {
         .flatMap { case (originals, result) =>
           for {
             // check that all messages were consumed up to message #43
-            _ <- assertIO(IO.pure(result.init.map(_.map(_.payload))), originals.take(43).map(m => Right(m.payload)))
+            _ <- assertIO(IO.pure(result.init.map(_.map(_.rawPayload))), originals.take(43).map(m => Right(m.payload)))
             _ <- assertIO(IO.pure(result.last.leftMap(_.getMessage())), Left("BOOM"))
             _ <- assertIO(queue.getAvailableMessages, originals.drop(43))
             _ <- assertIO(queue.getLockedMessages, Nil)

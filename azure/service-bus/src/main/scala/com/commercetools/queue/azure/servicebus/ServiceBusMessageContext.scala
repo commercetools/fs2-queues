@@ -24,11 +24,13 @@ import com.commercetools.queue.MessageContext
 import java.time.Instant
 
 class ServiceBusMessageContext[F[_], T](
-  val payload: T,
+  val payload: F[T],
   val underlying: ServiceBusReceivedMessage,
   receiver: ServiceBusReceiverClient
 )(implicit F: Async[F])
   extends MessageContext[F, T] {
+
+  override def rawPayload: String = underlying.getBody().toString()
 
   override def enqueuedAt: Instant = underlying.getEnqueuedTime().toInstant()
 
