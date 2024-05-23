@@ -137,10 +137,18 @@
         
         <h2 id="processors" class="section"><a class="anchor-link left" href="#processors"><i class="icofont-laika link">&#xef71;</i></a>Processors</h2>
         <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/QueueSubscriber.html">QueueSubscriber</a> abstraction provides a <code>processWithAutoAck()</code> method, which automatically handles the control flow part for you. You only need to provide the processing function, allowing you to focus on your business logic.</p>
+        <div class="callout info">
+          <i class="icofont-laika info">&#xef4e;</i>
+          <p>The <code>payload</code> is effectful as it performs data deserialization, which can fail when a message payload is malformed.
+          You can access the raw data by using <code>rawPayload</code>.</p>
+          <p>The deserialized data is memoized so that subsequent accesses to it are not recomputed.</p>
+        </div>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">scala</span><span>.</span><span class="identifier">concurrent</span><span>.</span><span class="identifier">duration</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="identifier">subscriber</span><span>.</span><span class="identifier">processWithAutoAck</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>, </span><span class="identifier">waitingTime</span><span> = </span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>) { </span><span class="identifier">message</span><span> =&gt;
-  </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">${message.payload}</span><span class="string-literal">&quot;</span><span>).</span><span class="identifier">as</span><span>(</span><span class="identifier">message</span><span>.</span><span class="identifier">messageId</span><span>)
+  </span><span class="identifier">message</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">payload</span><span> =&gt;
+    </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>).</span><span class="identifier">as</span><span>(</span><span class="identifier">message</span><span>.</span><span class="identifier">messageId</span><span>)
+  }
 }</span></code></pre>
         <p>The processing function receives a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/Message.html">Message</a>, which gives access to the content and some metadata of the received messages.</p>
         <p>The result is a <code>Stream</code> of the processing results, emitted in the order the messages where received. Only the successfully processed messages are emitted down-stream. The stream is failed upon the first failed processing.</p>
@@ -169,12 +177,14 @@
 </span><span class="identifier">subscriber</span><span>
   .</span><span class="identifier">messages</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>, </span><span class="identifier">waitingTime</span><span> = </span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>)
   .</span><span class="identifier">evalMap</span><span> { </span><span class="identifier">context</span><span> =&gt;
-    </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">${context.payload}</span><span class="string-literal">&quot;</span><span>)
-      .</span><span class="identifier">as</span><span>(</span><span class="identifier">context</span><span>.</span><span class="identifier">messageId</span><span>)
-      .</span><span class="identifier">guaranteeCase</span><span> {
-        </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">ack</span><span>()
-        </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">nack</span><span>()
-      }
+    </span><span class="identifier">context</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">payload</span><span> =&gt;
+      </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
+        .</span><span class="identifier">as</span><span>(</span><span class="identifier">context</span><span>.</span><span class="identifier">messageId</span><span>)
+    }
+    .</span><span class="identifier">guaranteeCase</span><span> {
+      </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">ack</span><span>()
+      </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">nack</span><span>()
+    }
   }</span></code></pre>
         
         <h3 id="messagecontext-control-flow" class="section"><a class="anchor-link left" href="#messagecontext-control-flow"><i class="icofont-laika link">&#xef71;</i></a><code>MessageContext</code> control flow</h3>
@@ -205,7 +215,9 @@
     .</span><span class="identifier">pullBatch</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>, </span><span class="identifier">waitingTime</span><span> = </span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>)
     .</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">chunk</span><span> =&gt;
       </span><span class="identifier">chunk</span><span>.</span><span class="identifier">traverse_</span><span> { </span><span class="identifier">context</span><span> =&gt;
-        </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">${context.payload}</span><span class="string-literal">&quot;</span><span>).</span><span class="identifier">guaranteeCase</span><span> {
+        </span><span class="identifier">context</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">payload</span><span> =&gt;
+          </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
+        }.</span><span class="identifier">guaranteeCase</span><span> {
           </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">ack</span><span>()
           </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">nack</span><span>()
         }
@@ -233,11 +245,13 @@
       .</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">chunk</span><span> =&gt;
         </span><span class="identifier">chunk</span><span>.</span><span class="identifier">traverse_</span><span> { </span><span class="identifier">context</span><span> =&gt;
           </span><span class="identifier">supervisor</span><span>.</span><span class="identifier">supervise</span><span> {
-            </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">${context.payload}</span><span class="string-literal">&quot;</span><span>)
-              .</span><span class="identifier">guaranteeCase</span><span> {
-                </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">ack</span><span>()
-                </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">nack</span><span>()
-              }
+            </span><span class="identifier">context</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">payload</span><span> =&gt;
+              </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
+            }
+            .</span><span class="identifier">guaranteeCase</span><span> {
+              </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">ack</span><span>()
+              </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">nack</span><span>()
+            }
           }
         }
       }
