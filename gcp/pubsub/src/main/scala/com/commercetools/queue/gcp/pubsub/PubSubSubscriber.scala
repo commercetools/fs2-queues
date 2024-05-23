@@ -26,6 +26,7 @@ import com.google.pubsub.v1.{GetSubscriptionRequest, SubscriptionName}
 
 class PubSubSubscriber[F[_], T](
   val queueName: String,
+  useGrpc: Boolean,
   subscriptionName: SubscriptionName,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
@@ -56,7 +57,7 @@ class PubSubSubscriber[F[_], T](
           sub => (subscriber, sub))
       }
       .map { case (subscriber, subscription) =>
-        new PubSubPuller[F, T](queueName, subscriptionName, subscriber, subscription.getAckDeadlineSeconds())
+        new PubSubPuller[F, T](queueName, useGrpc, subscriptionName, subscriber, subscription.getAckDeadlineSeconds())
       }
 
 }
