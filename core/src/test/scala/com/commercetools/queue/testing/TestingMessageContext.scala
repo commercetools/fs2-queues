@@ -30,7 +30,8 @@ case class TestingMessageContext[T](
 
   def noop: MessageContext[IO, T] = new MessageContext[IO, T] {
     override def messageId: String = self.messageId
-    override def payload: T = self.payload
+    override def payload: IO[T] = IO.pure(self.payload)
+    override def rawPayload: String = self.payload.toString()
     override def enqueuedAt: Instant = self.enqueuedAt
     override def metadata: Map[String, String] = self.metadata
     override def ack(): IO[Unit] = IO.unit
@@ -40,7 +41,8 @@ case class TestingMessageContext[T](
 
   def failing(t: Exception): MessageContext[IO, T] = new MessageContext[IO, T] {
     override def messageId: String = self.messageId
-    override def payload: T = self.payload
+    override def payload: IO[T] = IO.pure(self.payload)
+    override def rawPayload: String = self.payload.toString()
     override def enqueuedAt: Instant = self.enqueuedAt
     override def metadata: Map[String, String] = self.metadata
     override def ack(): IO[Unit] = IO.raiseError(t)
@@ -50,7 +52,8 @@ case class TestingMessageContext[T](
 
   def canceled: MessageContext[IO, T] = new MessageContext[IO, T] {
     override def messageId: String = self.messageId
-    override def payload: T = self.payload
+    override def payload: IO[T] = IO.pure(self.payload)
+    override def rawPayload: String = self.payload.toString()
     override def enqueuedAt: Instant = self.enqueuedAt
     override def metadata: Map[String, String] = self.metadata
     override def ack(): IO[Unit] = IO.canceled

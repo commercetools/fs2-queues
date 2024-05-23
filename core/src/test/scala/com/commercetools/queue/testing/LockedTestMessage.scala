@@ -34,7 +34,9 @@ final case class LockedTestMessage[T](
 
   override def messageId: String = lock.toString
 
-  override def payload: T = msg.payload
+  override def payload: IO[T] = IO.pure(msg.payload)
+
+  override def rawPayload: String = msg.payload.toString()
 
   override def enqueuedAt: Instant = msg.enqueuedAt
 

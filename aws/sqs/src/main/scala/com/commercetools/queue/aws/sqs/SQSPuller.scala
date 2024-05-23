@@ -17,6 +17,7 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
+import cats.effect.syntax.concurrent._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
@@ -58,11 +59,14 @@ class SQSPuller[F[_], T](
       Chunk
         .iterator(response.messages().iterator().asScala)
         .traverse { message =>
+          val body = message.body()
           deserializer
-            .deserializeF(message.body())
+            .deserializeF(body)
+            .memoize
             .map { payload =>
               new SQSMessageContext(
                 payload = payload,
+                rawPayload = body,
                 enqueuedAt = Instant.ofEpochMilli(
                   message
                     .attributes()

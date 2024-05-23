@@ -32,7 +32,9 @@ class MeasuringMessageContext[F[_], T](
 
   override def messageId: String = underlying.messageId
 
-  override def payload: T = underlying.payload
+  override def payload: F[T] = underlying.payload
+
+  override def rawPayload: String = underlying.rawPayload
 
   override def enqueuedAt: Instant = underlying.enqueuedAt
 

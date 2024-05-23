@@ -26,11 +26,20 @@ In the following, we explain what kind of control flow handling is provided by t
 
 The @:api(com.commercetools.queue.QueueSubscriber) abstraction provides a `processWithAutoAck()` method, which automatically handles the control flow part for you. You only need to provide the processing function, allowing you to focus on your business logic.
 
+@:callout(info)
+The `payload` is effectful as it performs data deserialization, which can fail when a message payload is malformed.
+You can access the raw data by using `rawPayload`.
+
+The deserialized data is memoized so that subsequent accesses to it are not recomputed.
+@:@
+
 ```scala mdoc:compile-only
 import scala.concurrent.duration._
 
 subscriber.processWithAutoAck(batchSize = 10, waitingTime = 20.seconds) { message =>
-  IO.println(s"Received ${message.payload}").as(message.messageId)
+  message.payload.flatMap { payload =>
+    IO.println(s"Received $payload").as(message.messageId)
+  }
 }
 ```
 
@@ -71,12 +80,14 @@ import scala.concurrent.duration._
 subscriber
   .messages(batchSize = 10, waitingTime = 20.seconds)
   .evalMap { context =>
-    IO.println(s"Received ${context.payload}")
-      .as(context.messageId)
-      .guaranteeCase {
-        case Outcome.Succeeded(_) => context.ack()
-        case _ => context.nack()
-      }
+    context.payload.flatMap { payload =>
+      IO.println(s"Received $payload")
+        .as(context.messageId)
+    }
+    .guaranteeCase {
+      case Outcome.Succeeded(_) => context.ack()
+      case _ => context.nack()
+    }
   }
 ```
 
@@ -108,7 +119,9 @@ subscriber.puller.use { queuePuller =>
     .pullBatch(batchSize = 10, waitingTime = 20.seconds)
     .flatMap { chunk =>
       chunk.traverse_ { context =>
-        IO.println(s"Received ${context.payload}").guaranteeCase {
+        context.payload.flatMap { payload =>
+          IO.println(s"Received $payload")
+        }.guaranteeCase {
           case Outcome.Succeeded(_) => context.ack()
           case _ => context.nack()
         }
@@ -139,11 +152,13 @@ subscriber.puller.use { queuePuller =>
       .flatMap { chunk =>
         chunk.traverse_ { context =>
           supervisor.supervise {
-            IO.println(s"Received ${context.payload}")
-              .guaranteeCase {
-                case Outcome.Succeeded(_) => context.ack()
-                case _ => context.nack()
-              }
+            context.payload.flatMap { payload =>
+              IO.println(s"Received $payload")
+            }
+            .guaranteeCase {
+              case Outcome.Succeeded(_) => context.ack()
+              case _ => context.nack()
+            }
           }
         }
       }

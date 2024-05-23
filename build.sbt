@@ -1,3 +1,5 @@
+import com.typesafe.tools.mima.core._
+
 import laika.config.PrettyURLs
 import laika.config.LinkConfig
 import laika.config.ApiLinks
@@ -40,7 +42,10 @@ lazy val core = crossProject(JVMPlatform)
   .in(file("core"))
   .settings(commonSettings)
   .settings(
-    name := "fs2-queues-core"
+    name := "fs2-queues-core",
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload")
+    )
   )
 
 lazy val testkit = crossProject(JVMPlatform)
@@ -111,6 +116,9 @@ lazy val awsSQS = crossProject(JVMPlatform)
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.25.50"
+    ),
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSMessageContext.this")
     )
   )
   .dependsOn(core)

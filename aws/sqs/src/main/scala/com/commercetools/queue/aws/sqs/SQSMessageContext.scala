@@ -26,7 +26,8 @@ import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityRequest
 import java.time.Instant
 
 class SQSMessageContext[F[_], T](
-  val payload: T,
+  val payload: F[T],
+  val rawPayload: String,
   val enqueuedAt: Instant,
   val metadata: Map[String, String],
   receiptHandle: String,

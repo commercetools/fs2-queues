@@ -17,6 +17,7 @@
 package com.commercetools.queue.azure.servicebus
 
 import cats.effect.Async
+import cats.effect.syntax.concurrent._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
@@ -45,6 +46,7 @@ class ServiceBusPuller[F[_], Data](
       chunk.traverse { sbMessage =>
         deserializer
           .deserializeF(sbMessage.getBody().toString())
+          .memoize
           .map { data =>
             new ServiceBusMessageContext(data, sbMessage, receiver)
           }

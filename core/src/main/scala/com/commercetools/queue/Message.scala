@@ -21,7 +21,7 @@ import java.time.Instant
 /**
  * Interface to access message data received from a queue.
  */
-trait Message[T] {
+trait Message[F[_], T] {
 
   /**
    * Unique message identifier
@@ -29,9 +29,14 @@ trait Message[T] {
   def messageId: String
 
   /**
-   * The message payload
+   * The deserialized message payload
    */
-  def payload: T
+  def payload: F[T]
+
+  /**
+   * The raw message content
+   */
+  def rawPayload: String
 
   /**
    * When the message was put into the queue.
