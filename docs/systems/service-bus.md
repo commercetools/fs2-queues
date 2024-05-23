@@ -3,7 +3,7 @@
 You can create a client to service bus queues by using the [Azure Service Bus][service-bus] module.
 
 ```scala
-libraryDependencies += "com.commercetools" %% "fs2-queues-azure-service-bus" % "@VERSION@"
+libraryDependencies += "com.commercetools" %% "fs2-queues-azure-service-bus" % "@SNAPSHOT_VERSION@"
 ```
 
 For instance, you can create a managed client via a namespace and credentials as follows.

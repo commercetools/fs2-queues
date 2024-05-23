@@ -19,7 +19,8 @@ ThisBuild / scalaVersion := Scala213
 
 ThisBuild / tlSonatypeUseLegacyHost := true
 
-lazy val root = tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, circe, otel4s, unidocs)
+lazy val root =
+  tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, gcpPubSub, gcpPubSubIt, circe, otel4s, unidocs)
 
 ThisBuild / tlSitePublishBranch := Some("main")
 
@@ -43,22 +44,24 @@ lazy val core = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-core",
+    // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload")
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueAdministration.configuration")
     )
   )
 
 lazy val testkit = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-testkit",
     libraryDependencies ++= List(
       "org.scalameta" %%% "munit" % Versions.munit,
       "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect
-    )
+    ),
+    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0")
   )
   .dependsOn(core)
 
@@ -66,9 +69,16 @@ lazy val testkit = crossProject(JVMPlatform)
 ThisBuild / githubWorkflowBuildPreamble := List(
   WorkflowStep.Use(
     UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "main"),
+    name = Some("Install localstack"),
     params = Map("image-tag" -> "latest"),
     env = Map("SERVICES" -> "sqs")
-  )
+  ),
+  WorkflowStep.Use(
+    UseRef.Public(owner = "google-github-actions", repo = "setup-gcloud", ref = "v2"),
+    name = Some("Install gcloud"),
+    params = Map("install_components" -> "beta,pubsub-emulator")
+  ),
+  WorkflowStep.Run(commands = List("./gcp/pubsub/emulator/start.sh &"), name = Some("Run PubSub emulator"))
 )
 
 lazy val otel4s = crossProject(JVMPlatform)
@@ -117,6 +127,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.25.50"
     ),
+    // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSMessageContext.this")
     )
@@ -128,6 +139,25 @@ lazy val awsSqsIt = project
   .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .dependsOn(awsSQS.jvm % Test, testkit.jvm % Test)
+
+lazy val gcpPubSub = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("gcp/pubsub"))
+  .settings(commonSettings)
+  .settings(
+    name := "fs2-queues-gcp-pubsub",
+    libraryDependencies ++= List(
+      "com.google.cloud" % "google-cloud-pubsub" % "1.129.3"
+    ),
+    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0")
+  )
+  .dependsOn(core)
+
+lazy val gcpPubSubIt = project
+  .in(file("gcp/pubsub/integration"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .dependsOn(gcpPubSub.jvm % Test, testkit.jvm % Test)
 
 lazy val docs = project
   .in(file("site"))
@@ -150,7 +180,7 @@ lazy val docs = project
       "com.azure" % "azure-identity" % "1.11.1"
     )
   )
-  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, otel4s.jvm)
+  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testkit.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))
@@ -162,5 +192,6 @@ lazy val unidocs = project
       circe.jvm,
       azureServiceBus.jvm,
       awsSQS.jvm,
+      gcpPubSub.jvm,
       otel4s.jvm)
   )

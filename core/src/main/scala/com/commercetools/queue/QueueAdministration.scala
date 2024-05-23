@@ -32,6 +32,9 @@ trait QueueAdministration[F[_]] {
    */
   def update(name: String, messageTTL: Option[FiniteDuration] = None, lockTTL: Option[FiniteDuration] = None): F[Unit]
 
+  /** Returns the current configuration settings for the queue. */
+  def configuration(name: String): F[QueueConfiguration]
+
   /** Deletes the queue with the given name. */
   def delete(name: String): F[Unit]
 

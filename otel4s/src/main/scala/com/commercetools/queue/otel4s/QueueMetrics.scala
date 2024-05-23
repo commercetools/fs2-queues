@@ -45,6 +45,7 @@ private object QueueMetrics {
   // queue management attributes
   final val create = Attribute("method", "create")
   final val update = Attribute("method", "update")
+  final val configuration = Attribute("method", "configuration")
   final val delete = Attribute("method", "delete")
   final val exist = Attribute("method", "exist")
 

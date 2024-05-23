@@ -3,7 +3,7 @@
 The circe module provides integration with the [circe][circe] library.
 
 ```scala
-libraryDependencies += "com.commercetools" %% "fs2-queues-circe" % "@VERSION@"
+libraryDependencies += "com.commercetools" %% "fs2-queues-circe" % "@SNAPSHOT_VERSION@"
 ```
 
 It provides:

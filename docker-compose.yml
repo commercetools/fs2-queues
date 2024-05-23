@@ -2,9 +2,18 @@ version: "3.8"
 
 services:
   localstack:
-    container_name: sqs
+    container_name: fs2-queues-sqs
     image: localstack/localstack:latest
     ports:
       - "127.0.0.1:4566:4566"
     environment:
       - SERVICES=sqs
+  pubsub:
+    container_name: fs2-queues-pubsub
+    # https://console.cloud.google.com/gcr/images/google.com:cloudsdktool/global/google-cloud-cli
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: "bash /root/scripts/start.sh"
+    ports:
+      - "8042:8042"
+    volumes:
+      - ./gcp/pubsub/emulator:/root/scripts

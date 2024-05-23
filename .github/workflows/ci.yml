@@ -52,11 +52,20 @@ jobs:
         if: matrix.java == 'temurin@8' && steps.setup-java-temurin-8.outputs.cache-hit == 'false'
         run: sbt +update
 
-      - env:
+      - name: Install localstack
+        env:
           SERVICES: sqs
         uses: LocalStack/setup-localstack@main
         with:
           image-tag: latest
+
+      - name: Install gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: beta,pubsub-emulator
+
+      - name: Run PubSub emulator
+        run: ./gcp/pubsub/emulator/start.sh &
 
       - name: Check that workflows are up to date
         run: sbt githubWorkflowCheck
@@ -82,11 +91,11 @@ jobs:
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: mkdir -p circe/.jvm/target unidocs/target otel4s/.jvm/target aws/sqs/.jvm/target core/.jvm/target azure/service-bus/.jvm/target project/target
+        run: mkdir -p circe/.jvm/target unidocs/target otel4s/.jvm/target aws/sqs/.jvm/target gcp/pubsub/.jvm/target core/.jvm/target azure/service-bus/.jvm/target testkit/.jvm/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
-        run: tar cf targets.tar circe/.jvm/target unidocs/target otel4s/.jvm/target aws/sqs/.jvm/target core/.jvm/target azure/service-bus/.jvm/target project/target
+        run: tar cf targets.tar circe/.jvm/target unidocs/target otel4s/.jvm/target aws/sqs/.jvm/target gcp/pubsub/.jvm/target core/.jvm/target azure/service-bus/.jvm/target testkit/.jvm/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
