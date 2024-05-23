@@ -6,7 +6,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Typelevel Laika + Helium Theme" />
-  <title>AWS SQS</title>
+  <title>GCP PubSub</title>
   
   <meta name="author" content="fs2-queues contributors"/>
   
@@ -90,9 +90,9 @@
     <li class="level2 nav-leaf"><a href="../../getting-started/serialization/">Data Serialization</a></li>
     <li class="level1 nav-header">Qeueue Systems</li>
     <li class="level2 nav-leaf"><a href="../">Providers</a></li>
-    <li class="level2 active nav-leaf"><a href="#">AWS SQS</a></li>
+    <li class="level2 nav-leaf"><a href="../sqs/">AWS SQS</a></li>
     <li class="level2 nav-leaf"><a href="../service-bus/">Azure Service Bus Queues</a></li>
-    <li class="level2 nav-leaf"><a href="../pubsub/">GCP PubSub</a></li>
+    <li class="level2 active nav-leaf"><a href="#">GCP PubSub</a></li>
     <li class="level1 nav-header">Library Integrations</li>
     <li class="level2 nav-leaf"><a href="../../integrations/otel4s/">Otel4s</a></li>
     <li class="level2 nav-leaf"><a href="../../integrations/circe/">Circe</a></li>
@@ -107,23 +107,23 @@
 
       <main class="content">
 
-        <h1 id="aws-sqs" class="title">AWS SQS</h1>
-        <p>You can create a client to service bus queues by using the <a href="https://aws.amazon.com/sqs/">AWS SQS</a> module.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-aws-sqs&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0-15-46f5792-SNAPSHOT&quot;</span></code></pre>
+        <h1 id="gcp-pubsub" class="title">GCP PubSub</h1>
+        <p>You can create a client to service bus queues by using the <a href="https://cloud.google.com/pubsub/">GCP PubSub</a> module.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-gcp-pubsub&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0-15-46f5792-SNAPSHOT&quot;</span></code></pre>
         <p>For instance you can create a managed client via a region and credentials as follows.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="identifier">aws</span><span>.</span><span class="identifier">sqs</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">software</span><span>.</span><span class="identifier">amazon</span><span>.</span><span class="identifier">awssdk</span><span>.</span><span class="identifier">regions</span><span>.</span><span class="type-name">Region</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">software</span><span>.</span><span class="identifier">amazon</span><span>.</span><span class="identifier">awssdk</span><span>.</span><span class="identifier">auth</span><span>.</span><span class="identifier">credentials</span><span>.</span><span class="type-name">DefaultCredentialsProvider</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="identifier">gcp</span><span>.</span><span class="identifier">pubsub</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">google</span><span>.</span><span class="identifier">api</span><span>.</span><span class="identifier">gax</span><span>.</span><span class="identifier">core</span><span>.</span><span class="type-name">GoogleCredentialsProvider</span><span>
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">region</span><span> = </span><span class="type-name">Region</span><span>.</span><span class="type-name">US_EAST_1</span><span> </span><span class="comment">// your region
-</span><span class="keyword">val</span><span> </span><span class="identifier">credentials</span><span> = </span><span class="type-name">DefaultCredentialsProvider</span><span>.</span><span class="identifier">create</span><span>() </span><span class="comment">// however you want to authenticate
+</span><span class="keyword">val</span><span> </span><span class="identifier">project</span><span> = </span><span class="string-literal">&quot;my-project&quot;</span><span> </span><span class="comment">// your project
+</span><span class="keyword">val</span><span> </span><span class="identifier">credentials</span><span> = </span><span class="type-name">GoogleCredentialsProvider</span><span>.</span><span class="identifier">newBuilder</span><span>().</span><span class="identifier">build</span><span>() </span><span class="comment">// however you want to authenticate
 </span><span>
-</span><span class="type-name">SQSClient</span><span>[</span><span class="type-name">IO</span><span>](</span><span class="identifier">region</span><span>, </span><span class="identifier">credentials</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+</span><span class="type-name">PubSubClient</span><span>[</span><span class="type-name">IO</span><span>](</span><span class="identifier">project</span><span>, </span><span class="identifier">credentials</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
   ???
 }</span></code></pre>
         <p>The client is managed, meaning that it uses a dedicated HTTP connection pool that will get shut down upon resource release.</p>
-        <p>If integrating with an existing code base where you already have an instance of <code>SdkAsyncHttpClient</code> that you would like to share, you can pass the optional <code>httpClient</code> parameter. If passed explicitly, the client is not closed when the resource is released, and it is up to the caller to manage it.</p>
+        <p>If integrating with an existing code base where you already have an instance of <code>TransportChannelProvider</code> that you would like to share, you can use the <code>unmanaged</code> construtor.
+        In this case, it is up to you to manage the channel provider life cycle.</p>
 
         
 <hr class="footer-rule"/>

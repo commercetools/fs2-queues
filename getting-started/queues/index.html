@@ -92,6 +92,7 @@
     <li class="level2 nav-leaf"><a href="../../systems/">Providers</a></li>
     <li class="level2 nav-leaf"><a href="../../systems/sqs/">AWS SQS</a></li>
     <li class="level2 nav-leaf"><a href="../../systems/service-bus/">Azure Service Bus Queues</a></li>
+    <li class="level2 nav-leaf"><a href="../../systems/pubsub/">GCP PubSub</a></li>
     <li class="level1 nav-header">Library Integrations</li>
     <li class="level2 nav-leaf"><a href="../../integrations/otel4s/">Otel4s</a></li>
     <li class="level2 nav-leaf"><a href="../../integrations/circe/">Circe</a></li>
@@ -108,7 +109,7 @@
 
         <h1 id="common-queue-interface" class="title">Common Queue Interface</h1>
         <p>The common abstractions are defined in the core module. To use it, add the following to your build.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-core&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0&quot;</span></code></pre>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-core&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0-15-46f5792-SNAPSHOT&quot;</span></code></pre>
         <p>The library provides both low and high level APIs, making it possible to have fine grained control over queue pulling, or just focusing on processing, delegating message management to the library.</p>
         <p>The design of the API is the result of the common usage patterns and how the various client SDKs are designed.
         There are several views possible on a queue:</p>

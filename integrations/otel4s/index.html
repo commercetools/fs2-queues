@@ -92,6 +92,7 @@
     <li class="level2 nav-leaf"><a href="../../systems/">Providers</a></li>
     <li class="level2 nav-leaf"><a href="../../systems/sqs/">AWS SQS</a></li>
     <li class="level2 nav-leaf"><a href="../../systems/service-bus/">Azure Service Bus Queues</a></li>
+    <li class="level2 nav-leaf"><a href="../../systems/pubsub/">GCP PubSub</a></li>
     <li class="level1 nav-header">Library Integrations</li>
     <li class="level2 active nav-leaf"><a href="#">Otel4s</a></li>
     <li class="level2 nav-leaf"><a href="../circe/">Circe</a></li>
@@ -108,7 +109,7 @@
 
         <h1 id="otel4s" class="title">Otel4s</h1>
         <p>The otel4s provides an integration with the <a href="https://typelevel.org/otel4s/">otel4s</a> library.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-otel4s&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0&quot;</span></code></pre>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-otel4s&quot;</span><span> % </span><span class="string-literal">&quot;0.1.0-15-46f5792-SNAPSHOT&quot;</span></code></pre>
         <p>It allows you to wrap an existing <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/QueueClient.html">QueueClient</a> into a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/otel4s/MeasuringQueueClient.html">MeasuringQueueClient</a>, which adds <a href="https://typelevel.org/otel4s/instrumentation/tracing.html">tracing</a> and <a href="https://typelevel.org/otel4s/instrumentation/metrics.html">metrics</a> on every call to the underlying queue system.</p>
         <p>You can opt-in for either one of them or both.</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
