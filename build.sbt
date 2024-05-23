@@ -44,22 +44,24 @@ lazy val core = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-core",
+    // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload")
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueAdministration.configuration")
     )
   )
 
 lazy val testkit = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit"))
-  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-testkit",
     libraryDependencies ++= List(
       "org.scalameta" %%% "munit" % Versions.munit,
       "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect
-    )
+    ),
+    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0")
   )
   .dependsOn(core)
 
@@ -125,6 +127,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.25.50"
     ),
+    // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSMessageContext.this")
     )
@@ -177,7 +180,7 @@ lazy val docs = project
       "com.azure" % "azure-identity" % "1.11.1"
     )
   )
-  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm)
+  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testkit.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))

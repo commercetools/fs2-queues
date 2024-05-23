@@ -3,7 +3,7 @@
 The common abstractions are defined in the core module. To use it, add the following to your build.
 
 ```scala
-libraryDependencies += "com.commercetools" %% "fs2-queues-core" % "@VERSION@"
+libraryDependencies += "com.commercetools" %% "fs2-queues-core" % "@SNAPSHOT_VERSION@"
 ```
 
 The library provides both low and high level APIs, making it possible to have fine grained control over queue pulling, or just focusing on processing, delegating message management to the library.
