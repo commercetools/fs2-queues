@@ -67,9 +67,16 @@ lazy val testkit = crossProject(JVMPlatform)
 ThisBuild / githubWorkflowBuildPreamble := List(
   WorkflowStep.Use(
     UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "main"),
+    name = Some("Install localstack"),
     params = Map("image-tag" -> "latest"),
     env = Map("SERVICES" -> "sqs")
-  )
+  ),
+  WorkflowStep.Use(
+    UseRef.Public(owner = "google-github-actions", repo = "setup-gcloud", ref = "v2"),
+    name = Some("Install gcloud"),
+    params = Map("install_components" -> "beta,pubsub-emulator")
+  ),
+  WorkflowStep.Run(commands = List("./gcp/pubsub/emulator/start.sh &"), name = Some("Run PubSub emulator"))
 )
 
 lazy val otel4s = crossProject(JVMPlatform)
