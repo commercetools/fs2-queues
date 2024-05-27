@@ -39,17 +39,18 @@ class PubSubPusher[F[_], T](
   serializer: Serializer[T])
   extends QueuePusher[F, T] {
 
-  private def makeMessage(payload: T, waitUntil: Option[Instant]): F[PubsubMessage] =
+  private def makeMessage(payload: T, metadata: Map[String, String], waitUntil: Option[Instant]): F[PubsubMessage] =
     F.delay {
       val builder = PubsubMessage.newBuilder().setData(ByteString.copyFromUtf8(serializer.serialize(payload)))
+      builder.putAllAttributes(metadata.asJava)
       waitUntil.foreach(waitUntil => builder.putAttributes(delayAttribute, waitUntil.toString()))
       builder.build
     }
 
-  override def push(message: T, delay: Option[FiniteDuration]): F[Unit] =
+  override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] =
     (for {
       waitUntil <- delay.traverse(delay => F.realTimeInstant.map(_.plusMillis(delay.toMillis)))
-      msg <- makeMessage(message, waitUntil)
+      msg <- makeMessage(message, metadata, waitUntil)
       _ <- wrapFuture(
         F.delay(
           publisher
@@ -58,10 +59,10 @@ class PubSubPusher[F[_], T](
     } yield ())
       .adaptError(makePushQueueException(_, queueName))
 
-  override def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
+  override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] =
     (for {
       waitUntil <- delay.traverse(delay => F.realTimeInstant.map(_.plusMillis(delay.toMillis)))
-      msgs <- messages.traverse(makeMessage(_, waitUntil))
+      msgs <- messages.traverse { case (payload, metadata) => makeMessage(payload, metadata, waitUntil) }
       _ <- wrapFuture(
         F.delay(publisher
           .publishCallable()

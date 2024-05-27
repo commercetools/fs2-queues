@@ -36,9 +36,11 @@ class MeasuringPusherSuite extends CatsEffectSuite {
 
     override def queueName: String = self.queueName
 
-    override def push(message: String, delay: Option[FiniteDuration]): IO[Unit] = result
+    override def push(message: String, metadata: Map[String, String], delay: Option[FiniteDuration]): IO[Unit] =
+      result
 
-    override def push(messages: List[String], delay: Option[FiniteDuration]): IO[Unit] = result
+    override def push(messages: List[(String, Map[String, String])], delay: Option[FiniteDuration]): IO[Unit] =
+      result
 
   }
 
@@ -47,7 +49,7 @@ class MeasuringPusherSuite extends CatsEffectSuite {
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
-        fiber <- measuringPusher.push("msg", None).start
+        fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
           counter.records.get,
@@ -61,7 +63,7 @@ class MeasuringPusherSuite extends CatsEffectSuite {
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
-        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3"), None).start
+        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
           counter.records.get,
@@ -78,7 +80,7 @@ class MeasuringPusherSuite extends CatsEffectSuite {
           new QueueMetrics(queueName, counter),
           Tracer.noop)
       for {
-        fiber <- measuringPusher.push("msg", None).start
+        fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
         _ <- assertIO(
           counter.records.get,
@@ -95,7 +97,7 @@ class MeasuringPusherSuite extends CatsEffectSuite {
           new QueueMetrics(queueName, counter),
           Tracer.noop)
       for {
-        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3"), None).start
+        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
         _ <- assertIO(
           counter.records.get,
@@ -109,7 +111,7 @@ class MeasuringPusherSuite extends CatsEffectSuite {
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
-        fiber <- measuringPusher.push("msg", None).start
+        fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
         _ <- assertIO(
           counter.records.get,
@@ -123,7 +125,7 @@ class MeasuringPusherSuite extends CatsEffectSuite {
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
-        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3"), None).start
+        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
         _ <- assertIO(
           counter.records.get,

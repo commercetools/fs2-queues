@@ -119,17 +119,17 @@ class TestQueue[T](
         Chunk.chain(newlyLocked.map(_._2)))
     }
 
-  def enqeueMessages(messages: List[T], delay: Option[FiniteDuration]) =
+  def enqeueMessages(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]) =
     state.evalUpdate { state =>
       for {
         now <- IO.realTimeInstant
         state <- update(state)
       } yield delay match {
         case None =>
-          state.copy(available = state.available.addAll(messages.map(TestMessage(_, now))))
+          state.copy(available = state.available.addAll(messages.map(x => TestMessage(x._1, now))))
         case Some(delay) =>
           val delayed = now.plusMillis(delay.toMillis)
-          state.copy(delayed = messages.map(TestMessage(_, delayed)) reverse_::: state.delayed)
+          state.copy(delayed = messages.map(x => TestMessage(x._1, delayed)) reverse_::: state.delayed)
       }
     }
 

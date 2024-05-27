@@ -41,8 +41,10 @@ abstract class QueueClientSuite extends CatsEffectSuite {
     for {
       random <- Random.scalaUtilRandom[IO]
       size <- random.nextLongBounded(30L)
-      messages = List.range(0L, size).map(_.toString())
-      received <- Ref[IO].of(List.empty[String])
+      messages = List
+        .range(0L, size)
+        .map(i => (i.toString, Map(s"metadata-$i-key" -> s"$i-value", s"metadata-$i-another-key" -> "another-value")))
+      received <- Ref[IO].of(List.empty[(String, Map[String, String])])
       client = clientFixture()
       _ <- Stream
         .emits(messages)
@@ -50,12 +52,15 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         .merge(
           client
             .subscribe(queueName)
-            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg => received.update(msg.rawPayload :: _))
+            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg =>
+              received.update((msg.rawPayload, msg.metadata) :: _))
             .take(size)
         )
         .compile
         .drain
-      _ <- assertIO(received.get.map(_.toSet), messages.toSet)
+      _ <- assertIO(
+        received.get.map(_.map(x => (x._1, keepMetadataWithPrefix(x._2, "metadata"))).toSet),
+        messages.toSet)
     } yield ()
   }
 
@@ -79,12 +84,17 @@ abstract class QueueClientSuite extends CatsEffectSuite {
   withQueue.test("delayed messages should not be pulled before deadline") { queueName =>
     val client = clientFixture()
     client.publish(queueName).pusher.use { pusher =>
-      pusher.push("delayed message", Some(2.seconds))
+      pusher.push("delayed message", Map("metadata-key" -> "value"), Some(2.seconds))
     } *> client.subscribe(queueName).puller.use { puller =>
       for {
         _ <- assertIO(puller.pullBatch(1, 1.second), Chunk.empty)
         _ <- IO.sleep(2.seconds)
-        _ <- assertIO(puller.pullBatch(1, 1.second).map(_.map(_.rawPayload)), Chunk("delayed message"))
+        _ <- assertIO(
+          puller
+            .pullBatch(1, 1.second)
+            .map(_.map(x => (x.rawPayload, keepMetadataWithPrefix(x.metadata, "metadata")))),
+          Chunk(("delayed message", Map("metadata-key" -> "value")))
+        )
       } yield ()
 
     }
@@ -102,5 +112,9 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         QueueConfiguration(originalMessageTTL + 1.minute, originalLockTTL + 10.seconds))
     } yield ()
   }
+
+  // to only keep metadata entries we are interested in, in not the ones set by the provider
+  private def keepMetadataWithPrefix(metadata: Map[String, String], prefix: String): Map[String, String] =
+    metadata.filter(_._1.startsWith(prefix))
 
 }

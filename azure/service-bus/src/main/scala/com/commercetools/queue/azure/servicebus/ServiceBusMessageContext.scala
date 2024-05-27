@@ -22,6 +22,7 @@ import com.azure.messaging.servicebus.{ServiceBusReceivedMessage, ServiceBusRece
 import com.commercetools.queue.MessageContext
 
 import java.time.Instant
+import scala.jdk.CollectionConverters.MapHasAsScala
 
 class ServiceBusMessageContext[F[_], T](
   val payload: F[T],
@@ -35,7 +36,9 @@ class ServiceBusMessageContext[F[_], T](
   override def enqueuedAt: Instant = underlying.getEnqueuedTime().toInstant()
 
   override def metadata: Map[String, String] =
-    Map.empty
+    underlying.getRawAmqpMessage.getApplicationProperties.asScala.view.collect {
+      case (k, v) if v.isInstanceOf[String] => (k, v.asInstanceOf[String])
+    }.toMap
 
   override def ack(): F[Unit] =
     F.blocking(receiver.complete(underlying)).void

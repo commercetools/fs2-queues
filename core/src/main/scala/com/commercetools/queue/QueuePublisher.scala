@@ -41,7 +41,7 @@ abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
    * produced data to the queue. The messages are published in batches, according
    * to the `batchSize` parameter.
    */
-  def sink(batchSize: Int = 10)(upstream: Stream[F, T]): Stream[F, Nothing] =
+  def sink(batchSize: Int = 10)(upstream: Stream[F, (T, Map[String, String])]): Stream[F, Nothing] =
     Stream.resource(pusher).flatMap { pusher =>
       upstream.chunkN(batchSize).foreach { chunk =>
         pusher.push(chunk.toList, None)

@@ -32,16 +32,16 @@ class MeasuringQueuePusher[F[_], T](
 
   override def queueName: String = underlying.queueName
 
-  override def push(message: T, delay: Option[FiniteDuration]): F[Unit] =
+  override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] =
     tracer
       .span("queue.pushMessage")
       .surround {
         underlying
-          .push(message, delay)
+          .push(message, metadata, delay)
       }
       .guaranteeCase(metrics.send)
 
-  override def push(messages: List[T], delay: Option[FiniteDuration]): F[Unit] =
+  override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] =
     tracer
       .span("queue.pushMessages")
       .surround {
