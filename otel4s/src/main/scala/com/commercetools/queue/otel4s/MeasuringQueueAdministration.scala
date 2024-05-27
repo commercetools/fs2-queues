@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
-import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
+import com.commercetools.queue.{QueueAdministration, QueueConfiguration, QueueCreationConfiguration}
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
@@ -32,11 +32,11 @@ class MeasuringQueueAdministration[F[_]](
 )(implicit F: MonadCancel[F, Throwable])
   extends QueueAdministration[F] {
 
-  override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
+  override def create(name: String, configuration: QueueCreationConfiguration): F[Unit] =
     tracer
       .span("queue.create")
       .surround {
-        underlying.create(name, messageTTL, lockTTL)
+        underlying.create(name, configuration)
       }
       .guaranteeCase(QueueMetrics.increment(Attribute("queue", name), QueueMetrics.create, requestCounter))
 

@@ -28,11 +28,12 @@ class PubSubClient[F[_]: Async] private (
   channelProvider: TransportChannelProvider,
   useGrpc: Boolean,
   credentials: CredentialsProvider,
-  endpoint: Option[String])
+  endpoint: Option[String],
+  makeDLQName: String => String)
   extends QueueClient[F] {
 
   override def administration: QueueAdministration[F] =
-    new PubSubAdministration[F](useGrpc, project, channelProvider, credentials, endpoint)
+    new PubSubAdministration[F](useGrpc, project, channelProvider, credentials, endpoint, makeDLQName)
 
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(name, SubscriptionName.of(project, s"fs2-queue-$name"), channelProvider, credentials, endpoint)
@@ -57,27 +58,60 @@ object PubSubClient {
     HttpJsonTransportChannel.create(
       ManagedHttpJsonChannel.newBuilder().setEndpoint(endpoint.getOrElse("https://pubsub.googleapis.com")).build())
 
+  private def makeDefaultDLQName(name: String): String =
+    s"$name-dlq"
+
+  /**
+   * Creates a [[PubSubClient]].
+   *
+   * @param project the project to use
+   * @param credentials the credentials to use
+   * @param makeDLQName how the dead letter queue name is derived from the queue name
+   *                    by default it suffixes the queue name with `-dlq`
+   * @param endpoint the service endpoint to use
+   * @param mkTransportChannel how the HTTP transport channel is created
+   *                           by default it uses the `NetHttpTransport` client
+   */
   def apply[F[_]](
     project: String,
     credentials: CredentialsProvider,
+    makeDLQName: String => String = makeDefaultDLQName,
     endpoint: Option[String] = None,
-    mkTransportChannel: Option[String] => HttpJsonTransportChannel = makeDefaultTransportChannel _
+    mkTransportChannel: Option[String] => HttpJsonTransportChannel = makeDefaultTransportChannel
   )(implicit F: Async[F]
   ): Resource[F, PubSubClient[F]] =
     Resource
       .fromAutoCloseable(F.blocking(mkTransportChannel(endpoint)))
       .map { channel =>
-        new PubSubClient[F](project, FixedTransportChannelProvider.create(channel), false, credentials, endpoint)
+        new PubSubClient[F](
+          project,
+          FixedTransportChannelProvider.create(channel),
+          false,
+          credentials,
+          endpoint,
+          makeDLQName)
       }
 
+  /**
+   * Creates an unmanaged [[PubSubClient]].
+   *
+   * @param project the project to use
+   * @param credentials the credentials to use
+   * @param makeDLQName how the dead letter queue name is derived from the queue name
+   *                    by default it suffixes the queue name with `-dlq`
+   * @param channelProvider the channel provider to use, needs to be managed by caller
+   * @param useGrpc whether the channel provider uses gRPC
+   * @param endpoint the service endpoint to use
+   */
   def unmanaged[F[_]](
     project: String,
     credentials: CredentialsProvider,
     channelProvider: TransportChannelProvider,
     useGrpc: Boolean,
+    makeDLQName: String => String = makeDefaultDLQName,
     endpoint: Option[String] = None
   )(implicit F: Async[F]
   ): PubSubClient[F] =
-    new PubSubClient[F](project, channelProvider, useGrpc, credentials, endpoint)
+    new PubSubClient[F](project, channelProvider, useGrpc, credentials, endpoint, makeDLQName)
 
 }

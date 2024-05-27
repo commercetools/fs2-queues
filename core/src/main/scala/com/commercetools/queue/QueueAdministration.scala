@@ -23,8 +23,13 @@ import scala.concurrent.duration.FiniteDuration
  */
 trait QueueAdministration[F[_]] {
 
-  /** Creates a queue with the given name, message TTL and lock TTL. */
-  def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit]
+  /**
+   * Creates a queue with the given name and configuration.
+   * If the configuration contains a `deadletter` element, a dead letter
+   * queue is created and associated to the main queue with the configured
+   * maximum delivery attempt.
+   */
+  def create(name: String, configuration: QueueCreationConfiguration): F[Unit]
 
   /**
    * Updates the queue with the given name, with provided message TTL and/or lock TTL.

@@ -21,7 +21,7 @@ import cats.syntax.functor._
 import cats.syntax.monadError._
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClient
 import com.azure.messaging.servicebus.administration.models.CreateQueueOptions
-import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
+import com.commercetools.queue.{DeadletterQueueConfiguration, QueueAdministration, QueueConfiguration, QueueCreationConfiguration}
 
 import java.time.Duration
 import scala.concurrent.duration._
@@ -29,14 +29,26 @@ import scala.concurrent.duration._
 class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(implicit F: Async[F])
   extends QueueAdministration[F] {
 
-  override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
-    F.blocking(
+  override def create(name: String, configuration: QueueCreationConfiguration): F[Unit] =
+    F.blocking {
+      val options = new CreateQueueOptions()
+        .setDefaultMessageTimeToLive(Duration.ofMillis(configuration.messageTTL.toMillis))
+        .setLockDuration(Duration.ofMillis(configuration.lockTTL.toMillis))
+      configuration.deadletter match {
+        case Some(configuration) =>
+          options
+            .setMaxDeliveryCount(configuration.maxAttempts)
+            .setDeadLetteringOnMessageExpiration(true)
+        case None =>
+          options
+            .setMaxDeliveryCount(Int.MaxValue)
+            .setDeadLetteringOnMessageExpiration(false)
+      }
       client.createQueue(
         name,
-        new CreateQueueOptions()
-          .setDefaultMessageTimeToLive(Duration.ofMillis(messageTTL.toMillis))
-          .setLockDuration(Duration.ofMillis(lockTTL.toMillis))))
-      .void
+        options
+      )
+    }.void
       .adaptError(makeQueueException(_, name))
 
   override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] =
@@ -45,15 +57,19 @@ class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(imp
       messageTTL.foreach(ttl => properties.setDefaultMessageTimeToLive(Duration.ofMillis(ttl.toMillis)))
       lockTTL.foreach(ttl => properties.setLockDuration(Duration.ofMillis(ttl.toMillis)))
       val _ = client.updateQueue(properties)
-    }
+    }.adaptError(makeQueueException(_, name))
 
   override def configuration(name: String): F[QueueConfiguration] =
     F.blocking {
       val properties = client.getQueue(name)
       val messageTTL = properties.getDefaultMessageTimeToLive().toMillis.millis
       val lockTTL = properties.getLockDuration().toMillis.millis
-      QueueConfiguration(messageTTL = messageTTL, lockTTL = lockTTL)
-    }
+      val deadletter =
+        Option.when(properties.isDeadLetteringOnMessageExpiration())(
+          DeadletterQueueConfiguration(properties.getForwardDeadLetteredMessagesTo(), properties.getMaxDeliveryCount()))
+
+      QueueConfiguration(messageTTL = messageTTL, lockTTL = lockTTL, deadletter = deadletter)
+    }.adaptError(makeQueueException(_, name))
 
   override def delete(name: String): F[Unit] =
     F.blocking(client.deleteQueue(name))

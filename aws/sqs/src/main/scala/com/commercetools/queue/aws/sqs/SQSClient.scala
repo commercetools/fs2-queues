@@ -28,7 +28,8 @@ import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
 
 import java.net.URI
 
-class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) extends QueueClient[F] {
+class SQSClient[F[_]] private (client: SqsAsyncClient, makeDLQName: String => String)(implicit F: Async[F])
+  extends QueueClient[F] {
 
   private def getQueueUrl(name: String): F[String] =
     F.fromCompletableFuture {
@@ -39,7 +40,7 @@ class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) ext
       .adaptError(makeQueueException(_, name))
 
   override def administration: QueueAdministration[F] =
-    new SQSAdministration(client, getQueueUrl(_))
+    new SQSAdministration(client, getQueueUrl(_), makeDLQName)
 
   override def statistics(name: String): QueueStatistics[F] =
     new SQSStatistics(name, client, getQueueUrl(name))
@@ -54,9 +55,26 @@ class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) ext
 
 object SQSClient {
 
+  private def defaultMakeDLQName(name: String): String =
+    s"$name-dlq"
+
+  /**
+   * Creates a new [[SQSClient]].
+   *
+   * @param region the region to use
+   * @param credentials the credentials to use
+   * @param makeDLQName how the dead letter queue name is derived from the queue name
+   *                    by default it suffixes the queue name with `-dlq`
+   * @param httpClient the existing HTTP client to use.
+   *                   '''Note:''' if provided, it is not closed when resource is released,
+   *                   otherwise the client manages its own client and will close it when
+   *                   released
+   * @param endpoint the service endpoint to use.
+   */
   def apply[F[_]](
     region: Region,
     credentials: AwsCredentialsProvider,
+    makeDLQName: String => String = defaultMakeDLQName,
     endpoint: Option[URI] = None,
     httpClient: Option[SdkAsyncHttpClient] = None
   )(implicit F: Async[F]
@@ -74,6 +92,6 @@ object SQSClient {
           builder.build()
         }
       }
-      .map(new SQSClient(_))
+      .map(new SQSClient(_, makeDLQName))
 
 }

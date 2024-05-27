@@ -18,7 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
-import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
+import com.commercetools.queue.{DeadletterQueueConfiguration, QueueAdministration, QueueConfiguration, QueueCreationConfiguration}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.rpc.{NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
@@ -32,7 +32,8 @@ class PubSubAdministration[F[_]](
   project: String,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
-  endpoint: Option[String]
+  endpoint: Option[String],
+  makeDLQName: String => String
 )(implicit F: Async[F])
   extends QueueAdministration[F] {
 
@@ -62,9 +63,9 @@ class PubSubAdministration[F[_]](
     SubscriptionAdminClient.create(builder.build())
   })
 
-  override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] = {
+  override def create(name: String, configuration: QueueCreationConfiguration): F[Unit] = {
     val topicName = TopicName.of(project, name)
-    val ttl = Duration.newBuilder().setSeconds(messageTTL.toSeconds).build()
+    val ttl = Duration.newBuilder().setSeconds(configuration.messageTTL.toSeconds).build()
     adminClient.use { client =>
       wrapFuture(F.delay {
         client
@@ -80,7 +81,7 @@ class PubSubAdministration[F[_]](
               .newBuilder()
               .setTopic(topicName.toString())
               .setName(SubscriptionName.of(project, s"fs2-queue-$name").toString())
-              .setAckDeadlineSeconds(lockTTL.toSeconds.toInt)
+              .setAckDeadlineSeconds(configuration.lockTTL.toSeconds.toInt)
               .setMessageRetentionDuration(ttl)
               // An empty expiration policy (no TTL set) ensures the subscription is never deleted
               .setExpirationPolicy(ExpirationPolicy.newBuilder().build())
@@ -155,21 +156,28 @@ class PubSubAdministration[F[_]](
   }
 
   override def configuration(name: String): F[QueueConfiguration] =
-    subscriptionClient.use { client =>
-      wrapFuture[F, Subscription](F.delay {
-        val subscriptionName = SubscriptionName.of(project, s"fs2-queue-$name")
-        client
-          .getSubscriptionCallable()
-          .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())
-      }).map { (sub: Subscription) =>
-        val messageTTL =
-          sub.getMessageRetentionDuration().getSeconds.seconds +
-            sub.getMessageRetentionDuration().getNanos().nanos
-        val lockTTL =
-          sub.getAckDeadlineSeconds().seconds
-        QueueConfiguration(messageTTL = messageTTL, lockTTL = lockTTL)
+    subscriptionClient
+      .use { client =>
+        wrapFuture(F.delay {
+          val subscriptionName = SubscriptionName.of(project, s"fs2-queue-$name")
+          client
+            .getSubscriptionCallable()
+            .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())
+        }).map { (sub: Subscription) =>
+          val messageTTL =
+            sub.getMessageRetentionDuration().getSeconds.seconds +
+              sub.getMessageRetentionDuration().getNanos().nanos
+          val lockTTL =
+            sub.getAckDeadlineSeconds().seconds
+          val policy = sub.getDeadLetterPolicy()
+          val deadletter =
+            Option(TopicName.parse(policy.getDeadLetterTopic())).map { topicName =>
+              DeadletterQueueConfiguration(topicName.toString(), policy.getMaxDeliveryAttempts())
+            }
+          QueueConfiguration(messageTTL = messageTTL, lockTTL = lockTTL, deadletter = deadletter)
+        }
       }
-    }
+      .adaptError(makeQueueException(_, name))
 
   override def delete(name: String): F[Unit] = {
     adminClient.use { client =>
