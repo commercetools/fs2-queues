@@ -58,9 +58,19 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         )
         .compile
         .drain
-      _ <- assertIO(
-        received.get.map(_.map(x => (x._1, keepMetadataWithPrefix(x._2, "metadata"))).toSet),
-        messages.toSet)
+      _ <- assertIO_(received.get.map { receivedMessages =>
+        if (receivedMessages.size != messages.size)
+          fail(s"expected to receive ${messages.size} messages, got ${receivedMessages.size}")
+
+        messages.sortBy(_._1).toSet.zip(receivedMessages.sortBy(_._1).toSet).forall {
+          case ((expectedPayload, expectedMetadata), (actualPayload, actualMetadata)) =>
+            if (expectedPayload != actualPayload)
+              fail(s"expected payload '$expectedPayload', got '$actualPayload'")
+            else if (!metadataContains(actualMetadata, expectedMetadata))
+              fail(s"expected metadata to contain '$expectedMetadata', got '$actualMetadata'")
+            else true
+        }
+      }.void)
     } yield ()
   }
 
@@ -89,12 +99,11 @@ abstract class QueueClientSuite extends CatsEffectSuite {
       for {
         _ <- assertIO(puller.pullBatch(1, 1.second), Chunk.empty)
         _ <- IO.sleep(2.seconds)
-        _ <- assertIO(
-          puller
-            .pullBatch(1, 1.second)
-            .map(_.map(x => (x.rawPayload, keepMetadataWithPrefix(x.metadata, "metadata")))),
-          Chunk(("delayed message", Map("metadata-key" -> "value")))
-        )
+        msg <- puller
+          .pullBatch(1, 1.second)
+          .map(_.head.getOrElse(fail("expected a message, got nothing.")))
+        _ = assertEquals(msg.rawPayload, "delayed message")
+        _ = assert(metadataContains(msg.metadata, Map("metadata-key" -> "value")))
       } yield ()
 
     }
@@ -113,8 +122,7 @@ abstract class QueueClientSuite extends CatsEffectSuite {
     } yield ()
   }
 
-  // to only keep metadata entries we are interested in, in not the ones set by the provider
-  private def keepMetadataWithPrefix(metadata: Map[String, String], prefix: String): Map[String, String] =
-    metadata.filter(_._1.startsWith(prefix))
+  private def metadataContains(actual: Map[String, String], expected: Map[String, String]) =
+    expected.forall { case (k, v) => actual.get(k).contains(v) }
 
 }
