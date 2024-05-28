@@ -35,6 +35,6 @@ trait QueuePusher[F[_], T] {
   /**
    * Publishes a bunch of messages to the queue, with an optional delay.
    */
-  def push(messages: (List[(T, Map[String, String])]), delay: Option[FiniteDuration]): F[Unit]
+  def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit]
 
 }
