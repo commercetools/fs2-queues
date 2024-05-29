@@ -93,6 +93,7 @@ lazy val otel4s = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "org.typelevel" %%% "otel4s-core" % "0.7.0"
     ),
+    // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePusher.push")
     )
@@ -120,6 +121,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.17.0"
     ),
+    // TODO: Remove once 0.2 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem](
         "com.commercetools.queue.azure.servicebus.ServiceBusPusher.push")

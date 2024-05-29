@@ -53,7 +53,7 @@ abstract class QueueClientSuite extends CatsEffectSuite {
           client
             .subscribe(queueName)
             .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg =>
-              received.update((msg.rawPayload, msg.metadata) :: _))
+              received.update(_ :+ (msg.rawPayload, msg.metadata)))
             .take(size)
         )
         .compile
@@ -62,7 +62,7 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         if (receivedMessages.size != messages.size)
           fail(s"expected to receive ${messages.size} messages, got ${receivedMessages.size}")
 
-        messages.sortBy(_._1).toSet.zip(receivedMessages.sortBy(_._1).toSet).forall {
+        messages.zip(receivedMessages).forall {
           case ((expectedPayload, expectedMetadata), (actualPayload, actualMetadata)) =>
             if (expectedPayload != actualPayload)
               fail(s"expected payload '$expectedPayload', got '$actualPayload'")
