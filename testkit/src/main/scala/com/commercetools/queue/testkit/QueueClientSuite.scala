@@ -41,8 +41,10 @@ abstract class QueueClientSuite extends CatsEffectSuite {
     for {
       random <- Random.scalaUtilRandom[IO]
       size <- random.nextLongBounded(30L)
-      messages = List.range(0L, size).map(_.toString())
-      received <- Ref[IO].of(List.empty[String])
+      messages = List
+        .range(0L, size)
+        .map(i => (i.toString, Map(s"metadata-$i-key" -> s"$i-value", s"metadata-$i-another-key" -> "another-value")))
+      received <- Ref[IO].of(List.empty[(String, Map[String, String])])
       client = clientFixture()
       _ <- Stream
         .emits(messages)
@@ -50,12 +52,25 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         .merge(
           client
             .subscribe(queueName)
-            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg => received.update(msg.rawPayload :: _))
+            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg =>
+              received.update(_ :+ (msg.rawPayload, msg.metadata)))
             .take(size)
         )
         .compile
         .drain
-      _ <- assertIO(received.get.map(_.toSet), messages.toSet)
+      _ <- assertIO_(received.get.map { receivedMessages =>
+        if (receivedMessages.size != messages.size)
+          fail(s"expected to receive ${messages.size} messages, got ${receivedMessages.size}")
+
+        messages.zip(receivedMessages).forall {
+          case ((expectedPayload, expectedMetadata), (actualPayload, actualMetadata)) =>
+            if (expectedPayload != actualPayload)
+              fail(s"expected payload '$expectedPayload', got '$actualPayload'")
+            else if (!metadataContains(actualMetadata, expectedMetadata))
+              fail(s"expected metadata to contain '$expectedMetadata', got '$actualMetadata'")
+            else true
+        }
+      }.void)
     } yield ()
   }
 
@@ -79,12 +94,16 @@ abstract class QueueClientSuite extends CatsEffectSuite {
   withQueue.test("delayed messages should not be pulled before deadline") { queueName =>
     val client = clientFixture()
     client.publish(queueName).pusher.use { pusher =>
-      pusher.push("delayed message", Some(2.seconds))
+      pusher.push("delayed message", Map("metadata-key" -> "value"), Some(2.seconds))
     } *> client.subscribe(queueName).puller.use { puller =>
       for {
         _ <- assertIO(puller.pullBatch(1, 1.second), Chunk.empty)
         _ <- IO.sleep(2.seconds)
-        _ <- assertIO(puller.pullBatch(1, 1.second).map(_.map(_.rawPayload)), Chunk("delayed message"))
+        msg <- puller
+          .pullBatch(1, 1.second)
+          .map(_.head.getOrElse(fail("expected a message, got nothing.")))
+        _ = assertEquals(msg.rawPayload, "delayed message")
+        _ = assert(metadataContains(msg.metadata, Map("metadata-key" -> "value")))
       } yield ()
 
     }
@@ -102,5 +121,8 @@ abstract class QueueClientSuite extends CatsEffectSuite {
         QueueConfiguration(originalMessageTTL + 1.minute, originalLockTTL + 10.seconds))
     } yield ()
   }
+
+  private def metadataContains(actual: Map[String, String], expected: Map[String, String]) =
+    expected.forall { case (k, v) => actual.get(k).contains(v) }
 
 }

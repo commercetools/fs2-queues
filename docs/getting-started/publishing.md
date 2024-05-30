@@ -26,10 +26,10 @@ The pipe takes a parameter allowing for batching publications.
 ```scala mdoc:compile-only
 import fs2.{Pipe, Stream}
 
-val input: Stream[IO, String] = ???
+val input: Stream[IO, (String, Map[String, String])] = ???
 
 // messages are published in batch of 10
-val publicationSink: Pipe[IO, String, Nothing] = publisher.sink(batchSize = 10)
+val publicationSink: Pipe[IO, (String, Map[String, String]), Nothing] = publisher.sink(batchSize = 10)
 
 // pipe the message producing stream through the publication sink
 input.through(publicationSink)
@@ -48,7 +48,7 @@ A `QueuePusher` is accessed as a [`Resource`][cats-effect-resource] as it usuall
 
 ```scala mdoc:compile-only
 publisher.pusher.use { queuePusher =>
-  val produceMessages: IO[List[String]] = ???
+  val produceMessages: IO[List[(String, Map[String, String])]] = ???
 
   // produce a batch
   produceMessages
@@ -69,7 +69,7 @@ If you need to spawn background fibers using the `queuePusher`, you can for inst
 import cats.effect.std.Supervisor
 
 publisher.pusher.use { queuePusher =>
-  val produceMessages: IO[List[String]] = ???
+  val produceMessages: IO[List[(String, Map[String, String])]] = ???
 
   // create a supervisor that waits for supervised spawn fibers
   // to finish before being released

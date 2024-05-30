@@ -25,10 +25,10 @@ class TestQueuePusher[T](queue: TestQueue[T]) extends QueuePusher[IO, T] {
 
   override val queueName: String = queue.name
 
-  override def push(message: T, delay: Option[FiniteDuration]): IO[Unit] =
-    queue.enqeueMessages(message :: Nil, delay)
+  override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): IO[Unit] =
+    queue.enqeueMessages((message, metadata) :: Nil, delay)
 
-  override def push(messages: List[T], delay: Option[FiniteDuration]): IO[Unit] =
+  override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): IO[Unit] =
     queue.enqeueMessages(messages, delay)
 
 }

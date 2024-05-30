@@ -33,8 +33,9 @@ class ServiceBusPusher[F[_], Data](
   F: Async[F])
   extends QueuePusher[F, Data] {
 
-  override def push(message: Data, delay: Option[FiniteDuration]): F[Unit] = {
+  override def push(message: Data, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] = {
     val sbMessage = new ServiceBusMessage(serializer.serialize(message))
+    sbMessage.getApplicationProperties.putAll(metadata.asJava)
     delay.traverse_ { delay =>
       F.realTimeInstant
         .map(now => sbMessage.setScheduledEnqueueTime(now.plusMillis(delay.toMillis).atOffset(ZoneOffset.UTC)))
@@ -44,8 +45,12 @@ class ServiceBusPusher[F[_], Data](
         .adaptError(makePushQueueException(_, queueName))
   }
 
-  override def push(messages: List[Data], delay: Option[FiniteDuration]): F[Unit] = {
-    val sbMessages = messages.map(msg => new ServiceBusMessage(serializer.serialize(msg)))
+  override def push(messages: List[(Data, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] = {
+    val sbMessages = messages.map { case (payload, metadata) =>
+      val sbm = new ServiceBusMessage(serializer.serialize(payload))
+      sbm.getApplicationProperties.putAll(metadata.asJava)
+      sbm
+    }
     delay.traverse_ { delay =>
       F.realTimeInstant.map { now =>
         sbMessages.foreach { msg =>

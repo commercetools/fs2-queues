@@ -51,7 +51,8 @@ class SQSPuller[F[_], T](
             .queueUrl(queueUrl)
             .maxNumberOfMessages(batchSize)
             .waitTimeSeconds(waitingTime.toSeconds.toInt)
-            .attributeNamesWithStrings(MessageSystemAttributeName.SENT_TIMESTAMP.toString())
+            .messageAttributeNames(".*")
+            .attributeNamesWithStrings(MessageSystemAttributeName.SENT_TIMESTAMP.toString)
             .build(): @nowarn("msg=method attributeNamesWithStrings in trait Builder is deprecated")
         )
       }
@@ -72,7 +73,12 @@ class SQSPuller[F[_], T](
                     .attributes()
                     .get(MessageSystemAttributeName.SENT_TIMESTAMP)
                     .toLong),
-                metadata = message.attributesAsStrings().asScala.toMap,
+                metadata = message
+                  .messageAttributes()
+                  .asScala
+                  .view
+                  .collect { case (k, v) if v.dataType() == "String" => (k, v.stringValue()) }
+                  .toMap,
                 receiptHandle = message.receiptHandle(),
                 messageId = message.messageId(),
                 lockTTL = lockTTL,
