@@ -137,10 +137,10 @@
         The pipe takes a parameter allowing for batching publications.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.{</span><span class="type-name">Pipe</span><span>, </span><span class="type-name">Stream</span><span>}
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">input</span><span>: </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">String</span><span>] = ???
+</span><span class="keyword">val</span><span> </span><span class="identifier">input</span><span>: </span><span class="type-name">Stream</span><span>[</span><span class="type-name">IO</span><span>, (</span><span class="type-name">String</span><span>, </span><span class="type-name">Map</span><span>[</span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>])] = ???
 
 </span><span class="comment">// messages are published in batch of 10
-</span><span class="keyword">val</span><span> </span><span class="identifier">publicationSink</span><span>: </span><span class="type-name">Pipe</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">String</span><span>, </span><span class="type-name">Nothing</span><span>] = </span><span class="identifier">publisher</span><span>.</span><span class="identifier">sink</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>)
+</span><span class="keyword">val</span><span> </span><span class="identifier">publicationSink</span><span>: </span><span class="type-name">Pipe</span><span>[</span><span class="type-name">IO</span><span>, (</span><span class="type-name">String</span><span>, </span><span class="type-name">Map</span><span>[</span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>]), </span><span class="type-name">Nothing</span><span>] = </span><span class="identifier">publisher</span><span>.</span><span class="identifier">sink</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>)
 
 </span><span class="comment">// pipe the message producing stream through the publication sink
 </span><span class="identifier">input</span><span>.</span><span class="identifier">through</span><span>(</span><span class="identifier">publicationSink</span><span>)</span></code></pre>
@@ -154,7 +154,7 @@
         This abstraction comes in handy when the messages you produce do not come from a <code>Stream</code>, otherwise you should prefer the <code>sink()</code> pipe presented above.</p>
         <p>A <code>QueuePusher</code> is accessed as a <a href="https://typelevel.org/cats-effect/docs/std/resource"><code>Resource</code></a> as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">publisher</span><span>.</span><span class="identifier">pusher</span><span>.</span><span class="identifier">use</span><span> { </span><span class="identifier">queuePusher</span><span> =&gt;
-  </span><span class="keyword">val</span><span> </span><span class="identifier">produceMessages</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">List</span><span>[</span><span class="type-name">String</span><span>]] = ???
+  </span><span class="keyword">val</span><span> </span><span class="identifier">produceMessages</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">List</span><span>[(</span><span class="type-name">String</span><span>, </span><span class="type-name">Map</span><span>[</span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>])]] = ???
 
   </span><span class="comment">// produce a batch
 </span><span>  </span><span class="identifier">produceMessages</span><span>
@@ -172,7 +172,7 @@
           <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">std</span><span>.</span><span class="type-name">Supervisor</span><span>
 
 </span><span class="identifier">publisher</span><span>.</span><span class="identifier">pusher</span><span>.</span><span class="identifier">use</span><span> { </span><span class="identifier">queuePusher</span><span> =&gt;
-  </span><span class="keyword">val</span><span> </span><span class="identifier">produceMessages</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">List</span><span>[</span><span class="type-name">String</span><span>]] = ???
+  </span><span class="keyword">val</span><span> </span><span class="identifier">produceMessages</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">List</span><span>[(</span><span class="type-name">String</span><span>, </span><span class="type-name">Map</span><span>[</span><span class="type-name">String</span><span>, </span><span class="type-name">String</span><span>])]] = ???
 
   </span><span class="comment">// create a supervisor that waits for supervised spawn fibers
 </span><span>  </span><span class="comment">// to finish before being released
