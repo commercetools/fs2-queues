@@ -37,7 +37,7 @@ class ServiceBusMessageContext[F[_], T](
 
   override def metadata: Map[String, String] =
     underlying.getRawAmqpMessage.getApplicationProperties.asScala.view.collect {
-      case (k, v) if v.isInstanceOf[String] => (k, v.asInstanceOf[String])
+      case (k, v: String) => (k, v)
     }.toMap
 
   override def ack(): F[Unit] =
