@@ -35,9 +35,9 @@ class ServiceBusMessageContext[F[_], T](
 
   override def enqueuedAt: Instant = underlying.getEnqueuedTime().toInstant()
 
-  override def metadata: Map[String, String] =
-    underlying.getRawAmqpMessage.getApplicationProperties.asScala.view.collect {
-      case (k, v: String) => (k, v)
+  override lazy val metadata: Map[String, String] =
+    underlying.getRawAmqpMessage.getApplicationProperties.asScala.view.collect { case (k, v: String) =>
+      (k, v)
     }.toMap
 
   override def ack(): F[Unit] =
