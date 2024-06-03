@@ -26,10 +26,6 @@ trait MessageHandler[F[_], T, Res, D[_] <: Decision[_]] {
   def handle(msg: Message[F, T]): F[D[Res]]
 }
 
-trait ImmediateDecisionMessageHandler[F[_], T, Res] extends MessageHandler[F, T, Res, ImmediateDecision] {
-  def handle(msg: Message[F, T]): F[ImmediateDecision[Res]]
-}
-
 sealed trait Decision[+O]
 sealed trait ImmediateDecision[+O] extends Decision[O]
 object Decision {
@@ -41,7 +37,7 @@ object Decision {
 
 object MessageHandler {
   // nack on any failure except for deserialization exception
-  def default[F[_]: MonadThrow, T, O](f: Message[F, T] => F[O]): ImmediateDecisionMessageHandler[F, T, O] =
+  def default[F[_]: MonadThrow, T, O](f: Message[F, T] => F[O]): MessageHandler[F, T, O, ImmediateDecision] =
     msg =>
       f(msg).attempt.map {
         case Left(de: DeserializationException) => Decision.Fail(de, ack = true)
