@@ -16,6 +16,8 @@
 
 package com.commercetools.queue
 
+import cats.Applicative
+
 import scala.concurrent.duration.FiniteDuration
 
 /**
@@ -37,4 +39,16 @@ trait QueuePusher[F[_], T] {
    */
   def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit]
 
+}
+
+object QueuePusher {
+
+  /**
+   * A pusher that does nothing.
+   */
+  def noOp[F[_], T](implicit F: Applicative[F]) = new QueuePusher[F, T] {
+    override def queueName: String = ""
+    override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] = F.unit
+    override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] = F.unit
+  }
 }

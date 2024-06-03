@@ -170,16 +170,8 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
   final def processWithImmediateDecision[Res](
     batchSize: Int,
     waitingTime: FiniteDuration
-  )(handler: ImmediateDecisionMessageHandler[F, T, Res]
+  )(handler: MessageHandler[F, T, Res, ImmediateDecision]
   ): Stream[F, Either[Throwable, Res]] =
-    messages(batchSize, waitingTime)
-      .parEvalMap(batchSize) { ctx =>
-        handler.handle(ctx).flatMap[Option[Either[Throwable, Res]]] {
-          case Decision.Ok(res) => ctx.ack().as(res.asRight.some)
-          case Decision.Drop => ctx.ack().as(none)
-          case Decision.Fail(t, true) => ctx.ack().as(t.asLeft.some)
-          case Decision.Fail(t, false) => ctx.nack().as(t.asLeft.some)
-        }
-      }
-      .flattenOption
+    process[Res](batchSize, waitingTime, QueuePublisher.noOp)((msg: Message[F, T]) =>
+      handler.handle(msg).widen[Decision[Res]])
 }
