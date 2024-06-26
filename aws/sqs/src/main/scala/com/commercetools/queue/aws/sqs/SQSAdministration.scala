@@ -17,13 +17,7 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
-import cats.syntax.applicativeError._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
-import cats.syntax.functorFilter._
-import cats.syntax.monadError._
-import cats.syntax.option._
-import cats.syntax.traverse._
+import cats.syntax.all._
 import com.commercetools.queue.aws.sqs.makeQueueException
 import com.commercetools.queue.{DeadletterQueueConfiguration, MalformedQueueConfigurationException, QueueAdministration, QueueConfiguration, QueueCreationConfiguration, QueueDoesNotExistException}
 import software.amazon.awssdk.protocols.jsoncore.JsonNodeParser
@@ -169,21 +163,30 @@ class SQSAdministration[F[_]](
       }
       .adaptError(makeQueueException(_, name))
 
-  override def delete(name: String): F[Unit] =
-    getQueueUrl(name)
-      .flatMap { queueUrl =>
-        F.fromCompletableFuture {
-          F.delay {
-            client.deleteQueue(
-              DeleteQueueRequest
-                .builder()
-                .queueUrl(queueUrl)
-                .build())
+  override def delete(name: String): F[Unit] = {
+    def doDelete(name: String): F[Unit] =
+      getQueueUrl(name)
+        .flatMap { queueUrl =>
+          F.fromCompletableFuture {
+            F.delay {
+              client.deleteQueue(
+                DeleteQueueRequest
+                  .builder()
+                  .queueUrl(queueUrl)
+                  .build())
+            }
           }
         }
-      }
-      .void
-      .adaptError(makeQueueException(_, name))
+        .void
+        .adaptError(makeQueueException(_, name))
+
+    configuration(name).flatMap { queueConfiguration =>
+      doDelete(name) *>
+        queueConfiguration.deadletter.traverse_ { case DeadletterQueueConfiguration(dlname, _) =>
+          doDelete(dlname)
+        }
+    }
+  }
 
   override def exists(name: String): F[Boolean] =
     getQueueUrl(name)
