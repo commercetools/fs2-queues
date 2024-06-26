@@ -29,11 +29,12 @@ class PubSubClient[F[_]: Async] private (
   useGrpc: Boolean,
   credentials: CredentialsProvider,
   endpoint: Option[String],
+  makeSubName: String => String,
   makeDLQName: String => String)
   extends QueueClient[F] {
 
   override def administration: QueueAdministration[F] =
-    new PubSubAdministration[F](project, channelProvider, credentials, endpoint, makeDLQName)
+    new PubSubAdministration[F](project, channelProvider, credentials, endpoint, makeSubName, makeDLQName)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
     new PubSubPublisher[F, T](name, TopicName.of(project, name), channelProvider, credentials, endpoint)
@@ -42,7 +43,7 @@ class PubSubClient[F[_]: Async] private (
     new PubSubSubscriber[F, T](
       name,
       useGrpc,
-      SubscriptionName.of(project, s"fs2-queue-$name"),
+      SubscriptionName.of(project, makeSubName(name)),
       channelProvider,
       credentials,
       endpoint)
@@ -58,11 +59,16 @@ object PubSubClient {
   private def makeDefaultDLQName(name: String): String =
     s"$name-dlq"
 
+  private def makeDefaultSubName(name: String): String =
+    s"fs2-queues-$name"
+
   /**
    * Creates a [[PubSubClient]].
    *
    * @param project the project to use
    * @param credentials the credentials to use
+   * @param makeSubName how the associated subscription name is derived from the queue name
+   *                    by default it prefixes the queue name with `fs2-queues-`
    * @param makeDLQName how the dead letter queue name is derived from the queue name
    *                    by default it suffixes the queue name with `-dlq`
    * @param endpoint the service endpoint to use
@@ -72,6 +78,7 @@ object PubSubClient {
   def apply[F[_]](
     project: String,
     credentials: CredentialsProvider,
+    makeSubName: String => String = makeDefaultSubName,
     makeDLQName: String => String = makeDefaultDLQName,
     endpoint: Option[String] = None,
     mkTransportChannel: Option[String] => HttpJsonTransportChannel = makeDefaultTransportChannel
@@ -86,6 +93,7 @@ object PubSubClient {
           false,
           credentials,
           endpoint,
+          makeSubName,
           makeDLQName)
       }
 
@@ -94,6 +102,8 @@ object PubSubClient {
    *
    * @param project the project to use
    * @param credentials the credentials to use
+   * @param makeSubName how the associated subscription name is derived from the queue name
+   *                    by default it prefixes the queue name with `fs2-queues-`
    * @param makeDLQName how the dead letter queue name is derived from the queue name
    *                    by default it suffixes the queue name with `-dlq`
    * @param channelProvider the channel provider to use, needs to be managed by caller
@@ -105,10 +115,11 @@ object PubSubClient {
     credentials: CredentialsProvider,
     channelProvider: TransportChannelProvider,
     useGrpc: Boolean,
+    makeSubName: String => String = makeDefaultSubName,
     makeDLQName: String => String = makeDefaultDLQName,
     endpoint: Option[String] = None
   )(implicit F: Async[F]
   ): PubSubClient[F] =
-    new PubSubClient[F](project, channelProvider, useGrpc, credentials, endpoint, makeDLQName)
+    new PubSubClient[F](project, channelProvider, useGrpc, credentials, endpoint, makeSubName, makeDLQName)
 
 }
