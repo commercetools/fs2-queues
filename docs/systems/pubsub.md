@@ -3,7 +3,7 @@
 You can create a client to service bus queues by using the [GCP PubSub][pubsub] module.
 
 ```scala
-libraryDependencies += "com.commercetools" %% "fs2-queues-gcp-pubsub" % "@SNAPSHOT_VERSION@"
+libraryDependencies += "com.commercetools" %% "fs2-queues-gcp-pubsub" % "@VERSION@"
 ```
 
 For instance you can create a managed client via a region and credentials as follows.
