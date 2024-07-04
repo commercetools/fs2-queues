@@ -13,6 +13,8 @@ There are several views possible on a queue:
 
  - as a `QueuePublisher` when you only need to [publish messages](publishing.md) to an existing queue.
  - as a `QueueSubscriber` when you only need to [subscribe](subscribing.md) to an existing queue.
+ - as a `QueueStatistics` when you only need to [gather queue statistics](stats.md) from an existing queue.
+ - as a `QueueSubscriber` when you only need to [subscribe](subscribing.md) to an existing queue.
  - as a `QueueAdministration` when you need to [manage](administration.md) queues (creation, deletion, ...).
 
 The entry point is the `QueueClient` factory for each underlying queue system.
