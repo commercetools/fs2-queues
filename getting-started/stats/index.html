@@ -6,7 +6,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="generator" content="Typelevel Laika + Helium Theme" />
-  <title>Managing Queues</title>
+  <title>Queue Statistics</title>
   
   <meta name="author" content="fs2-queues contributors"/>
   
@@ -86,8 +86,8 @@
     <li class="level2 nav-leaf"><a href="../queues/">Common Queue Interface</a></li>
     <li class="level2 nav-leaf"><a href="../publishing/">Publishing Data</a></li>
     <li class="level2 nav-leaf"><a href="../subscribing/">Receiving Data</a></li>
-    <li class="level2 nav-leaf"><a href="../stats/">Queue Statistics</a></li>
-    <li class="level2 active nav-leaf"><a href="#">Managing Queues</a></li>
+    <li class="level2 active nav-leaf"><a href="#">Queue Statistics</a></li>
+    <li class="level2 nav-leaf"><a href="../administration/">Managing Queues</a></li>
     <li class="level2 nav-leaf"><a href="../serialization/">Data Serialization</a></li>
     <li class="level1 nav-header">Qeueue Systems</li>
     <li class="level2 nav-leaf"><a href="../../systems/">Providers</a></li>
@@ -105,13 +105,11 @@
 
       
 <nav id="page-nav">
-  <p class="header"><a href="#">Managing Queues</a></p>
+  <p class="header"><a href="#">Queue Statistics</a></p>
 
   <ul class="nav-list">
-    <li class="level1 nav-leaf"><a href="#create-a-queue">Create a queue</a></li>
-    <li class="level1 nav-leaf"><a href="#check-if-queue-exists">Check if queue exists</a></li>
-    <li class="level1 nav-leaf"><a href="#update-queue-properties">Update queue properties</a></li>
-    <li class="level1 nav-leaf"><a href="#delete-a-queue">Delete a queue</a></li>
+    <li class="level1 nav-leaf"><a href="#building-a-stream-of-statistics">Building a stream of statistics</a></li>
+    <li class="level1 nav-leaf"><a href="#explicit-fetch">Explicit fetch</a></li>
   </ul>
 
   <p class="footer"></p>
@@ -121,46 +119,48 @@
 
       <main class="content">
 
-        <h1 id="managing-queues" class="title">Managing Queues</h1>
-        <p>Managing queues is made using the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/QueueAdministration.html">QueueAdministration</a>. You can acquire an instance through a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/QueueClient.html">QueueClient</a> by using the <code>administration()</code> method. A <code>QueueAdministration</code> instance is <strong>not</strong> associated to any specific queue. The queue to operate on will be provided in each administration method.</p>
+        <h1 id="queue-statistics" class="title">Queue Statistics</h1>
+        <p>The library exposes a simple interface to access basic queue statistics through a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/QueueStatistics.html">QueueStatistics</a>.</p>
+        <div class="callout warning">
+          <i class="icofont-laika warning">&#xf026;</i>
+          <p>The numbers reported by the statistics are approximate numbers. Depending on the underlying system, there might be some delay in data availability.</p>
+          <p>When in doubt, refer to the queue provider documentation.</p>
+        </div>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
 
-</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.{</span><span class="type-name">QueueAdministration</span><span>, </span><span class="type-name">QueueClient</span><span>}
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.{</span><span class="type-name">QueueClient</span><span>, </span><span class="type-name">QueueStatistics</span><span>}
 
 </span><span class="keyword">def</span><span> </span><span class="declaration-name">client</span><span>: </span><span class="type-name">QueueClient</span><span>[</span><span class="type-name">IO</span><span>] = ???
 
-</span><span class="keyword">def</span><span> </span><span class="declaration-name">admin</span><span>: </span><span class="type-name">QueueAdministration</span><span>[</span><span class="type-name">IO</span><span>] =
-  </span><span class="identifier">client</span><span>.</span><span class="identifier">administration</span></code></pre>
+</span><span class="comment">// returns a statistics accessor for the queue named `my-queue`
+</span><span class="keyword">def</span><span> </span><span class="declaration-name">stats</span><span>: </span><span class="type-name">QueueStatistics</span><span>[</span><span class="type-name">IO</span><span>] =
+  </span><span class="identifier">client</span><span>.</span><span class="identifier">statistics</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>)</span></code></pre>
         
-        <h2 id="create-a-queue" class="section"><a class="anchor-link left" href="#create-a-queue"><i class="icofont-laika link">&#xef71;</i></a>Create a queue</h2>
-        <p>A queue can be created by using the <code>create()</code> method.
-        You need to provide the message TTL and lock TTL together with the new queue name.
-        The different TTLs are defined at queue level and will affect messages published and subscribers.</p>
+        <h2 id="building-a-stream-of-statistics" class="section"><a class="anchor-link left" href="#building-a-stream-of-statistics"><i class="icofont-laika link">&#xef71;</i></a>Building a stream of statistics</h2>
+        <p>This interface expoes a way to build a stream of statistics, polling them at some configured interval. For instance, this code will print the statistics polled every 20 seconds.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">scala</span><span>.</span><span class="identifier">concurrent</span><span>.</span><span class="identifier">duration</span><span>.</span><span class="identifier">_</span><span>
 
-</span><span class="identifier">admin</span><span>.</span><span class="identifier">create</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>, </span><span class="identifier">messageTTL</span><span> = </span><span class="number-literal">14</span><span>.</span><span class="identifier">days</span><span>, </span><span class="identifier">lockTTL</span><span> = </span><span class="number-literal">2</span><span>.</span><span class="identifier">minutes</span><span>)</span></code></pre>
-        <div class="callout info">
-          <i class="icofont-laika info">&#xef4e;</i>
-          <p>The <code>lockTTL</code> parameter has an influence on the behavior of the <a href="../subscribing/">subscriber</a> methods and streams. If you change it at runtime, you should restart the subscribing streams to ensure they are taken into account.</p>
-        </div>
+</span><span class="identifier">stats</span><span>
+  .</span><span class="identifier">stream</span><span>(</span><span class="identifier">interval</span><span> = </span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>)
+  .</span><span class="identifier">evalMap</span><span> { 
+    </span><span class="keyword">case</span><span> </span><span class="type-name">Right</span><span>(</span><span class="identifier">stats</span><span>) =&gt; </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="identifier">stats</span><span>)
+    </span><span class="keyword">case</span><span> </span><span class="type-name">Left</span><span>(</span><span class="identifier">t</span><span>) =&gt; </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Statistics failed to be retrieved: </span><span class="substitution">${t.getMessage()}</span><span class="string-literal">&quot;</span><span>)
+  }
+  .</span><span class="identifier">drain</span></code></pre>
+        <p>If you want the stream to fail upon the first fetching error, you can use the <code>strictStream</code> variant.</p>
         
-        <h2 id="check-if-queue-exists" class="section"><a class="anchor-link left" href="#check-if-queue-exists"><i class="icofont-laika link">&#xef71;</i></a>Check if queue exists</h2>
-        <p>You can check the existence of a queue in the queue system by calling the <code>exists()</code> method.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">admin</span><span>.</span><span class="identifier">exists</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>)</span></code></pre>
-        
-        <h2 id="update-queue-properties" class="section"><a class="anchor-link left" href="#update-queue-properties"><i class="icofont-laika link">&#xef71;</i></a>Update queue properties</h2>
-        <p>The queue TTLs can be updated for an existing queue by using the <code>update()</code> method. The method accepts both TTLs as <code>Option[FiniteDuration]</code> with a default value of <code>None</code>. Only the defined TTLs will be updated. Values that are not provided are left unchanged.</p>
+        <h2 id="explicit-fetch" class="section"><a class="anchor-link left" href="#explicit-fetch"><i class="icofont-laika link">&#xef71;</i></a>Explicit fetch</h2>
+        <p>If you are integrating this library with an existing code base that performs explicit fetches for queue statistics, you can access the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.1.0/com/commercetools/queue/com/commercetools/queue/QueueStatsFetcher.html">QueueStatsFetcher</a> lower level API, which exposes a way to fetch statistics explicitly.</p>
+        <p>A <code>QueueStatsFetcher</code> is accessed as a <a href="https://typelevel.org/cats-effect/docs/std/resource"><code>Resource</code></a> as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.</p>
+        <p>The explicitly fetch and report statistics every 20 seconds, one can use this approach (errors are not properly handled, and the stream approach above should be preferred):</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">scala</span><span>.</span><span class="identifier">concurrent</span><span>.</span><span class="identifier">duration</span><span>.</span><span class="identifier">_</span><span>
 
-</span><span class="comment">// only updates the lock TTL
-</span><span class="identifier">admin</span><span>.</span><span class="identifier">update</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>, </span><span class="identifier">lockTTL</span><span> = </span><span class="type-name">Some</span><span>(</span><span class="number-literal">5</span><span>.</span><span class="identifier">minutes</span><span>))
-
-</span><span class="comment">// updates both the message and lock TTLs
-</span><span class="identifier">admin</span><span>.</span><span class="identifier">update</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>, </span><span class="identifier">messageTTL</span><span> = </span><span class="type-name">Some</span><span>(</span><span class="number-literal">1</span><span>.</span><span class="identifier">day</span><span>), </span><span class="identifier">lockTTL</span><span> = </span><span class="type-name">Some</span><span>(</span><span class="number-literal">5</span><span>.</span><span class="identifier">minutes</span><span>))</span></code></pre>
-        
-        <h2 id="delete-a-queue" class="section"><a class="anchor-link left" href="#delete-a-queue"><i class="icofont-laika link">&#xef71;</i></a>Delete a queue</h2>
-        <p>You can delete an existing queue by calling the <code>delete()</code> method.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">admin</span><span>.</span><span class="identifier">delete</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>)</span></code></pre>
+</span><span class="identifier">stats</span><span>.</span><span class="identifier">fetcher</span><span>.</span><span class="identifier">use</span><span> { </span><span class="identifier">statsFetcher</span><span> =&gt;
+  (</span><span class="identifier">statsFetcher</span><span>
+    .</span><span class="identifier">fetch</span><span>
+    .</span><span class="identifier">flatMap</span><span>(</span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="identifier">_</span><span>)) *&gt;
+   </span><span class="type-name">IO</span><span>.</span><span class="identifier">sleep</span><span>(</span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>)).</span><span class="identifier">foreverM</span><span>
+}</span></code></pre>
 
         
 <hr class="footer-rule"/>
