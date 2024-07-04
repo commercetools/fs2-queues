@@ -5,7 +5,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.1"
+ThisBuild / tlBaseVersion := "0.2"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
