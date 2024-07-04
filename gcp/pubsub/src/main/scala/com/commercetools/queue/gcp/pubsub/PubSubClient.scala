@@ -17,7 +17,7 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.httpjson.{HttpJsonTransportChannel, ManagedHttpJsonChannel}
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
@@ -32,10 +32,13 @@ class PubSubClient[F[_]: Async] private (
   extends QueueClient[F] {
 
   override def administration: QueueAdministration[F] =
-    new PubSubAdministration[F](project, channelProvider, credentials, endpoint)
+    new PubSubAdministration[F](useGrpc, project, channelProvider, credentials, endpoint)
+
+  override def statistics(name: String): QueueStatistics[F] =
+    new PubSubStatistics(name, SubscriptionName.of(project, s"fs2-queue-$name"), channelProvider, credentials, endpoint)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new PubSubPublisher[F, T](name, TopicName.of(project, name), channelProvider, credentials, endpoint)
+    new PubSubPublisher[F, T](name, useGrpc, TopicName.of(project, name), channelProvider, credentials, endpoint)
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new PubSubSubscriber[F, T](

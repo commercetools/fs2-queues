@@ -30,6 +30,8 @@ private class QueueMetrics[F[_]](queueName: String, requestCounter: Counter[F, L
   final val nack: Outcome[F, Throwable, _] => F[Unit] = QueueMetrics.increment(queue, QueueMetrics.nack, requestCounter)
   final val extendLock: Outcome[F, Throwable, _] => F[Unit] =
     QueueMetrics.increment(queue, QueueMetrics.extendLock, requestCounter)
+  final val stats: Outcome[F, Throwable, _] => F[Unit] =
+    QueueMetrics.increment(queue, QueueMetrics.stats, requestCounter)
 
 }
 
@@ -41,6 +43,7 @@ private object QueueMetrics {
   final val ack = Attribute("method", "ack")
   final val nack = Attribute("method", "nack")
   final val extendLock = Attribute("method", "extendLock")
+  final val stats = Attribute("method", "stats")
 
   // queue management attributes
   final val create = Attribute("method", "create")

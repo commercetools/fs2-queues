@@ -1,0 +1,36 @@
+/*
+ * Copyright 2024 Commercetools GmbH
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.commercetools.queue.azure.servicebus
+
+import cats.effect.{Async, Resource}
+import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder
+import com.commercetools.queue.{QueueStatistics, QueueStatsFetcher}
+
+class ServiceBusStatistics[F[_]](
+  val queueName: String,
+  builder: ServiceBusAdministrationClientBuilder
+)(implicit F: Async[F])
+  extends QueueStatistics[F] {
+
+  override def fetcher: Resource[F, QueueStatsFetcher[F]] =
+    Resource.eval {
+      F.delay {
+        new ServiceBusStatsFetcher(queueName, builder.buildClient())
+      }
+    }
+
+}
