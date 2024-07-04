@@ -46,7 +46,7 @@ object QueuePusher {
   /**
    * A pusher that does nothing.
    */
-  def noOp[F[_], T](implicit F: Applicative[F]) = new QueuePusher[F, T] {
+  def noop[F[_], T](implicit F: Applicative[F]) = new QueuePusher[F, T] {
     override def queueName: String = ""
     override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] = F.unit
     override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] = F.unit

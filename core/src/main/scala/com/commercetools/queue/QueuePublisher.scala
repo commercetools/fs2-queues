@@ -55,8 +55,8 @@ object QueuePublisher {
   /**
    * A publisher that does nothing.
    */
-  def noOp[F[_], T](implicit F: MonadCancel[F, Throwable]) = new QueuePublisher[F, T] {
+  def noop[F[_], T](implicit F: MonadCancel[F, Throwable]) = new QueuePublisher[F, T] {
     override def queueName: String = ""
-    override def pusher: Resource[F, QueuePusher[F, T]] = Resource.pure(QueuePusher.noOp)
+    override def pusher: Resource[F, QueuePusher[F, T]] = Resource.pure(QueuePusher.noop)
   }
 }

@@ -172,6 +172,6 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
     waitingTime: FiniteDuration
   )(handler: MessageHandler[F, T, Res, ImmediateDecision]
   ): Stream[F, Either[Throwable, Res]] =
-    process[Res](batchSize, waitingTime, QueuePublisher.noOp)((msg: Message[F, T]) =>
+    process[Res](batchSize, waitingTime, QueuePublisher.noop)((msg: Message[F, T]) =>
       handler.handle(msg).widen[Decision[Res]])
 }
