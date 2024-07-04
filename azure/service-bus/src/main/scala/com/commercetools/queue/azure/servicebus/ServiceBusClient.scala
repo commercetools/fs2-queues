@@ -21,7 +21,7 @@ import com.azure.core.credential.TokenCredential
 import com.azure.core.util.ClientOptions
 import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
 
 class ServiceBusClient[F[_]] private (
   clientBuilder: ServiceBusClientBuilder,
@@ -31,6 +31,9 @@ class ServiceBusClient[F[_]] private (
 
   override def administration: QueueAdministration[F] =
     new ServiceBusAdministration(adminBuilder.buildClient())
+
+  override def statistics(name: String): QueueStatistics[F] =
+    new ServiceBusStatistics(name, adminBuilder)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
     new ServiceBusQueuePublisher[F, T](name, clientBuilder)

@@ -16,6 +16,7 @@ import com.commercetools.queue.{
   QueueClient,
   QueueAdministration,
   QueuePublisher,
+  QueueStatistics,
   QueueSubscriber,
   Serializer
 }
@@ -23,6 +24,7 @@ import com.commercetools.queue.testkit.QueueClientSuite
 
 class MyQueueClient[F[_]] extends QueueClient[F] {
   def administration: QueueAdministration[F] = ???
+  def statistics(name: String): QueueStatistics[F] = ???
   def publish[T: Serializer](name: String): QueuePublisher[F,T] = ???
   def subscribe[T: Deserializer](name: String): QueueSubscriber[F,T] = ???
 

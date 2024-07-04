@@ -29,6 +29,11 @@ trait QueueClient[F[_]] {
   def administration: QueueAdministration[F]
 
   /**
+   * Gives access to queue statistics API.
+   */
+  def statistics(name: String): QueueStatistics[F]
+
+  /**
    * Gives access to the publication API.
    */
   def publish[T: Serializer](name: String): QueuePublisher[F, T]
