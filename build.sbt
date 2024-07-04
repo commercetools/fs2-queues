@@ -43,15 +43,7 @@ lazy val core = crossProject(JVMPlatform)
   .in(file("core"))
   .settings(commonSettings)
   .settings(
-    name := "fs2-queues-core",
-    // TODO: Remove once 0.2 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.Message.rawPayload"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueAdministration.configuration"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueuePusher.push"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueuePusher.push"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.statistics")
-    )
+    name := "fs2-queues-core"
   )
 
 lazy val testkit = crossProject(JVMPlatform)
@@ -93,10 +85,6 @@ lazy val otel4s = crossProject(JVMPlatform)
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
       "org.typelevel" %%% "otel4s-core" % "0.7.0"
-    ),
-    // TODO: Remove once 0.2 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePusher.push")
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -121,11 +109,6 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.17.0"
-    ),
-    // TODO: Remove once 0.2 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusPusher.push")
     )
   )
   .dependsOn(core, testkit % Test)
@@ -138,11 +121,6 @@ lazy val awsSQS = crossProject(JVMPlatform)
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.25.50"
-    ),
-    // TODO: Remove once 0.2 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSMessageContext.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSPusher.push")
     )
   )
   .dependsOn(core)
