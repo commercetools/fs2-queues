@@ -32,7 +32,8 @@ object Decision {
   case class Ok[O](res: O) extends ImmediateDecision[O]
   case object Drop extends ImmediateDecision[Nothing]
   case class Fail(t: Throwable, ack: Boolean) extends ImmediateDecision[Nothing]
-  case class Reenqueue(metadata: Option[Map[String, String]], delay: Option[FiniteDuration]) extends Decision[Nothing]
+  case class Reenqueue(metadata: Option[Map[String, String]] = None, delay: Option[FiniteDuration] = None)
+    extends Decision[Nothing]
 }
 
 object MessageHandler {
