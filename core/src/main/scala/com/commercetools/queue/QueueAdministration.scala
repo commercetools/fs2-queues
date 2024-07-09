@@ -40,7 +40,9 @@ trait QueueAdministration[F[_]] {
   /** Returns the current configuration settings for the queue. */
   def configuration(name: String): F[QueueConfiguration]
 
-  /** Deletes the queue with the given name. */
+  /** Deletes the queue with the given name.
+    * It also tries to delete the dead letter queue if any is configured and detected.
+    */
   def delete(name: String): F[Unit]
 
   /** Indicates whether the queue with the given name exists. */

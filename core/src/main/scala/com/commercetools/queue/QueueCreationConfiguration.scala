@@ -31,4 +31,4 @@ import scala.concurrent.duration.FiniteDuration
 final case class QueueCreationConfiguration(
   messageTTL: FiniteDuration,
   lockTTL: FiniteDuration,
-  deadletter: Option[DeadletterQueueCreationConfiguration])
+  deadletter: Option[DeadletterQueueCreationConfiguration] = None)

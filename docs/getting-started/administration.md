@@ -6,7 +6,7 @@ Managing queues is made using the @:api(com.commercetools.queue.QueueAdministrat
 ```scala mdoc
 import cats.effect.IO
 
-import com.commercetools.queue.{QueueAdministration, QueueClient}
+import com.commercetools.queue.{QueueAdministration, QueueClient, QueueCreationConfiguration}
 
 def client: QueueClient[IO] = ???
 
@@ -23,11 +23,33 @@ The different TTLs are defined at queue level and will affect messages published
 ```scala mdoc:compile-only
 import scala.concurrent.duration._
 
-admin.create("my-queue", messageTTL = 14.days, lockTTL = 2.minutes)
+admin.create("my-queue", QueueCreationConfiguration(messageTTL = 14.days, lockTTL = 2.minutes))
 ```
 
 @:callout(info)
 The `lockTTL` parameter has an influence on the behavior of the [subscriber][doc-subscribing] methods and streams. If you change it at runtime, you should restart the subscribing streams to ensure they are taken into account.
+@:@
+
+### Dead-letter queues
+
+When creating a new queue, there is a possibility to pass a `deadletter` parameter to the `QueueCreationConfiguration` instance. This will make the library bind the newly created queue with a dead letter queue, and configure the number of delivery attempts after which a message is put in the dead letter queue, as configured.
+
+```scala mdoc:compile-only
+import com.commercetools.queue.DeadletterQueueCreationConfiguration
+
+import scala.concurrent.duration._
+
+admin.create("my-queue",
+             QueueCreationConfiguration(
+               messageTTL = 14.days,
+               lockTTL = 2.minutes,
+               Some(DeadletterQueueCreationConfiguration(maxAttempts = 100))))
+```
+
+@:callout(info)
+Some queue providers might always create a dead letter queue when a queue is created (e.g. on Azure Service Bus). In this case, if no configuration is provided explicitly the default values will be used.
+
+Please refer to the queue provider documentation for more information.
 @:@
 
 ## Check if queue exists
@@ -59,5 +81,9 @@ You can delete an existing queue by calling the `delete()` method.
 ```scala mdoc:compile-only
 admin.delete("my-queue")
 ```
+
+@:callout(info)
+If the library detects that a dead letter queue was configured, it tries to delete it as well.
+@:@
 
 [doc-subscribing]: subscribing.md
