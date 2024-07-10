@@ -152,7 +152,7 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
               case Decision.Fail(t, true) => ctx.ack().as(t.asLeft.some)
               case Decision.Fail(t, false) => ctx.nack().as(t.asLeft.some)
               case Decision.Reenqueue(metadata, delay) =>
-                ctx.payload.flatMap(pusher.push(_, metadata.getOrElse(ctx.metadata), delay)).as(none)
+                ctx.payload.flatMap(pusher.push(_, ctx.metadata ++ metadata.getOrElse(Map.empty), delay)).as(none)
             }
           }
           .flattenOption
