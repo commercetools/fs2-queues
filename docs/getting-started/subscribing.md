@@ -7,15 +7,21 @@ The subscriber also requires a [data deserializer][doc-deserializer] upon creati
 
 ```scala mdoc
 import cats.effect.IO
-
-import com.commercetools.queue.{QueueClient, QueueSubscriber}
+import cats.implicits._
+import scala.concurrent.duration._
+import com.commercetools.queue.{Decision, Message, QueueClient, QueueSubscriber}
+import com.commercetools.queue.Decision._
 
 def client: QueueClient[IO] = ???
+
+def doSomething(message: Message[IO, String]): IO[Unit] = IO.unit
+
+val queueName: String = "my-queue"
 
 // returns a subscriber for the queue named `my-queue`,
 // which can receive messages of type String
 def subscriber: QueueSubscriber[IO, String] =
-  client.subscribe[String]("my-queue")
+  client.subscribe[String](queueName)
 ```
 
 When a message is received by a subscriber, it is _locked_ (or _leased_) for a queue level configured amount of time (see more on the [Managing Queues] page). This means that only one subscriber receives (and can process) a given message in this amount of time. A message needs to be settled once processed (or if processing fails) to ensure it is either removed from the queue or made available again. This is part of the message control flow.
@@ -34,8 +40,6 @@ The deserialized data is memoized so that subsequent accesses to it are not reco
 @:@
 
 ```scala mdoc:compile-only
-import scala.concurrent.duration._
-
 subscriber.processWithAutoAck(batchSize = 10, waitingTime = 20.seconds) { message =>
   message.payload.flatMap { payload =>
     IO.println(s"Received $payload").as(message.messageId)
@@ -50,6 +54,33 @@ The result is a `Stream` of the processing results, emitted in the order the mes
 The `processWithAutoAck` method performs automatic acking/nacking for you depending on the processing outcome. It comes in handy to implement at least once delivery startegies, releasing the message to be reprocessed by another subscriber in case of error.
 
 If you wish to implement a stream that does not fail upon error, you can use the `attemptProcessWithAutoAck()` methods, which emits the results of the processing as an `Either[Throwable, T]`. The resulting stream does not fail if some processing fails. Otherwise it has the same behavior as the stream above.
+
+For more flexibility in terms of what to do with each received messages, you can also check `process()` and `processWithImmediateDecision()`, 
+that will give access to the content and some metadata of the received messages, apply some effects and return a @:api(com.commercetools.queue.Decision), 
+to dictate whether each message should be confirmed (see @:api(com.commercetools.queue.Decision.Ok)), dropped (see @:api(com.commercetools.queue.Decision.Drop), 
+considered as failed (see @:api(com.commercetools.queue.Decision.Fail)), or if the message should be re-enqueued (see @:api(com.commercetools.queue.Decision.Reenqueue)).
+An @:api(com.commercetools.queue.ImmediateDecision) is a kind of decision that won't allow messages to get re-enqueued.
+
+These variants of processors can be as involved as needed, and allow to cover a wide range of use cases, declaratively.
+
+```scala mdoc:compile-only
+subscriber.process[Int](
+  batchSize = 5,
+  waitingTime = 1.second,
+  publisherForReenqueue = client.publish(queueName))(
+  (msg: Message[IO, String]) =>
+    msg.rawPayload.toInt match { // coercing to Int, as an example to show the options
+      // Checking various scenarios, like a message that gets reenqueue'ed once and then ok'ed,
+      // a message dropped, a message failed and ack'ed, a message failed and not ack'ed.
+      // A business logic would do something with the message, effectfully, and dictate what to do with that at the end.
+      case 0 => doSomething(msg).as(Decision.Ok(0))
+      case 1 if msg.metadata.contains("reenqueued") => doSomething(msg).as(Decision.Ok(1))
+      case 1 => doSomething(msg).as(Decision.Reenqueue(Map("reenqueued" -> "true").some, None))
+      case 2 => doSomething(msg).as(Decision.Drop)
+      case 3 => doSomething(msg).as(Decision.Fail(new Throwable("3"), ack = true))
+      case 4 => doSomething(msg).as(Decision.Fail(new Throwable("4"), ack = false))
+    })
+```
 
 ## Raw message stream
 
