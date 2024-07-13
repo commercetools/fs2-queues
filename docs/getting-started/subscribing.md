@@ -7,7 +7,7 @@ The subscriber also requires a [data deserializer][doc-deserializer] upon creati
 
 ```scala mdoc
 import cats.effect.IO
-import cats.implicits._
+import cats.syntax.all._
 import scala.concurrent.duration._
 import com.commercetools.queue.{Decision, Message, QueueClient, QueueSubscriber}
 import com.commercetools.queue.Decision._
