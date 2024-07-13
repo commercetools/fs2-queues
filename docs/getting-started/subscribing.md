@@ -69,17 +69,27 @@ subscriber.process[Int](
   waitingTime = 1.second,
   publisherForReenqueue = client.publish(queueName))(
   (msg: Message[IO, String]) =>
-    msg.rawPayload.toInt match { // coercing to Int, as an example to show the options
-      // Checking various scenarios, like a message that gets reenqueue'ed once and then ok'ed,
-      // a message dropped, a message failed and ack'ed, a message failed and not ack'ed.
-      // A business logic would do something with the message, effectfully, and dictate what to do with that at the end.
-      case 0 => doSomething(msg).as(Decision.Ok(0))
-      case 1 if msg.metadata.contains("reenqueued") => doSomething(msg).as(Decision.Ok(1))
-      case 1 => doSomething(msg).as(Decision.Reenqueue(Map("reenqueued" -> "true").some, None))
-      case 2 => doSomething(msg).as(Decision.Drop)
-      case 3 => doSomething(msg).as(Decision.Fail(new Throwable("3"), ack = true))
-      case 4 => doSomething(msg).as(Decision.Fail(new Throwable("4"), ack = false))
-    })
+    (for {
+      payload <- msg.payload
+      i <- payload.toIntOption.liftTo[IO](new Exception("Payload is not an integer"))
+      res <- i match {
+        // coercing to Int, as an example to show the options
+        // Checking various scenarios, like a message that gets reenqueue'ed once and then ok'ed,
+        // a message dropped, a message failed and ack'ed, a message failed and not ack'ed.
+        // A business logic would do something with the message, effectfully, and dictate what to do with that at the end.
+        case 0 => doSomething(msg).as(Decision.Ok(0))
+        case 1 if msg.metadata.contains("reenqueued") => doSomething(msg).as(Decision.Ok(1))
+        case 1 => doSomething(msg).as(Decision.Reenqueue(Map("reenqueued" -> "true").some, None))
+        case 2 => doSomething(msg).as(Decision.Drop)
+        case 3 => doSomething(msg).as(Decision.Fail(new Throwable("3"), ack = true))
+        case 4 => doSomething(msg).as(Decision.Fail(new Throwable("4"), ack = false))
+      }
+    } yield res)
+    .handleErrorWith { t =>
+      // do some logging for instance
+      IO.pure(Decision.Fail(t, ack = true))
+    }
+  )
 ```
 
 ## Raw message stream
