@@ -109,6 +109,19 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.17.0"
+    ),
+    // TODO: Remove once 0.3 is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusAdministration.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.unmanaged"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.apply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.apply$default$3")
     )
   )
   .dependsOn(core, testkit % Test)
