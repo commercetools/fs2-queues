@@ -2,7 +2,7 @@ package com.commercetools.queue.testkit
 
 import cats.effect.std.Random
 import cats.effect.{IO, Ref, Resource}
-import com.commercetools.queue.{QueueClient, QueueConfiguration}
+import com.commercetools.queue.{QueueClient, QueueConfiguration, QueueCreationConfiguration}
 import fs2.{Chunk, Stream}
 import munit.CatsEffectSuite
 
@@ -34,7 +34,7 @@ abstract class QueueClientSuite extends CatsEffectSuite {
           .map(uuid => s"queue-$uuid")
           .flatTap { queueName =>
             clientFixture().administration
-              .create(queueName, originalMessageTTL, originalLockTTL)
+              .create(queueName, QueueCreationConfiguration(originalMessageTTL, originalLockTTL, None))
           })(queueName => clientFixture().administration.delete(queueName)))
 
   withQueue.test("published messages are received by a processor") { queueName =>
@@ -110,15 +110,15 @@ abstract class QueueClientSuite extends CatsEffectSuite {
   }
 
   withQueue.test("configuration can be updated") { queueName =>
-    assume(queueUpdateSupported, "The test environment does not support queue update")
     val client = clientFixture()
     val admin = client.administration
     for {
-      _ <- assertIO(admin.configuration(queueName), QueueConfiguration(originalMessageTTL, originalLockTTL))
+      _ <- assertIO(admin.configuration(queueName), QueueConfiguration(originalMessageTTL, originalLockTTL, None))
+      _ = assume(queueUpdateSupported, "The test environment does not support queue update")
       _ <- admin.update(queueName, Some(originalMessageTTL + 1.minute), Some(originalLockTTL + 10.seconds))
       _ <- assertIO(
         admin.configuration(queueName),
-        QueueConfiguration(originalMessageTTL + 1.minute, originalLockTTL + 10.seconds))
+        QueueConfiguration(originalMessageTTL + 1.minute, originalLockTTL + 10.seconds, None))
     } yield ()
   }
 

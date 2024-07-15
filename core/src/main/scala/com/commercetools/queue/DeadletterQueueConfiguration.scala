@@ -16,14 +16,8 @@
 
 package com.commercetools.queue
 
-import scala.concurrent.duration.FiniteDuration
-
 /**
- * @param messageTTL the time a message is guaranteed to stay in the queue before being discarded by the underlying system
- * @param lockTTL the time a message is locked (or leased) upon reception by a subscriber before being eligible to redelivery
- * @param deadletter the dead-letter queue configuration if any
+ * @param name the name of the deadletter queue
+ * @param maxAttempts the maximum number of delivery attempts made before forwarding a message to the dead letter queue
  */
-final case class QueueConfiguration(
-  messageTTL: FiniteDuration,
-  lockTTL: FiniteDuration,
-  deadletter: Option[DeadletterQueueConfiguration])
+final case class DeadletterQueueConfiguration(name: String, maxAttempts: Int)
