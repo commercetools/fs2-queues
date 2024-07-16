@@ -111,41 +111,6 @@
         <h1 id="providers" class="title">Providers</h1>
         <p><code>fs2-queues</code> comes with several queue system implementations. Each of them implements the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.2.0/com/commercetools/queue/com/commercetools/queue/QueueClient.html">QueueClient</a> abstraction with the various interfaces it gives access to.</p>
         <p>Each implementations comes with its own way to get access to a client, depending on the underlying SDK. Please have a look at the provider documentation to see the different ways to instantiate the clients.</p>
-        
-        <h2 id="add-your-own-provider" class="section"><a class="anchor-link left" href="#add-your-own-provider"><i class="icofont-laika link">&#xef71;</i></a>Add your own provider</h2>
-        <p>To add a new queue system, you need to implement the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.2.0/com/commercetools/queue/com/commercetools/queue/QueueClient.html">QueueClient</a> abstraction and all abstractions it gives access to.
-        To validate your implementation, we provide a testkit, which runs a series of tests that need to pass to ensure the abstraction behavior is working. All what is needed to implement the integration tests in the testkit is to implement the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.2.0/com/commercetools/queue/com/commercetools/queue/testkit/QueueClientSuite.html">QueueClientSuite</a> class and provide a way to instantiate your client as a <code>Resource</code>.</p>
-        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.{</span><span class="type-name">IO</span><span>,  </span><span class="type-name">Resource</span><span>}
-</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.{
-  </span><span class="type-name">Deserializer</span><span>,
-  </span><span class="type-name">QueueClient</span><span>,
-  </span><span class="type-name">QueueAdministration</span><span>,
-  </span><span class="type-name">QueuePublisher</span><span>,
-  </span><span class="type-name">QueueStatistics</span><span>,
-  </span><span class="type-name">QueueSubscriber</span><span>,
-  </span><span class="type-name">Serializer</span><span>
-}
-</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="identifier">testkit</span><span>.</span><span class="type-name">QueueClientSuite</span><span>
-
-</span><span class="keyword">class</span><span> </span><span class="type-name">MyQueueClient</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]] </span><span class="keyword">extends</span><span> </span><span class="type-name">QueueClient</span><span>[</span><span class="type-name">F</span><span>] {
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">administration</span><span>: </span><span class="type-name">QueueAdministration</span><span>[</span><span class="type-name">F</span><span>] = ???
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">statistics</span><span>(</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>): </span><span class="type-name">QueueStatistics</span><span>[</span><span class="type-name">F</span><span>] = ???
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">publish</span><span>[</span><span class="type-name">T</span><span>: </span><span class="type-name">Serializer</span><span>](</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>): </span><span class="type-name">QueuePublisher</span><span>[</span><span class="type-name">F</span><span>,</span><span class="type-name">T</span><span>] = ???
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">subscribe</span><span>[</span><span class="type-name">T</span><span>: </span><span class="type-name">Deserializer</span><span>](</span><span class="identifier">name</span><span>: </span><span class="type-name">String</span><span>): </span><span class="type-name">QueueSubscriber</span><span>[</span><span class="type-name">F</span><span>,</span><span class="type-name">T</span><span>] = ???
-
-}
-
-</span><span class="keyword">object</span><span> </span><span class="type-name">MyQueueClient</span><span> {
-  </span><span class="keyword">def</span><span> </span><span class="declaration-name">apply</span><span>[</span><span class="type-name">F</span><span>[</span><span class="identifier">_</span><span>]](): </span><span class="type-name">Resource</span><span>[</span><span class="type-name">F</span><span>, </span><span class="type-name">MyQueueClient</span><span>[</span><span class="type-name">F</span><span>]] = ???
-}
-
-</span><span class="comment">// Running this test suite will run all the testkit test
-</span><span class="keyword">class</span><span> </span><span class="type-name">MyQueueClientSuite</span><span> </span><span class="keyword">extends</span><span> </span><span class="type-name">QueueClientSuite</span><span> {
-
-  </span><span class="keyword">override</span><span> </span><span class="keyword">def</span><span> </span><span class="declaration-name">client</span><span>: </span><span class="type-name">Resource</span><span>[</span><span class="type-name">IO</span><span>, </span><span class="type-name">QueueClient</span><span>[</span><span class="type-name">IO</span><span>]] =
-    </span><span class="type-name">MyQueueClient</span><span>[</span><span class="type-name">IO</span><span>]()
-
-}</span></code></pre>
 
         
 <hr class="footer-rule"/>
