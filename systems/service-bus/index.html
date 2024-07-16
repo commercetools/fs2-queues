@@ -124,6 +124,30 @@
 }</span></code></pre>
         <p>The client is managed, meaning that it uses a conection pool that will get shut down upon resource release.</p>
         <p>If integrating with an existing code base where you already have builders that you would like to share, you can use the <code>unmanaged</code> variant.</p>
+        
+        <h2 id="global-setting-for-queue-creation" class="section"><a class="anchor-link left" href="#global-setting-for-queue-creation"><i class="icofont-laika link">&#xef71;</i></a>Global setting for queue creation</h2>
+        <p>When queues are created using the library, you can define global settings at client instantiation time. These settings will be applied to any queue created with the client instance.</p>
+        <p>For instance, this comes in handy when creating queues in a partitioned Premium namespace, you need to indicate that the queue is partitioned.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="identifier">azure</span><span>.</span><span class="identifier">servicebus</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">azure</span><span>.</span><span class="identifier">identity</span><span>.</span><span class="type-name">DefaultAzureCredentialBuilder</span><span>
+
+</span><span class="keyword">import</span><span> </span><span class="identifier">scala</span><span>.</span><span class="identifier">concurrent</span><span>.</span><span class="identifier">duration</span><span>.</span><span class="identifier">_</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">namespace</span><span> = </span><span class="string-literal">&quot;{namespace}.servicebus.windows.net&quot;</span><span> </span><span class="comment">// your namespace
+</span><span class="keyword">val</span><span> </span><span class="identifier">credentials</span><span> = </span><span class="keyword">new</span><span> </span><span class="type-name">DefaultAzureCredentialBuilder</span><span>().</span><span class="identifier">build</span><span>() </span><span class="comment">// however you want to authenticate
+</span><span>
+</span><span class="comment">// queues will be partitioned and have a size of 20GiB
+// message size is not changed
+</span><span class="keyword">val</span><span> </span><span class="identifier">globalQueueSettings</span><span> =
+  </span><span class="type-name">NewQueueSettings</span><span>.</span><span class="keyword">default</span><span>.</span><span class="identifier">copy</span><span>(
+    </span><span class="identifier">partitioned</span><span> = </span><span class="type-name">Some</span><span>(</span><span class="boolean-literal">true</span><span>),
+    </span><span class="identifier">queueSize</span><span> = </span><span class="type-name">Some</span><span>(</span><span class="type-name">Size</span><span>.</span><span class="identifier">gib</span><span>(</span><span class="number-literal">20</span><span>)))
+
+</span><span class="type-name">ServiceBusClient</span><span>[</span><span class="type-name">IO</span><span>](</span><span class="identifier">namespace</span><span>, </span><span class="identifier">credentials</span><span>, </span><span class="identifier">newQueueSettings</span><span> = </span><span class="identifier">globalQueueSettings</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+  </span><span class="comment">// the queue will be partitioned and will be able to store up to 20GiB of data
+</span><span>  </span><span class="identifier">client</span><span>.</span><span class="identifier">administration</span><span>.</span><span class="identifier">create</span><span>(</span><span class="string-literal">&quot;my-queue&quot;</span><span>, </span><span class="identifier">messageTTL</span><span> = </span><span class="number-literal">1</span><span>.</span><span class="identifier">hour</span><span>, </span><span class="identifier">lockTTL</span><span> = </span><span class="number-literal">10</span><span>.</span><span class="identifier">seconds</span><span>)
+}</span></code></pre>
 
         
 <hr class="footer-rule"/>
