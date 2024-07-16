@@ -18,15 +18,15 @@ package com.commercetools.queue.azure.servicebus
 
 import cats.effect.{Async, Resource}
 import com.azure.messaging.servicebus.ServiceBusClientBuilder
-import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
+import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
 
-class ServiceBusQueuePublisher[F[_], Data](
+private class ServiceBusQueuePublisher[F[_], Data](
   val queueName: String,
   clientBuilder: ServiceBusClientBuilder
 )(implicit
   F: Async[F],
   serializer: Serializer[Data])
-  extends QueuePublisher[F, Data] {
+  extends UnsealedQueuePublisher[F, Data] {
 
   override def pusher: Resource[F, QueuePusher[F, Data]] =
     Resource

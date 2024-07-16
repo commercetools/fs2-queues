@@ -26,7 +26,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * The base interface to subscribe to a queue.
  */
-abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
+sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
 
   /** The queue name to which this subscriber subscribes. */
   def queueName: String
@@ -175,3 +175,5 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
     process[Res](batchSize, waitingTime, QueuePublisher.noop)((msg: Message[F, T]) =>
       handler.handle(msg).widen[Decision[Res]])
 }
+
+abstract private[queue] class UnsealedQueueSubscriber[F[_], T](implicit F: Concurrent[F]) extends QueueSubscriber[F, T]

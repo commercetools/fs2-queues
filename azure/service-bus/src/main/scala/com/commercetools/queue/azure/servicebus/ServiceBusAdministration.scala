@@ -21,16 +21,16 @@ import cats.syntax.functor._
 import cats.syntax.monadError._
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClient
 import com.azure.messaging.servicebus.administration.models.CreateQueueOptions
-import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
+import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
 
 import java.time.Duration
 import scala.concurrent.duration._
 
-class ServiceBusAdministration[F[_]](
+private class ServiceBusAdministration[F[_]](
   client: ServiceBusAdministrationClient,
   newQueueSettings: NewQueueSettings
 )(implicit F: Async[F])
-  extends QueueAdministration[F] {
+  extends UnsealedQueueAdministration[F] {
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
     F.blocking {

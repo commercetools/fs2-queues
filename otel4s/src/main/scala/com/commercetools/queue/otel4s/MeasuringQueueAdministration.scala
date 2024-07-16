@@ -18,19 +18,19 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
-import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
+import com.commercetools.queue.{QueueAdministration, QueueConfiguration, UnsealedQueueAdministration}
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.FiniteDuration
 
-class MeasuringQueueAdministration[F[_]](
+private class MeasuringQueueAdministration[F[_]](
   underlying: QueueAdministration[F],
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]
 )(implicit F: MonadCancel[F, Throwable])
-  extends QueueAdministration[F] {
+  extends UnsealedQueueAdministration[F] {
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
     tracer

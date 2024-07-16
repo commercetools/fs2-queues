@@ -18,18 +18,18 @@ package com.commercetools.queue.aws.sqs
 
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
-import com.commercetools.queue.{Deserializer, QueuePuller, QueueSubscriber}
+import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 
-class SQSSubscriber[F[_], T](
+private class SQSSubscriber[F[_], T](
   val queueName: String,
   client: SqsAsyncClient,
   getQueueUrl: F[String]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
-  extends QueueSubscriber[F, T] {
+  extends UnsealedQueueSubscriber[F, T] {
 
   private def getLockTTL(queueUrl: String): F[Int] =
     F.fromCompletableFuture {

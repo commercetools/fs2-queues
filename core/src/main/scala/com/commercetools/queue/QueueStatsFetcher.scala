@@ -19,7 +19,7 @@ package com.commercetools.queue
 /**
  * A queue statistics fetcher allows for fetching statistics a queue individually.
  */
-trait QueueStatsFetcher[F[_]] {
+sealed trait QueueStatsFetcher[F[_]] {
 
   /**
    * Fetches the current statistics for the queue.
@@ -27,3 +27,5 @@ trait QueueStatsFetcher[F[_]] {
   def fetch: F[QueueStats]
 
 }
+
+private[queue] trait UnsealedQueueStatsFetcher[F[_]] extends QueueStatsFetcher[F]

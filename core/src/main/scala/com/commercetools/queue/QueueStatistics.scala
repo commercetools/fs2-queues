@@ -25,7 +25,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * The base interface to fetch statistics from a queue.
  */
-abstract class QueueStatistics[F[_]](implicit F: Temporal[F]) {
+sealed abstract class QueueStatistics[F[_]](implicit F: Temporal[F]) {
 
   /** The queue name from which to pull statistics. */
   def queueName: String
@@ -62,3 +62,5 @@ abstract class QueueStatistics[F[_]](implicit F: Temporal[F]) {
     stream(interval).rethrow
 
 }
+
+abstract private[queue] class UnsealedQueueStatistics[F[_]](implicit F: Temporal[F]) extends QueueStatistics[F]

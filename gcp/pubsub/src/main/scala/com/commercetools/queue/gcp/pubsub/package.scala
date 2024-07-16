@@ -53,23 +53,24 @@ package object pubsub {
       }
     }
 
-  def makeQueueException(t: Throwable, queueName: String): QueueException = t match {
+  private[pubsub] def makeQueueException(t: Throwable, queueName: String): QueueException = t match {
     case _: NotFoundException => QueueDoesNotExistException(queueName, t)
     case _: AlreadyExistsException => QueueAlreadyExistException(queueName, t)
     case t: QueueException => t
     case _ => UnknownQueueException(queueName, t)
   }
 
-  def makePushQueueException(t: Throwable, queueName: String): QueueException =
+  private[pubsub] def makePushQueueException(t: Throwable, queueName: String): QueueException =
     new CannotPushException(queueName, makeQueueException(t, queueName))
 
-  def makePullQueueException(t: Throwable, queueName: String): QueueException =
+  private[pubsub] def makePullQueueException(t: Throwable, queueName: String): QueueException =
     t match {
       case t: QueueException => t
       case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
     }
 
-  def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action): QueueException =
+  private[pubsub] def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action)
+    : QueueException =
     t match {
       case t: QueueException => t
       case _ => new MessageException(msgId = msgId, action = action, inner = makeQueueException(t, queueName))

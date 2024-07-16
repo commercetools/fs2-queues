@@ -18,17 +18,17 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.effect.syntax.monadCancel._
-import com.commercetools.queue.MessageContext
+import com.commercetools.queue.{MessageContext, UnsealedMessageContext}
 import org.typelevel.otel4s.trace.Tracer
 
 import java.time.Instant
 
-class MeasuringMessageContext[F[_], T](
+private class MeasuringMessageContext[F[_], T](
   underlying: MessageContext[F, T],
   metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
-  extends MessageContext[F, T] {
+  extends UnsealedMessageContext[F, T] {
 
   override def messageId: String = underlying.messageId
 

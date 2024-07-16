@@ -18,13 +18,13 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
-import com.commercetools.queue.{Deserializer, QueuePuller, QueueSubscriber}
+import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcSubscriberStub, HttpJsonSubscriberStub, SubscriberStubSettings}
 import com.google.pubsub.v1.{GetSubscriptionRequest, SubscriptionName}
 
-class PubSubSubscriber[F[_], T](
+private class PubSubSubscriber[F[_], T](
   val queueName: String,
   useGrpc: Boolean,
   subscriptionName: SubscriptionName,
@@ -34,7 +34,7 @@ class PubSubSubscriber[F[_], T](
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
-  extends QueueSubscriber[F, T] {
+  extends UnsealedQueueSubscriber[F, T] {
 
   override def puller: Resource[F, QueuePuller[F, T]] =
     Resource

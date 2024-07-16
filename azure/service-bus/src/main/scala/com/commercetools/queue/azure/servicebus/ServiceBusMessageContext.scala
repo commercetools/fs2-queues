@@ -19,17 +19,17 @@ package com.commercetools.queue.azure.servicebus
 import cats.effect.Async
 import cats.syntax.functor._
 import com.azure.messaging.servicebus.{ServiceBusReceivedMessage, ServiceBusReceiverClient}
-import com.commercetools.queue.MessageContext
+import com.commercetools.queue.UnsealedMessageContext
 
 import java.time.Instant
 import scala.jdk.CollectionConverters.MapHasAsScala
 
-class ServiceBusMessageContext[F[_], T](
+private class ServiceBusMessageContext[F[_], T](
   val payload: F[T],
   val underlying: ServiceBusReceivedMessage,
   receiver: ServiceBusReceiverClient
 )(implicit F: Async[F])
-  extends MessageContext[F, T] {
+  extends UnsealedMessageContext[F, T] {
 
   override def rawPayload: String = underlying.getBody().toString()
 

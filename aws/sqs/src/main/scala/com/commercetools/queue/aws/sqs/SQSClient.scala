@@ -19,7 +19,7 @@ package com.commercetools.queue.aws.sqs
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
 
 import java.net.URI
 
-class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) extends QueueClient[F] {
+private class SQSClient[F[_]](client: SqsAsyncClient)(implicit F: Async[F]) extends UnsealedQueueClient[F] {
 
   private def getQueueUrl(name: String): F[String] =
     F.fromCompletableFuture {
@@ -54,13 +54,20 @@ class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) ext
 
 object SQSClient {
 
+  /**
+   * Creates an SQS client for the given `region` and `credentials`.
+   *
+   * If `httpClient` is provided, it is not shut down when the resulting resource is released.
+   * It is up to the caller to ensure that the client is properly managed.
+   * This is useful if you integrate the library in an existing code base which already uses a client.
+   */
   def apply[F[_]](
     region: Region,
     credentials: AwsCredentialsProvider,
     endpoint: Option[URI] = None,
     httpClient: Option[SdkAsyncHttpClient] = None
   )(implicit F: Async[F]
-  ): Resource[F, SQSClient[F]] =
+  ): Resource[F, QueueClient[F]] =
     Resource
       .fromAutoCloseable {
         F.delay {

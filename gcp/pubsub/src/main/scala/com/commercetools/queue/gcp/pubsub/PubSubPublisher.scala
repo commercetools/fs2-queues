@@ -17,13 +17,13 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
+import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcPublisherStub, HttpJsonPublisherStub, PublisherStubSettings}
 import com.google.pubsub.v1.TopicName
 
-class PubSubPublisher[F[_], T](
+private class PubSubPublisher[F[_], T](
   val queueName: String,
   useGrpc: Boolean,
   topicName: TopicName,
@@ -33,7 +33,7 @@ class PubSubPublisher[F[_], T](
 )(implicit
   F: Async[F],
   serializer: Serializer[T])
-  extends QueuePublisher[F, T] {
+  extends UnsealedQueuePublisher[F, T] {
 
   override def pusher: Resource[F, QueuePusher[F, T]] =
     Resource

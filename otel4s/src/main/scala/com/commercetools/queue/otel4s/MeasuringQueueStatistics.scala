@@ -17,16 +17,16 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.{Resource, Temporal}
-import com.commercetools.queue.{QueueStatistics, QueueStatsFetcher}
+import com.commercetools.queue.{QueueStatistics, QueueStatsFetcher, UnsealedQueueStatistics}
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
-class MeasuringQueueStatistics[F[_]](
+private class MeasuringQueueStatistics[F[_]](
   underlying: QueueStatistics[F],
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
-  extends QueueStatistics[F] {
+  extends UnsealedQueueStatistics[F] {
 
   override def queueName: String = underlying.queueName
 

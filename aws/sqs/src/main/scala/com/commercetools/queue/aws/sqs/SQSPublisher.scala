@@ -17,17 +17,17 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{QueuePublisher, QueuePusher, Serializer}
+import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
-class SQSPublisher[F[_], T](
+private class SQSPublisher[F[_], T](
   val queueName: String,
   client: SqsAsyncClient,
   getQueueUrl: F[String]
 )(implicit
   F: Async[F],
   serializer: Serializer[T])
-  extends QueuePublisher[F, T] {
+  extends UnsealedQueuePublisher[F, T] {
 
   override def pusher: Resource[F, QueuePusher[F, T]] =
     Resource.eval(getQueueUrl).map(new SQSPusher(queueName, client, _))

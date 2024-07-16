@@ -19,13 +19,13 @@ package com.commercetools.queue.aws.sqs
 import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Action, MessageContext}
+import com.commercetools.queue.{Action, UnsealedMessageContext}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityRequest, DeleteMessageRequest}
 
 import java.time.Instant
 
-class SQSMessageContext[F[_], T](
+private class SQSMessageContext[F[_], T](
   val payload: F[T],
   val rawPayload: String,
   val enqueuedAt: Instant,
@@ -37,7 +37,7 @@ class SQSMessageContext[F[_], T](
   queueUrl: String,
   client: SqsAsyncClient
 )(implicit F: Async[F])
-  extends MessageContext[F, T] {
+  extends UnsealedMessageContext[F, T] {
 
   override def ack(): F[Unit] =
     F.fromCompletableFuture {

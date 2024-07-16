@@ -17,9 +17,9 @@
 package com.commercetools.queue.testing
 
 import cats.effect.{IO, Resource}
-import com.commercetools.queue.{QueuePuller, QueueSubscriber}
+import com.commercetools.queue.{QueuePuller, UnsealedQueueSubscriber}
 
-class TestQueueSubscriber[T](queue: TestQueue[T]) extends QueueSubscriber[IO, T] {
+class TestQueueSubscriber[T](queue: TestQueue[T]) extends UnsealedQueueSubscriber[IO, T] {
 
   override val queueName: String = queue.name
 

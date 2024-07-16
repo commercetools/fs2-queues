@@ -21,7 +21,7 @@ import com.commercetools.queue.{Action, CannotPullException, CannotPushException
 
 package object servicebus {
 
-  def makeQueueException(t: Throwable, queueName: String): QueueException =
+  private[servicebus] def makeQueueException(t: Throwable, queueName: String): QueueException =
     t match {
       case _: ResourceNotFoundException => QueueDoesNotExistException(queueName, t)
       case _: ResourceExistsException => QueueAlreadyExistException(queueName, t)
@@ -29,16 +29,17 @@ package object servicebus {
       case _ => UnknownQueueException(queueName, t)
     }
 
-  def makePushQueueException(t: Throwable, queueName: String): QueueException =
+  private[servicebus] def makePushQueueException(t: Throwable, queueName: String): QueueException =
     new CannotPushException(queueName, makeQueueException(t, queueName))
 
-  def makePullQueueException(t: Throwable, queueName: String): QueueException =
+  private[servicebus] def makePullQueueException(t: Throwable, queueName: String): QueueException =
     t match {
       case t: QueueException => t
       case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
     }
 
-  def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action): QueueException =
+  private[servicebus] def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action)
+    : QueueException =
     t match {
       case t: QueueException => t
       case _ => new MessageException(msgId = msgId, action = action, inner = makeQueueException(t, queueName))

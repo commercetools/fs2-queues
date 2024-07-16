@@ -21,7 +21,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * Interface that gives access to the queue administration capabilities.
  */
-trait QueueAdministration[F[_]] {
+sealed trait QueueAdministration[F[_]] {
 
   /** Creates a queue with the given name, message TTL and lock TTL. */
   def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit]
@@ -42,3 +42,5 @@ trait QueueAdministration[F[_]] {
   def exists(name: String): F[Boolean]
 
 }
+
+private[queue] trait UnsealedQueueAdministration[F[_]] extends QueueAdministration[F]

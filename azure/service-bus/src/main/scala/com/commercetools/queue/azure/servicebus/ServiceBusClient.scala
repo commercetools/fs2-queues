@@ -21,14 +21,14 @@ import com.azure.core.credential.TokenCredential
 import com.azure.core.util.ClientOptions
 import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 
-class ServiceBusClient[F[_]] private (
+private class ServiceBusClient[F[_]] private (
   clientBuilder: ServiceBusClientBuilder,
   adminBuilder: ServiceBusAdministrationClientBuilder,
   newQueueSettings: NewQueueSettings
 )(implicit F: Async[F])
-  extends QueueClient[F] {
+  extends UnsealedQueueClient[F] {
 
   override def administration: QueueAdministration[F] =
     new ServiceBusAdministration(adminBuilder.buildClient(), newQueueSettings)
@@ -54,7 +54,7 @@ object ServiceBusClient {
     connectionString: String,
     newQueueSettings: NewQueueSettings = NewQueueSettings.default
   )(implicit F: Async[F]
-  ): Resource[F, ServiceBusClient[F]] =
+  ): Resource[F, QueueClient[F]] =
     for {
       clientBuilder <- Resource.eval {
         F.delay {
@@ -79,7 +79,7 @@ object ServiceBusClient {
     newQueueSettings: NewQueueSettings = NewQueueSettings.default,
     options: Option[ClientOptions] = None
   )(implicit F: Async[F]
-  ): Resource[F, ServiceBusClient[F]] =
+  ): Resource[F, QueueClient[F]] =
     for {
       clientBuilder <- Resource.eval {
         F.delay {
@@ -107,7 +107,7 @@ object ServiceBusClient {
     adminBuilder: ServiceBusAdministrationClientBuilder,
     newQueueSettings: NewQueueSettings = NewQueueSettings.default
   )(implicit F: Async[F]
-  ): ServiceBusClient[F] =
+  ): QueueClient[F] =
     new ServiceBusClient(clientBuilder, adminBuilder, newQueueSettings)
 
 }

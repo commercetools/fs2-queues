@@ -21,23 +21,24 @@ import software.amazon.awssdk.services.sqs.model.{QueueDoesNotExistException => 
 
 package object sqs {
 
-  def makeQueueException(t: Throwable, queueName: String): QueueException = t match {
+  private[sqs] def makeQueueException(t: Throwable, queueName: String): QueueException = t match {
     case _: AwsQueueDoesNotExistException => QueueDoesNotExistException(queueName, t)
     case _: QueueNameExistsException => QueueAlreadyExistException(queueName, t)
     case t: QueueException => t
     case _ => UnknownQueueException(queueName, t)
   }
 
-  def makePushQueueException(t: Throwable, queueName: String): QueueException =
+  private[sqs] def makePushQueueException(t: Throwable, queueName: String): QueueException =
     new CannotPushException(queueName, makeQueueException(t, queueName))
 
-  def makePullQueueException(t: Throwable, queueName: String): QueueException =
+  private[sqs] def makePullQueueException(t: Throwable, queueName: String): QueueException =
     t match {
       case t: QueueException => t
       case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
     }
 
-  def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action): QueueException =
+  private[sqs] def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action)
+    : QueueException =
     t match {
       case t: QueueException => t
       case _ => new MessageException(msgId = msgId, action = action, inner = makeQueueException(t, queueName))

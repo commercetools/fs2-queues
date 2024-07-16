@@ -17,12 +17,12 @@
 package com.commercetools.queue.testing
 
 import cats.effect.IO
-import com.commercetools.queue.{MessageContext, QueuePuller}
+import com.commercetools.queue.{MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 
 import scala.concurrent.duration.FiniteDuration
 
-class TestQueuePuller[T](queue: TestQueue[T]) extends QueuePuller[IO, T] {
+class TestQueuePuller[T](queue: TestQueue[T]) extends UnsealedQueuePuller[IO, T] {
 
   override val queueName: String = queue.name
 

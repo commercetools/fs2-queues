@@ -19,7 +19,7 @@ package com.commercetools.queue.otel4s
 import cats.data.Chain
 import cats.effect.IO
 import com.commercetools.queue.testing.TestingMessageContext
-import com.commercetools.queue.{MessageContext, QueuePuller}
+import com.commercetools.queue.{MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attribute
@@ -34,7 +34,7 @@ class MeasuringPullerSuite extends CatsEffectSuite {
 
   val queueAttribute = Attribute("queue", queueName)
 
-  def puller(batch: IO[Chunk[MessageContext[IO, String]]]) = new QueuePuller[IO, String] {
+  def puller(batch: IO[Chunk[MessageContext[IO, String]]]) = new UnsealedQueuePuller[IO, String] {
 
     override def queueName: String = self.queueName
 
