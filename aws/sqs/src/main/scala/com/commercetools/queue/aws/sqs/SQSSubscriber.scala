@@ -22,7 +22,7 @@ import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscrib
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 
-class SQSSubscriber[F[_], T](
+private class SQSSubscriber[F[_], T](
   val queueName: String,
   client: SqsAsyncClient,
   getQueueUrl: F[String]

@@ -25,7 +25,7 @@ import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.FiniteDuration
 
-class MeasuringQueueAdministration[F[_]](
+private class MeasuringQueueAdministration[F[_]](
   underlying: QueueAdministration[F],
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]

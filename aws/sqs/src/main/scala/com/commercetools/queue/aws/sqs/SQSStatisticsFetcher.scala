@@ -29,7 +29,11 @@ import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, Que
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
-class SQSStatisticsFetcher[F[_]](val queueName: String, client: SqsAsyncClient, queueUrl: String)(implicit F: Async[F])
+private class SQSStatisticsFetcher[F[_]](
+  val queueName: String,
+  client: SqsAsyncClient,
+  queueUrl: String
+)(implicit F: Async[F])
   extends UnsealedQueueStatsFetcher[F] {
 
   override def fetch: F[QueueStats] =

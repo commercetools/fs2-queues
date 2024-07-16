@@ -20,7 +20,7 @@ import cats.effect.{Async, Resource}
 import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
-class SQSPublisher[F[_], T](
+private class SQSPublisher[F[_], T](
   val queueName: String,
   client: SqsAsyncClient,
   getQueueUrl: F[String]

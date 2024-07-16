@@ -26,7 +26,7 @@ import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
 import java.time.Duration
 import scala.concurrent.duration._
 
-class ServiceBusAdministration[F[_]](
+private class ServiceBusAdministration[F[_]](
   client: ServiceBusAdministrationClient,
   newQueueSettings: NewQueueSettings
 )(implicit F: Async[F])

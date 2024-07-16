@@ -21,7 +21,11 @@ import cats.syntax.functor._
 import com.commercetools.queue.{QueueStatsFetcher, UnsealedQueueStatistics}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 
-class SQSStatistics[F[_]](val queueName: String, client: SqsAsyncClient, getQueueUrl: F[String])(implicit F: Async[F])
+private class SQSStatistics[F[_]](
+  val queueName: String,
+  client: SqsAsyncClient,
+  getQueueUrl: F[String]
+)(implicit F: Async[F])
   extends UnsealedQueueStatistics[F] {
 
   override def fetcher: Resource[F, QueueStatsFetcher[F]] =

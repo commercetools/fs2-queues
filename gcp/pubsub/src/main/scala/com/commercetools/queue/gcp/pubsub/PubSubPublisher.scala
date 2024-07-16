@@ -23,7 +23,7 @@ import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcPublisherStub, HttpJsonPublisherStub, PublisherStubSettings}
 import com.google.pubsub.v1.TopicName
 
-class PubSubPublisher[F[_], T](
+private class PubSubPublisher[F[_], T](
   val queueName: String,
   useGrpc: Boolean,
   topicName: TopicName,

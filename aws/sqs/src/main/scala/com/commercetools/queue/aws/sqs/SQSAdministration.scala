@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueu
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[String])(implicit F: Async[F])
+private class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[String])(implicit F: Async[F])
   extends UnsealedQueueAdministration[F] {
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =

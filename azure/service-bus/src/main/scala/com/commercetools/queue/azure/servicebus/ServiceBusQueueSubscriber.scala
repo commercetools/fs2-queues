@@ -15,12 +15,13 @@
  */
 
 package com.commercetools.queue.azure.servicebus
+
 import cats.effect.{Async, Resource}
 import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.models.ServiceBusReceiveMode
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 
-class ServiceBusQueueSubscriber[F[_], Data](
+private class ServiceBusQueueSubscriber[F[_], Data](
   val queueName: String,
   builder: ServiceBusClientBuilder
 )(implicit

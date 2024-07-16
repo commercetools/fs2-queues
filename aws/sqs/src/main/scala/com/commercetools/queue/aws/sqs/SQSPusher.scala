@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.sqs.model.{MessageAttributeValue, SendMes
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class SQSPusher[F[_], T](
+private class SQSPusher[F[_], T](
   val queueName: String,
   client: SqsAsyncClient,
   queueUrl: String

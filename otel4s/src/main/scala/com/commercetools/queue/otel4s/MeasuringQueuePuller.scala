@@ -25,7 +25,7 @@ import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.FiniteDuration
 
-class MeasuringQueuePuller[F[_], T](
+private class MeasuringQueuePuller[F[_], T](
   underlying: QueuePuller[F, T],
   metrics: QueueMetrics[F],
   tracer: Tracer[F]

@@ -17,13 +17,13 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.httpjson.{HttpJsonTransportChannel, ManagedHttpJsonChannel}
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
 import com.google.pubsub.v1.{SubscriptionName, TopicName}
 
-class PubSubClient[F[_]: Async] private (
+private class PubSubClient[F[_]: Async] private (
   project: String,
   channelProvider: TransportChannelProvider,
   useGrpc: Boolean,
@@ -63,7 +63,7 @@ object PubSubClient {
     endpoint: Option[String] = None,
     mkTransportChannel: Option[String] => HttpJsonTransportChannel = makeDefaultTransportChannel _
   )(implicit F: Async[F]
-  ): Resource[F, PubSubClient[F]] =
+  ): Resource[F, QueueClient[F]] =
     Resource
       .fromAutoCloseable(F.blocking(mkTransportChannel(endpoint)))
       .map { channel =>
@@ -77,7 +77,7 @@ object PubSubClient {
     useGrpc: Boolean,
     endpoint: Option[String] = None
   )(implicit F: Async[F]
-  ): PubSubClient[F] =
+  ): QueueClient[F] =
     new PubSubClient[F](project, channelProvider, useGrpc, credentials, endpoint)
 
 }

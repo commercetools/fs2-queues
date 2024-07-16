@@ -23,7 +23,7 @@ import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.monitoring.v3.stub.{GrpcMetricServiceStub, MetricServiceStubSettings}
 import com.google.pubsub.v1.SubscriptionName
 
-class PubSubStatistics[F[_]](
+private class PubSubStatistics[F[_]](
   val queueName: String,
   subscriptionName: SubscriptionName,
   channelProvider: TransportChannelProvider,

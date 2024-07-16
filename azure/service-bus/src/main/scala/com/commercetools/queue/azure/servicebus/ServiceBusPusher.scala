@@ -25,7 +25,7 @@ import java.time.ZoneOffset
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class ServiceBusPusher[F[_], Data](
+private class ServiceBusPusher[F[_], Data](
   val queueName: String,
   sender: ServiceBusSenderClient
 )(implicit

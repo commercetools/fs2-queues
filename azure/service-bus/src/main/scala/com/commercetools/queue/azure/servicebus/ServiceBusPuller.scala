@@ -29,7 +29,7 @@ import java.time.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class ServiceBusPuller[F[_], Data](
+private class ServiceBusPuller[F[_], Data](
   val queueName: String,
   receiver: ServiceBusReceiverClient
 )(implicit

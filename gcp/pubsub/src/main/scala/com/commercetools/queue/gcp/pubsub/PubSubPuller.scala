@@ -33,7 +33,7 @@ import java.time
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class PubSubPuller[F[_], T](
+private class PubSubPuller[F[_], T](
   val queueName: String,
   useGrpc: Boolean,
   subscriptionName: SubscriptionName,

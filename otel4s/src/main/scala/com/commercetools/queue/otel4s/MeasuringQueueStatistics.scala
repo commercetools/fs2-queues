@@ -21,7 +21,7 @@ import com.commercetools.queue.{QueueStatistics, QueueStatsFetcher, UnsealedQueu
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
-class MeasuringQueueStatistics[F[_]](
+private class MeasuringQueueStatistics[F[_]](
   underlying: QueueStatistics[F],
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]

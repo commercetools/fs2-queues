@@ -22,7 +22,7 @@ import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, 
 import org.typelevel.otel4s.metrics.{Counter, Meter}
 import org.typelevel.otel4s.trace.Tracer
 
-class MeasuringQueueClient[F[_]](
+private class MeasuringQueueClient[F[_]](
   private val underlying: QueueClient[F],
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]

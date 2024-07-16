@@ -17,7 +17,7 @@
 package com.commercetools.queue.testing
 
 import cats.effect.IO
-import com.commercetools.queue.MessageContext
+import com.commercetools.queue.{MessageContext, UnsealedMessageContext}
 
 import java.time.Instant
 
@@ -28,7 +28,7 @@ case class TestingMessageContext[T](
   metadata: Map[String, String] = Map.empty) {
   self =>
 
-  def noop: MessageContext[IO, T] = new MessageContext[IO, T] {
+  def noop: MessageContext[IO, T] = new UnsealedMessageContext[IO, T] {
     override def messageId: String = self.messageId
     override def payload: IO[T] = IO.pure(self.payload)
     override def rawPayload: String = self.payload.toString()
@@ -39,7 +39,7 @@ case class TestingMessageContext[T](
     override def extendLock(): IO[Unit] = IO.unit
   }
 
-  def failing(t: Exception): MessageContext[IO, T] = new MessageContext[IO, T] {
+  def failing(t: Exception): MessageContext[IO, T] = new UnsealedMessageContext[IO, T] {
     override def messageId: String = self.messageId
     override def payload: IO[T] = IO.pure(self.payload)
     override def rawPayload: String = self.payload.toString()
@@ -50,7 +50,7 @@ case class TestingMessageContext[T](
     override def extendLock(): IO[Unit] = IO.raiseError(t)
   }
 
-  def canceled: MessageContext[IO, T] = new MessageContext[IO, T] {
+  def canceled: MessageContext[IO, T] = new UnsealedMessageContext[IO, T] {
     override def messageId: String = self.messageId
     override def payload: IO[T] = IO.pure(self.payload)
     override def rawPayload: String = self.payload.toString()

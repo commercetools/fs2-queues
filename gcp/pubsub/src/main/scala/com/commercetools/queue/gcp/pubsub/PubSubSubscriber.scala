@@ -24,7 +24,7 @@ import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcSubscriberStub, HttpJsonSubscriberStub, SubscriberStubSettings}
 import com.google.pubsub.v1.{GetSubscriptionRequest, SubscriptionName}
 
-class PubSubSubscriber[F[_], T](
+private class PubSubSubscriber[F[_], T](
   val queueName: String,
   useGrpc: Boolean,
   subscriptionName: SubscriptionName,

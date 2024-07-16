@@ -27,7 +27,7 @@ import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, Expi
 
 import scala.concurrent.duration._
 
-class PubSubAdministration[F[_]](
+private class PubSubAdministration[F[_]](
   useGrpc: Boolean,
   project: String,
   channelProvider: TransportChannelProvider,

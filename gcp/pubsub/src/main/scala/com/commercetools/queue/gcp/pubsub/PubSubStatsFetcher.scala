@@ -26,7 +26,7 @@ import com.google.pubsub.v1.SubscriptionName
 
 import scala.jdk.CollectionConverters._
 
-class PubSubStatsFetcher[F[_]](
+private class PubSubStatsFetcher[F[_]](
   val queueName: String,
   subscriptionName: SubscriptionName,
   client: MetricServiceStub

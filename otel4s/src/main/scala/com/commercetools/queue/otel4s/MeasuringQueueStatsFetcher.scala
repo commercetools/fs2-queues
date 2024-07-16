@@ -21,7 +21,7 @@ import cats.effect.syntax.monadCancel._
 import com.commercetools.queue.{QueueStats, QueueStatsFetcher, UnsealedQueueStatsFetcher}
 import org.typelevel.otel4s.trace.Tracer
 
-class MeasuringQueueStatsFetcher[F[_]](
+private class MeasuringQueueStatsFetcher[F[_]](
   underlying: QueueStatsFetcher[F],
   metrics: QueueMetrics[F],
   tracer: Tracer[F]

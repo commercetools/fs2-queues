@@ -20,7 +20,7 @@ import cats.effect.{Async, Resource}
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder
 import com.commercetools.queue.{QueueStatsFetcher, UnsealedQueueStatistics}
 
-class ServiceBusStatistics[F[_]](
+private class ServiceBusStatistics[F[_]](
   val queueName: String,
   builder: ServiceBusAdministrationClientBuilder
 )(implicit F: Async[F])

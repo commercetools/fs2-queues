@@ -30,7 +30,7 @@ import java.time.Instant
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters._
 
-class PubSubPusher[F[_], T](
+private class PubSubPusher[F[_], T](
   val queueName: String,
   topicName: TopicName,
   publisher: PublisherStub

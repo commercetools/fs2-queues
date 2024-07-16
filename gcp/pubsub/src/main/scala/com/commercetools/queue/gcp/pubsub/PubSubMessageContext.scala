@@ -19,14 +19,14 @@ package com.commercetools.queue.gcp.pubsub
 import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Action, MessageContext}
+import com.commercetools.queue.{Action, UnsealedMessageContext}
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
 import com.google.pubsub.v1.{AcknowledgeRequest, ModifyAckDeadlineRequest, ReceivedMessage, SubscriptionName}
 
 import java.time.Instant
 import scala.jdk.CollectionConverters._
 
-class PubSubMessageContext[F[_], T](
+private class PubSubMessageContext[F[_], T](
   subscriber: SubscriberStub,
   subscriptionName: SubscriptionName,
   underlying: ReceivedMessage,
@@ -34,7 +34,7 @@ class PubSubMessageContext[F[_], T](
   val payload: F[T],
   queueName: String
 )(implicit F: Async[F])
-  extends MessageContext[F, T] {
+  extends UnsealedMessageContext[F, T] {
 
   override def messageId: String = underlying.getAckId()
 

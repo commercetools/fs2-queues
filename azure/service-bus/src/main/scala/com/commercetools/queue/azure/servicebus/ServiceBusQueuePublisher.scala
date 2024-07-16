@@ -20,7 +20,7 @@ import cats.effect.{Async, Resource}
 import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
 
-class ServiceBusQueuePublisher[F[_], Data](
+private class ServiceBusQueuePublisher[F[_], Data](
   val queueName: String,
   clientBuilder: ServiceBusClientBuilder
 )(implicit
