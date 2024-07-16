@@ -49,3 +49,14 @@ abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
     }
 
 }
+
+object QueuePublisher {
+
+  /**
+   * A publisher that does nothing.
+   */
+  def noop[F[_], T](implicit F: MonadCancel[F, Throwable]) = new QueuePublisher[F, T] {
+    override def queueName: String = ""
+    override def pusher: Resource[F, QueuePusher[F, T]] = Resource.pure(QueuePusher.noop)
+  }
+}
