@@ -17,7 +17,7 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{QueueStatistics, QueueStatsFetcher}
+import com.commercetools.queue.{QueueStatsFetcher, UnsealedQueueStatistics}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.monitoring.v3.stub.{GrpcMetricServiceStub, MetricServiceStubSettings}
@@ -30,7 +30,7 @@ class PubSubStatistics[F[_]](
   credentials: CredentialsProvider,
   endpoint: Option[String]
 )(implicit F: Async[F])
-  extends QueueStatistics[F] {
+  extends UnsealedQueueStatistics[F] {
 
   override def fetcher: Resource[F, QueueStatsFetcher[F]] =
     Resource

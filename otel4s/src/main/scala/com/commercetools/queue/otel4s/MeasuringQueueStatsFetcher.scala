@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
-import com.commercetools.queue.{QueueStats, QueueStatsFetcher}
+import com.commercetools.queue.{QueueStats, QueueStatsFetcher, UnsealedQueueStatsFetcher}
 import org.typelevel.otel4s.trace.Tracer
 
 class MeasuringQueueStatsFetcher[F[_]](
@@ -26,7 +26,7 @@ class MeasuringQueueStatsFetcher[F[_]](
   metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: MonadCancel[F, Throwable])
-  extends QueueStatsFetcher[F] {
+  extends UnsealedQueueStatsFetcher[F] {
 
   override def fetch: F[QueueStats] =
     tracer

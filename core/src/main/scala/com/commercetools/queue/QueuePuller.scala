@@ -23,7 +23,7 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * A queue puller allows for pulling batches of elements from a queue individually.
  */
-trait QueuePuller[F[_], T] {
+sealed trait QueuePuller[F[_], T] {
 
   /** The queue name from which this puller is pulling. */
   def queueName: String
@@ -44,3 +44,5 @@ trait QueuePuller[F[_], T] {
   def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]]
 
 }
+
+private[queue] trait UnsealedQueuePuller[F[_], T] extends QueuePuller[F, T]

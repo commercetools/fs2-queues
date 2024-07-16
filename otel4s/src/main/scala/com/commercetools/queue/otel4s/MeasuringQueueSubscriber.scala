@@ -17,7 +17,7 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.{Resource, Temporal}
-import com.commercetools.queue.{QueuePuller, QueueSubscriber}
+import com.commercetools.queue.{QueuePuller, QueueSubscriber, UnsealedQueueSubscriber}
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
@@ -26,7 +26,7 @@ class MeasuringQueueSubscriber[F[_], T](
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
-  extends QueueSubscriber[F, T] {
+  extends UnsealedQueueSubscriber[F, T] {
 
   override def queueName: String = underlying.queueName
 

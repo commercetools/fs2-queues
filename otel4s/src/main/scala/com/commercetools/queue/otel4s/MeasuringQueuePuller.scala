@@ -19,7 +19,7 @@ package com.commercetools.queue.otel4s
 import cats.effect.Temporal
 import cats.effect.syntax.monadCancel._
 import cats.syntax.functor._
-import com.commercetools.queue.{MessageContext, QueuePuller}
+import com.commercetools.queue.{MessageContext, QueuePuller, UnsealedQueuePuller}
 import fs2.Chunk
 import org.typelevel.otel4s.trace.Tracer
 
@@ -30,7 +30,7 @@ class MeasuringQueuePuller[F[_], T](
   metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
-  extends QueuePuller[F, T] {
+  extends UnsealedQueuePuller[F, T] {
 
   override def queueName: String = underlying.queueName
 

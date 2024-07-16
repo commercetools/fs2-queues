@@ -20,10 +20,10 @@ import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClient
-import com.commercetools.queue.{QueueStats, QueueStatsFetcher}
+import com.commercetools.queue.{QueueStats, UnsealedQueueStatsFetcher}
 
 class ServiceBusStatsFetcher[F[_]](val queueName: String, client: ServiceBusAdministrationClient)(implicit F: Async[F])
-  extends QueueStatsFetcher[F] {
+  extends UnsealedQueueStatsFetcher[F] {
 
   override def fetch: F[QueueStats] =
     F.blocking(client.getQueueRuntimeProperties(queueName))

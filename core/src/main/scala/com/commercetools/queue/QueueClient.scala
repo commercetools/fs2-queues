@@ -21,7 +21,7 @@ package com.commercetools.queue
  * A client will manage connection pools and has knowledge of the underlying queue system.
  * A client should be managed as a resource to cleanup connections when not need anymore.
  */
-trait QueueClient[F[_]] {
+sealed trait QueueClient[F[_]] {
 
   /**
    * Gives access to adminsitrative API.
@@ -44,3 +44,5 @@ trait QueueClient[F[_]] {
   def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T]
 
 }
+
+private[queue] trait UnsealedQueueClient[F[_]] extends QueueClient[F]

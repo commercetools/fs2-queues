@@ -22,7 +22,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import com.azure.messaging.servicebus.ServiceBusReceiverClient
-import com.commercetools.queue.{Deserializer, MessageContext, QueuePuller}
+import com.commercetools.queue.{Deserializer, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 
 import java.time.Duration
@@ -35,7 +35,7 @@ class ServiceBusPuller[F[_], Data](
 )(implicit
   F: Async[F],
   deserializer: Deserializer[Data])
-  extends QueuePuller[F, Data] {
+  extends UnsealedQueuePuller[F, Data] {
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, Data]]] = F
     .blocking {

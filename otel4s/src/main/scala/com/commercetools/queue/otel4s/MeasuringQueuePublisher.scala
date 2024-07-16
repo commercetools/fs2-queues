@@ -17,7 +17,7 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.{MonadCancel, Resource}
-import com.commercetools.queue.{QueuePublisher, QueuePusher}
+import com.commercetools.queue.{QueuePublisher, QueuePusher, UnsealedQueuePublisher}
 import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.Tracer
 
@@ -26,7 +26,7 @@ class MeasuringQueuePublisher[F[_], T](
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]
 )(implicit F: MonadCancel[F, Throwable])
-  extends QueuePublisher[F, T] {
+  extends UnsealedQueuePublisher[F, T] {
 
   override def queueName: String = underlying.queueName
 

@@ -18,7 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.Async
 import cats.syntax.flatMap._
-import com.commercetools.queue.{MalformedQueueConfigurationException, QueueStats, QueueStatsFetcher}
+import com.commercetools.queue.{MalformedQueueConfigurationException, QueueStats, UnsealedQueueStatsFetcher}
 import com.google.cloud.monitoring.v3.stub.MetricServiceStub
 import com.google.monitoring.v3.{ListTimeSeriesRequest, Point, TimeInterval}
 import com.google.protobuf.Timestamp
@@ -31,7 +31,7 @@ class PubSubStatsFetcher[F[_]](
   subscriptionName: SubscriptionName,
   client: MetricServiceStub
 )(implicit F: Async[F])
-  extends QueueStatsFetcher[F] {
+  extends UnsealedQueueStatsFetcher[F] {
 
   override def fetch: F[QueueStats] =
     F.realTime

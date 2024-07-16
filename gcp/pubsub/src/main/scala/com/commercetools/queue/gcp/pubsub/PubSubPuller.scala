@@ -19,7 +19,7 @@ package com.commercetools.queue.gcp.pubsub
 import cats.effect.Async
 import cats.effect.syntax.concurrent._
 import cats.syntax.all._
-import com.commercetools.queue.{Deserializer, MessageContext, QueuePuller}
+import com.commercetools.queue.{Deserializer, MessageContext, UnsealedQueuePuller}
 import com.google.api.gax.grpc.GrpcCallContext
 import com.google.api.gax.httpjson.HttpJsonCallContext
 import com.google.api.gax.retrying.RetrySettings
@@ -42,7 +42,7 @@ class PubSubPuller[F[_], T](
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
-  extends QueuePuller[F, T] {
+  extends UnsealedQueuePuller[F, T] {
 
   private def callContext(waitingTime: FiniteDuration): ApiCallContext =
     if (useGrpc)

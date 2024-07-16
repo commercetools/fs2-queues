@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.syntax.functor._
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 import org.typelevel.otel4s.metrics.{Counter, Meter}
 import org.typelevel.otel4s.trace.Tracer
 
@@ -27,7 +27,7 @@ class MeasuringQueueClient[F[_]](
   requestCounter: Counter[F, Long],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
-  extends QueueClient[F] {
+  extends UnsealedQueueClient[F] {
 
   override def administration: QueueAdministration[F] =
     new MeasuringQueueAdministration[F](underlying.administration, requestCounter, tracer)

@@ -24,7 +24,7 @@ import cats.syntax.functorFilter._
 import cats.syntax.monadError._
 import cats.syntax.option._
 import com.commercetools.queue.aws.sqs.makeQueueException
-import com.commercetools.queue.{MalformedQueueConfigurationException, QueueAdministration, QueueConfiguration, QueueDoesNotExistException}
+import com.commercetools.queue.{MalformedQueueConfigurationException, QueueConfiguration, QueueDoesNotExistException, UnsealedQueueAdministration}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, GetQueueAttributesRequest, QueueAttributeName, SetQueueAttributesRequest}
 
@@ -32,7 +32,7 @@ import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
 class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[String])(implicit F: Async[F])
-  extends QueueAdministration[F] {
+  extends UnsealedQueueAdministration[F] {
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
     F.fromCompletableFuture {

@@ -17,7 +17,7 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.httpjson.{HttpJsonTransportChannel, ManagedHttpJsonChannel}
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
@@ -29,7 +29,7 @@ class PubSubClient[F[_]: Async] private (
   useGrpc: Boolean,
   credentials: CredentialsProvider,
   endpoint: Option[String])
-  extends QueueClient[F] {
+  extends UnsealedQueueClient[F] {
 
   override def administration: QueueAdministration[F] =
     new PubSubAdministration[F](useGrpc, project, channelProvider, credentials, endpoint)

@@ -18,7 +18,7 @@ package com.commercetools.queue.azure.servicebus
 import cats.effect.{Async, Resource}
 import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.models.ServiceBusReceiveMode
-import com.commercetools.queue.{Deserializer, QueuePuller, QueueSubscriber}
+import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 
 class ServiceBusQueueSubscriber[F[_], Data](
   val queueName: String,
@@ -26,7 +26,7 @@ class ServiceBusQueueSubscriber[F[_], Data](
 )(implicit
   F: Async[F],
   deserializer: Deserializer[Data])
-  extends QueueSubscriber[F, Data] {
+  extends UnsealedQueueSubscriber[F, Data] {
 
   override def puller: Resource[F, QueuePuller[F, Data]] = Resource
     .fromAutoCloseable {

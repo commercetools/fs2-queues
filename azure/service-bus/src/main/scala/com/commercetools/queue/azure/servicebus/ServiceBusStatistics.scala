@@ -18,13 +18,13 @@ package com.commercetools.queue.azure.servicebus
 
 import cats.effect.{Async, Resource}
 import com.azure.messaging.servicebus.administration.ServiceBusAdministrationClientBuilder
-import com.commercetools.queue.{QueueStatistics, QueueStatsFetcher}
+import com.commercetools.queue.{QueueStatsFetcher, UnsealedQueueStatistics}
 
 class ServiceBusStatistics[F[_]](
   val queueName: String,
   builder: ServiceBusAdministrationClientBuilder
 )(implicit F: Async[F])
-  extends QueueStatistics[F] {
+  extends UnsealedQueueStatistics[F] {
 
   override def fetcher: Resource[F, QueueStatsFetcher[F]] =
     Resource.eval {

@@ -22,7 +22,7 @@ import fs2.Stream
 /**
  * The interface to publish to a queue.
  */
-abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
+sealed abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
 
   /** The queue name to which this publisher publishes. */
   def queueName: String
@@ -49,6 +49,9 @@ abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable]) {
     }
 
 }
+
+abstract private[queue] class UnsealedQueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwable])
+  extends QueuePublisher[F, T]
 
 object QueuePublisher {
 

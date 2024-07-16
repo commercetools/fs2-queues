@@ -19,7 +19,7 @@ package com.commercetools.queue.aws.sqs
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer}
+import com.commercetools.queue.{Deserializer, QueueAdministration, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient
 import software.amazon.awssdk.regions.Region
@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
 
 import java.net.URI
 
-class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) extends QueueClient[F] {
+class SQSClient[F[_]] private (client: SqsAsyncClient)(implicit F: Async[F]) extends UnsealedQueueClient[F] {
 
   private def getQueueUrl(name: String): F[String] =
     F.fromCompletableFuture {

@@ -22,7 +22,7 @@ import cats.syntax.functor._
 import cats.syntax.monadError._
 import cats.syntax.option._
 import cats.syntax.traverse._
-import com.commercetools.queue.{MalformedQueueConfigurationException, QueueStats, QueueStatsFetcher}
+import com.commercetools.queue.{MalformedQueueConfigurationException, QueueStats, UnsealedQueueStatsFetcher}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 
@@ -30,7 +30,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 
 class SQSStatisticsFetcher[F[_]](val queueName: String, client: SqsAsyncClient, queueUrl: String)(implicit F: Async[F])
-  extends QueueStatsFetcher[F] {
+  extends UnsealedQueueStatsFetcher[F] {
 
   override def fetch: F[QueueStats] =
     (for {

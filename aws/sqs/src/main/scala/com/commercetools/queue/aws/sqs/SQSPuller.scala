@@ -21,7 +21,7 @@ import cats.effect.syntax.concurrent._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Deserializer, MessageContext, QueuePuller}
+import com.commercetools.queue.{Deserializer, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{MessageSystemAttributeName, ReceiveMessageRequest}
@@ -39,7 +39,7 @@ class SQSPuller[F[_], T](
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
-  extends QueuePuller[F, T] {
+  extends UnsealedQueuePuller[F, T] {
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
     F.fromCompletableFuture {

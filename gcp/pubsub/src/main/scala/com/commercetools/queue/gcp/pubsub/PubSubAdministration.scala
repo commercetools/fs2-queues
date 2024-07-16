@@ -18,7 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
-import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
+import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.rpc.{NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
@@ -34,7 +34,7 @@ class PubSubAdministration[F[_]](
   credentials: CredentialsProvider,
   endpoint: Option[String]
 )(implicit F: Async[F])
-  extends QueueAdministration[F] {
+  extends UnsealedQueueAdministration[F] {
 
   private val adminClient = Resource.fromAutoCloseable(F.delay {
     val builder =
