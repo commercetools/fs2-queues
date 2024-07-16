@@ -20,6 +20,7 @@ import cats.collections.Heap
 import cats.effect.IO
 import cats.effect.std.AtomicCell
 import cats.effect.testkit.TestControl
+import cats.implicits.catsSyntaxOptionId
 import cats.syntax.either._
 import cats.syntax.traverse._
 import com.commercetools.queue.testing._
@@ -35,11 +36,11 @@ class SubscriberSuite extends CatsEffectSuite {
       .map { state =>
         val queue =
           new TestQueue[String](name = "test-queue", state = state, messageTTL = 15.minutes, lockTTL = 1.minute)
-        (queue, new TestQueueSubscriber(queue))
+        (queue, new TestQueueSubscriber(queue), new TestQueuePublisher(queue))
       }
       .toResource)
 
-  queueSub.test("Successful messages must be acked") { case (queue, subscriber) =>
+  queueSub.test("Successful messages must be acked") { case (queue, subscriber, _) =>
     TestControl
       .executeEmbed(for {
         // first populate the queue
@@ -70,7 +71,7 @@ class SubscriberSuite extends CatsEffectSuite {
   }
 
   queueSub.test("Messages must be unack'ed if processing fails and emit everything up to failure") {
-    case (queue, subscriber) =>
+    case (queue, subscriber, _) =>
       TestControl
         .executeEmbed(for {
           // first populate the queue
@@ -98,4 +99,133 @@ class SubscriberSuite extends CatsEffectSuite {
         }
   }
 
+  queueSub.test("Messages consumed and ok'ed or drop'ed should follow the decision") {
+    case (queue, subscriber, publisher) =>
+      TestControl
+        .executeEmbed(for {
+          // first populate the queue
+          messages <- List.range(0, 100).traverse { i =>
+            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
+          }
+          _ <- queue.setAvailableMessages(messages)
+          result <- subscriber
+            .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
+              if (msg.rawPayload.toInt % 2 == 0) IO.pure(Decision.Drop)
+              else IO.pure(Decision.Ok(1)))
+            .interruptAfter(3.seconds)
+            .compile
+            .foldMonoid
+        } yield result)
+        .flatMap { result =>
+          for {
+            _ <- assertIO(queue.getAvailableMessages, Nil)
+            _ = assertEquals(result, 50.asRight)
+          } yield ()
+        }
+  }
+
+  queueSub.test("Messages consumed and confirmed or dropped should follow the decision") {
+    case (queue, subscriber, publisher) =>
+      TestControl
+        .executeEmbed(for {
+          // first populate the queue
+          messages <- List.range(0, 100).traverse { i =>
+            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
+          }
+          _ <- queue.setAvailableMessages(messages)
+          result <- subscriber
+            .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
+              if (msg.rawPayload.toInt % 2 == 0) IO.pure(Decision.Ok(1))
+              else IO.pure(Decision.Drop))
+            .take(50)
+            .compile
+            .foldMonoid
+        } yield result)
+        .flatMap { result =>
+          for {
+            _ <- assertIO(queue.getAvailableMessages, Nil)
+            _ = assertEquals(result, 50.asRight)
+          } yield ()
+        }
+  }
+
+  queueSub.test("Messages consumed and requeued should follow the decision") { case (queue, subscriber, publisher) =>
+    TestControl
+      .executeEmbed(for {
+        // first populate the queue
+        messages <- List.range(0, 100).traverse { i =>
+          IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
+        }
+        _ <- queue.setAvailableMessages(messages)
+        opCounter <- AtomicCell[IO].of(0)
+        result <- subscriber
+          .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
+            opCounter.update(_ + 1) >> {
+              // let's reenqueue at the first run, and then confirm
+              if (msg.metadata.contains("reenqueued")) IO.pure(Decision.Ok(1))
+              else IO.pure(Decision.Reenqueue(Map("reenqueued" -> "true").some, None))
+            })
+          .take(100)
+          .compile
+          .foldMonoid
+        totOpCount <- opCounter.get
+      } yield (result, totOpCount))
+      .flatMap { case (result, totOpCount) =>
+        for {
+          _ <- assertIO(queue.getAvailableMessages, Nil)
+          _ = assertEquals(totOpCount, 200)
+          _ = assertEquals(result, 100.asRight)
+        } yield ()
+      }
+  }
+
+  queueSub.test("Messages that are marked as failed and acked should follow the decision") {
+    case (queue, subscriber, publisher) =>
+      TestControl
+        .executeEmbed(for {
+          // first populate the queue
+          messages <- List.range(0, 100).traverse { i =>
+            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
+          }
+          _ <- queue.setAvailableMessages(messages)
+          result <- subscriber
+            .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
+              IO.pure(Decision.Fail(new Throwable(s"failed ${msg.rawPayload}"), ack = true)))
+            .take(100)
+            .collect { case Left(_) => 1 }
+            .compile
+            .foldMonoid
+        } yield result)
+        .flatMap { result =>
+          for {
+            _ <- assertIO(queue.getAvailableMessages, Nil)
+            _ = assertEquals(result, 100)
+          } yield ()
+        }
+  }
+
+  queueSub.test("Messages that are marked as failed and not acked should follow the decision") {
+    case (queue, subscriber, publisher) =>
+      TestControl
+        .executeEmbed(for {
+          // first populate the queue
+          messages <- List.range(0, 100).traverse { i =>
+            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
+          }
+          _ <- queue.setAvailableMessages(messages)
+          result <- subscriber
+            .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
+              IO.pure(Decision.Fail(new Throwable(s"failed ${msg.rawPayload}"), ack = false)))
+            .take(100)
+            .collect { case Left(_) => 1 }
+            .compile
+            .foldMonoid
+        } yield result)
+        .flatMap { result =>
+          for {
+            _ <- assertIO(queue.getAvailableMessages.map(_.size), 100)
+            _ = assertEquals(result, 100)
+          } yield ()
+        }
+  }
 }

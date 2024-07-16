@@ -126,4 +126,52 @@ abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
         case Left(_) => ctx.nack()
       })
 
+  /**
+   * Processes the messages with the provided message handler.
+   * The messages are ack'ed, nack'ed or reenqueu'ed based on the decision returned from the handler.
+   * The stream emits results or errors down-stream and does not fail on business logic errors,
+   * allowing you to build error recovery logic.
+   *
+   * Messages in a batch are processed in parallel but result is emitted in order the messages were received,
+   * with the exclusion of the messages that have been reenqueu'ed and dropped.
+   */
+  final def process[Res](
+    batchSize: Int,
+    waitingTime: FiniteDuration,
+    publisherForReenqueue: QueuePublisher[F, T]
+  )(handler: MessageHandler[F, T, Res, Decision]
+  ): Stream[F, Either[Throwable, Res]] =
+    Stream
+      .resource(publisherForReenqueue.pusher)
+      .flatMap { pusher =>
+        messages(batchSize, waitingTime)
+          .parEvalMap(batchSize) { ctx =>
+            handler.handle(ctx).flatMap[Option[Either[Throwable, Res]]] {
+              case Decision.Ok(res) => ctx.ack().as(res.asRight.some)
+              case Decision.Drop => ctx.ack().as(none)
+              case Decision.Fail(t, true) => ctx.ack().as(t.asLeft.some)
+              case Decision.Fail(t, false) => ctx.nack().as(t.asLeft.some)
+              case Decision.Reenqueue(metadata, delay) =>
+                ctx.payload.flatMap(pusher.push(_, ctx.metadata ++ metadata.getOrElse(Map.empty), delay)).as(none)
+            }
+          }
+          .flattenOption
+      }
+
+  /**
+   * Processes the messages with the provided message handler.
+   * The messages are ack'ed or nack'ed based on the decision returned from the handler.
+   * The stream emits results or errors down-stream and does not fail on business logic errors,
+   * allowing you to build error recovery logic.
+   *
+   * Messages in a batch are processed in parallel but result is emitted in order the messages were received,
+   * with the exclusion of the messages that have been dropped.
+   */
+  final def processWithImmediateDecision[Res](
+    batchSize: Int,
+    waitingTime: FiniteDuration
+  )(handler: MessageHandler[F, T, Res, ImmediateDecision]
+  ): Stream[F, Either[Throwable, Res]] =
+    process[Res](batchSize, waitingTime, QueuePublisher.noop)((msg: Message[F, T]) =>
+      handler.handle(msg).widen[Decision[Res]])
 }

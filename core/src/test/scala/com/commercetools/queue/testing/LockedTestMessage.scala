@@ -40,7 +40,7 @@ final case class LockedTestMessage[T](
 
   override def enqueuedAt: Instant = msg.enqueuedAt
 
-  override val metadata: Map[String, String] = Map.empty
+  override val metadata: Map[String, String] = msg.metadata
 
   override def ack(): IO[Unit] =
     // done, just delete it
