@@ -25,12 +25,13 @@ import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, 
 
 class ServiceBusClient[F[_]] private (
   clientBuilder: ServiceBusClientBuilder,
-  adminBuilder: ServiceBusAdministrationClientBuilder
+  adminBuilder: ServiceBusAdministrationClientBuilder,
+  newQueueSettings: NewQueueSettings
 )(implicit F: Async[F])
   extends QueueClient[F] {
 
   override def administration: QueueAdministration[F] =
-    new ServiceBusAdministration(adminBuilder.buildClient())
+    new ServiceBusAdministration(adminBuilder.buildClient(), newQueueSettings)
 
   override def statistics(name: String): QueueStatistics[F] =
     new ServiceBusStatistics(name, adminBuilder)
@@ -45,7 +46,15 @@ class ServiceBusClient[F[_]] private (
 
 object ServiceBusClient {
 
-  def apply[F[_]](connectionString: String)(implicit F: Async[F]): Resource[F, ServiceBusClient[F]] =
+  /**
+   * Creates a new client from the connection string.
+   * You can optionally provide global settings for when queues are created via the library.
+   */
+  def fromConnectionString[F[_]](
+    connectionString: String,
+    newQueueSettings: NewQueueSettings = NewQueueSettings.default
+  )(implicit F: Async[F]
+  ): Resource[F, ServiceBusClient[F]] =
     for {
       clientBuilder <- Resource.eval {
         F.delay {
@@ -58,11 +67,16 @@ object ServiceBusClient {
             .connectionString(connectionString)
         }
       }
-    } yield new ServiceBusClient(clientBuilder, adminBuilder)
+    } yield new ServiceBusClient(clientBuilder, adminBuilder, newQueueSettings)
 
+  /**
+   * Creates a new client for the given namespace and some credentials.
+   * You can optionally provide global settings for when queues are created via the library.
+   */
   def apply[F[_]](
     namespace: String,
     credentials: TokenCredential,
+    newQueueSettings: NewQueueSettings = NewQueueSettings.default,
     options: Option[ClientOptions] = None
   )(implicit F: Async[F]
   ): Resource[F, ServiceBusClient[F]] =
@@ -79,13 +93,21 @@ object ServiceBusClient {
           options.fold(base)(base.clientOptions(_))
         }
       }
-    } yield new ServiceBusClient(clientBuilder, adminBuilder)
+    } yield new ServiceBusClient(clientBuilder, adminBuilder, newQueueSettings)
 
+  /**
+   * Creates a new client wrapping unmanaged SDK client.
+   * This is useful when integrating the library in a codebase that already manages a Java SDK client.
+   * Otherwise, prefer the other variants to construct a client.
+   *
+   * You can optionally provide global settings for when queues are created via the library.
+   */
   def unmanaged[F[_]](
     clientBuilder: ServiceBusClientBuilder,
-    adminBuilder: ServiceBusAdministrationClientBuilder
+    adminBuilder: ServiceBusAdministrationClientBuilder,
+    newQueueSettings: NewQueueSettings = NewQueueSettings.default
   )(implicit F: Async[F]
   ): ServiceBusClient[F] =
-    new ServiceBusClient(clientBuilder, adminBuilder)
+    new ServiceBusClient(clientBuilder, adminBuilder, newQueueSettings)
 
 }

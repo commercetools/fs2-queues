@@ -26,17 +26,22 @@ import com.commercetools.queue.{QueueAdministration, QueueConfiguration}
 import java.time.Duration
 import scala.concurrent.duration._
 
-class ServiceBusAdministration[F[_]](client: ServiceBusAdministrationClient)(implicit F: Async[F])
+class ServiceBusAdministration[F[_]](
+  client: ServiceBusAdministrationClient,
+  newQueueSettings: NewQueueSettings
+)(implicit F: Async[F])
   extends QueueAdministration[F] {
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
-    F.blocking(
-      client.createQueue(
-        name,
-        new CreateQueueOptions()
-          .setDefaultMessageTimeToLive(Duration.ofMillis(messageTTL.toMillis))
-          .setLockDuration(Duration.ofMillis(lockTTL.toMillis))))
-      .void
+    F.blocking {
+      val options = new CreateQueueOptions()
+        .setDefaultMessageTimeToLive(Duration.ofMillis(messageTTL.toMillis))
+        .setLockDuration(Duration.ofMillis(lockTTL.toMillis))
+      newQueueSettings.partitioned.foreach(options.setPartitioningEnabled(_))
+      newQueueSettings.queueSize.foreach(size => options.setMaxSizeInMegabytes(size.mib))
+      newQueueSettings.maxMessageSize.foreach(size => options.setMaxMessageSizeInKilobytes(size.kib.toLong))
+      client.createQueue(name, options)
+    }.void
       .adaptError(makeQueueException(_, name))
 
   override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] =

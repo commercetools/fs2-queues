@@ -121,6 +121,16 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     // TODO: Remove once 0.3 is published
     mimaBinaryIssueFilters ++= List(
       ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusAdministration.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.unmanaged"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.apply"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
+        "com.commercetools.queue.azure.servicebus.ServiceBusClient.apply$default$3"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem](
         "com.commercetools.queue.azure.servicebus.ServiceBusQueueSubscriber.this")
     )
   )
