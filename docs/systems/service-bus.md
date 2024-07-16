@@ -36,14 +36,21 @@ import cats.effect.IO
 import com.commercetools.queue.azure.servicebus._
 import com.azure.identity.DefaultAzureCredentialBuilder
 
+import scala.concurrent.duration._
+
 val namespace = "{namespace}.servicebus.windows.net" // your namespace
 val credentials = new DefaultAzureCredentialBuilder().build() // however you want to authenticate
 
-val globalQueueSettings = NewQueueSettings.default.copy(partitioned = Some(true), queueSize = Some(Size.gib(20)))
+// queues will be partitioned and have a size of 20GiB
+// message size is not changed
+val globalQueueSettings =
+  NewQueueSettings.default.copy(
+    partitioned = Some(true),
+    queueSize = Some(Size.gib(20)))
 
 ServiceBusClient[IO](namespace, credentials, newQueueSettings = globalQueueSettings).use { client =>
   // the queue will be partitioned and will be able to store up to 20GiB of data
-  client.administration.create("my-queue")
+  client.administration.create("my-queue", messageTTL = 1.hour, lockTTL = 10.seconds)
 }
 ```
 
