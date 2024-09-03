@@ -5,7 +5,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.2"
+ThisBuild / tlBaseVersion := "0.3"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -43,11 +43,7 @@ lazy val core = crossProject(JVMPlatform)
   .in(file("core"))
   .settings(commonSettings)
   .settings(
-    name := "fs2-queues-core",
-    // TODO: Remove once 0.3 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueueSubscriber.this")
-    )
+    name := "fs2-queues-core"
   )
 
 lazy val testkit = crossProject(JVMPlatform)
@@ -89,10 +85,6 @@ lazy val otel4s = crossProject(JVMPlatform)
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
       "org.typelevel" %%% "otel4s-core" % "0.7.0"
-    ),
-    // TODO: Remove once 0.3 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueSubscriber.this")
     )
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -117,29 +109,6 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.17.0"
-    ),
-    // TODO: Remove once 0.3 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusAdministration.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusClient.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusClient.unmanaged"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusClient.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusClient.apply$default$3"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusQueueSubscriber.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.package.makeMessageException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.package.makePullQueueException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.package.makePushQueueException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.package.makeQueueException")
     )
   )
   .dependsOn(core, testkit % Test)
@@ -152,17 +121,6 @@ lazy val awsSQS = crossProject(JVMPlatform)
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.25.50"
-    ),
-    // TODO: Remove once 0.3 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSSubscriber.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.aws.sqs.package.makeMessageException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.aws.sqs.package.makePullQueueException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.aws.sqs.package.makePushQueueException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.package.makeQueueException")
     )
   )
   .dependsOn(core)
@@ -183,20 +141,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
       "com.google.cloud" % "google-cloud-pubsub" % "1.129.3",
       "com.google.cloud" % "google-cloud-monitoring" % "3.47.0"
     ),
-    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0"),
-    // TODO: Remove once 0.3 is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.package.makeMessageException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.package.makePullQueueException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.package.makePushQueueException"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.package.makeQueueException")
-    )
+    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0")
   )
   .dependsOn(core)
 
