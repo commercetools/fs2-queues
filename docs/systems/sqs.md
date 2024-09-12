@@ -6,7 +6,7 @@ You can create a client to service bus queues by using the [AWS SQS][sqs] module
 libraryDependencies += "com.commercetools" %% "fs2-queues-aws-sqs" % "@VERSION@"
 ```
 
-For instance you can create a managed client via a region and credentials as follows.
+For instance, you can create a managed client via a region and credentials as follows.
 
 ```scala mdoc:compile-only
 import cats.effect.IO
@@ -25,5 +25,7 @@ SQSClient[IO](region, credentials).use { client =>
 The client is managed, meaning that it uses a dedicated HTTP connection pool that will get shut down upon resource release.
 
 If integrating with an existing code base where you already have an instance of `SdkAsyncHttpClient` that you would like to share, you can pass the optional `httpClient` parameter. If passed explicitly, the client is not closed when the resource is released, and it is up to the caller to manage it.
+
+For full customization, you can supply your own instance of `SqsAsyncClient` by using `SQSClient.fromClient`. Note that this requires explicit management of the underlying client's lifecycle.
 
 [sqs]: https://aws.amazon.com/sqs/

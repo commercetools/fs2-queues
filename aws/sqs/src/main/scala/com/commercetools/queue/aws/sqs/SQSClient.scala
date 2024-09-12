@@ -83,4 +83,12 @@ object SQSClient {
       }
       .map(new SQSClient(_))
 
+  /**
+   * Creates an SQS client from a given instance of `SqsAsyncClient`.
+   *
+   * It is upon the caller to ensure closing of the underlying client once appropriate.
+   */
+  def fromClient[F[_]](client: SqsAsyncClient)(implicit F: Async[F]): QueueClient[F] =
+    new SQSClient(client)
+
 }
