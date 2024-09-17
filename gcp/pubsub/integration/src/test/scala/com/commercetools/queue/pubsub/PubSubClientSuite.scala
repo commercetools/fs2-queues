@@ -24,9 +24,27 @@ import com.google.api.gax.core.NoCredentialsProvider
 
 class PubSubClientSuite extends QueueClientSuite {
 
-  override val queueUpdateSupported = false
+  private def isEmulatorDefault = true
+  private def isEmulatorEnvVar = "GCP_PUBSUB_USE_EMULATOR"
+
+  override val queueUpdateSupported: Boolean = false // not supported
+  override val inFlightMessagesStatsSupported: Boolean = false // not supported
+  override val delayedMessagesStatsSupported: Boolean = false // not supported
+  override val messagesStatsSupported: Boolean = // // not supported in the emulator
+    !sys.env.get(isEmulatorEnvVar).map(_.toBoolean).getOrElse(isEmulatorDefault)
+
+  private def config =
+    booleanOrDefault(isEmulatorEnvVar, default = isEmulatorDefault).ifM(
+      ifTrue = IO.pure(("test-project", NoCredentialsProvider.create(), Some("localhost:8042"))),
+      ifFalse = for {
+        project <- string("GCP_PUBSUB_PROJECT")
+        credentials = NoCredentialsProvider.create() // TODO
+      } yield (project, credentials, None)
+    )
 
   override def client: Resource[IO, QueueClient[IO]] =
-    PubSubClient("test-project", NoCredentialsProvider.create(), endpoint = Some("localhost:8042"))
+    config.toResource.flatMap { case (project, credentials, endpoint) =>
+      PubSubClient(project, credentials, endpoint = endpoint)
+    }
 
 }

@@ -40,7 +40,7 @@ private class PubSubStatistics[F[_]](
             .newBuilder()
             .setCredentialsProvider(credentials)
             .setTransportChannelProvider(channelProvider)
-          endpoint.foreach(builder.setEndpoint(_))
+          endpoint.foreach(builder.setEndpoint)
           GrpcMetricServiceStub.create(builder.build())
         }
       }
