@@ -24,7 +24,7 @@ import scala.concurrent.duration.FiniteDuration
  * A queue pusher allows for pushing elements into a queue either on at a time
  * or in batch.
  */
-trait QueuePusher[F[_], T] {
+sealed trait QueuePusher[F[_], T] {
 
   /** The queue name to which this pusher is pushing. */
   def queueName: String
@@ -52,3 +52,5 @@ object QueuePusher {
     override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] = F.unit
   }
 }
+
+private[queue] trait UnsealedQueuePusher[F[_], T] extends QueuePusher[F, T]

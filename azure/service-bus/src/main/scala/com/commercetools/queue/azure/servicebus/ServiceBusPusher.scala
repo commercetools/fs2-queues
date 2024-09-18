@@ -19,7 +19,7 @@ package com.commercetools.queue.azure.servicebus
 import cats.effect.Async
 import cats.syntax.all._
 import com.azure.messaging.servicebus.{ServiceBusMessage, ServiceBusSenderClient}
-import com.commercetools.queue.{QueuePusher, Serializer}
+import com.commercetools.queue.{Serializer, UnsealedQueuePusher}
 
 import java.time.ZoneOffset
 import scala.concurrent.duration.FiniteDuration
@@ -31,7 +31,7 @@ private class ServiceBusPusher[F[_], Data](
 )(implicit
   serializer: Serializer[Data],
   F: Async[F])
-  extends QueuePusher[F, Data] {
+  extends UnsealedQueuePusher[F, Data] {
 
   override def push(message: Data, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] = {
     val sbMessage = new ServiceBusMessage(serializer.serialize(message))

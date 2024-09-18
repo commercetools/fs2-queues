@@ -21,7 +21,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import cats.syntax.traverse._
-import com.commercetools.queue.{QueuePusher, Serializer}
+import com.commercetools.queue.{Serializer, UnsealedQueuePusher}
 import com.google.cloud.pubsub.v1.stub.PublisherStub
 import com.google.protobuf.ByteString
 import com.google.pubsub.v1.{PublishRequest, PubsubMessage, TopicName}
@@ -37,7 +37,7 @@ private class PubSubPusher[F[_], T](
 )(implicit
   F: Async[F],
   serializer: Serializer[T])
-  extends QueuePusher[F, T] {
+  extends UnsealedQueuePusher[F, T] {
 
   private def makeMessage(payload: T, metadata: Map[String, String], waitUntil: Option[Instant]): F[PubsubMessage] =
     F.delay {

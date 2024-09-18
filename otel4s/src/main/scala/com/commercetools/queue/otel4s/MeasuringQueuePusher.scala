@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
-import com.commercetools.queue.QueuePusher
+import com.commercetools.queue.{QueuePusher, UnsealedQueuePusher}
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.FiniteDuration
@@ -28,7 +28,7 @@ private class MeasuringQueuePusher[F[_], T](
   metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: MonadCancel[F, Throwable])
-  extends QueuePusher[F, T] {
+  extends UnsealedQueuePusher[F, T] {
 
   override def queueName: String = underlying.queueName
 

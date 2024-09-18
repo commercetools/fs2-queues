@@ -1,3 +1,4 @@
+import sbtcrossproject.CrossProject
 import com.typesafe.tools.mima.core._
 
 import laika.config.PrettyURLs
@@ -20,16 +21,24 @@ ThisBuild / scalaVersion := Scala213
 ThisBuild / tlSonatypeUseLegacyHost := true
 
 lazy val root =
-  tlCrossRootProject.aggregate(core, azureServiceBus, awsSQS, awsSqsIt, gcpPubSub, gcpPubSubIt, circe, otel4s, unidocs)
+  tlCrossRootProject.aggregate(
+    core,
+    testing,
+    azureServiceBus,
+    awsSQS,
+    awsSqsIt,
+    gcpPubSub,
+    gcpPubSubIt,
+    circe,
+    otel4s,
+    unidocs)
 
 ThisBuild / tlSitePublishBranch := Some("main")
 
 val commonSettings = List(
   libraryDependencies ++= Seq(
-    "co.fs2" %%% "fs2-core" % Versions.fs2,
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-collections-core" % "0.9.8" % Test,
     "org.typelevel" %%% "cats-effect-testkit" % "3.5.3" % Test
   ),
   scalacOptions += (scalaVersion.value match {
@@ -38,25 +47,41 @@ val commonSettings = List(
   })
 )
 
-lazy val core = crossProject(JVMPlatform)
+lazy val core: CrossProject = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("core"))
   .settings(commonSettings)
   .settings(
-    name := "fs2-queues-core"
+    name := "fs2-queues-core",
+    libraryDependencies ++= List(
+      "co.fs2" %%% "fs2-core" % Versions.fs2
+    )
   )
+
+lazy val testing = crossProject(JVMPlatform)
+  .crossType(CrossType.Pure)
+  .in(file("testing"))
+  .settings(commonSettings)
+  .settings(
+    name := "fs2-queues-testing",
+    libraryDependencies ++= List(
+      "org.typelevel" %%% "cats-collections-core" % "0.9.8"
+    ),
+    tlVersionIntroduced := Map("3" -> "0.4.0", "2.13" -> "0.4.0")
+  )
+  .dependsOn(core)
 
 lazy val testkit = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
   .in(file("testkit"))
+  .enablePlugins(NoPublishPlugin)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-testkit",
     libraryDependencies ++= List(
       "org.scalameta" %%% "munit" % Versions.munit,
       "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect
-    ),
-    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0")
+    )
   )
   .dependsOn(core)
 
@@ -87,7 +112,7 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-core" % "0.9.0"
     )
   )
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(core, testing % Test)
 
 lazy val circe = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -140,8 +165,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.129.3",
       "com.google.cloud" % "google-cloud-monitoring" % "3.47.0"
-    ),
-    tlVersionIntroduced := Map("3" -> "0.2.0", "2.13" -> "0.2.0")
+    )
   )
   .dependsOn(core)
 
@@ -169,10 +193,11 @@ lazy val docs = project
     laikaExtensions += PrettyURLs,
     tlFatalWarnings := false,
     libraryDependencies ++= List(
-      "com.azure" % "azure-identity" % "1.11.1"
+      "com.azure" % "azure-identity" % "1.11.1",
+      "org.typelevel" %% "cats-effect-testkit" % "3.5.4"
     )
   )
-  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testkit.jvm)
+  .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testing.jvm)
 
 lazy val unidocs = project
   .in(file("unidocs"))
@@ -185,5 +210,6 @@ lazy val unidocs = project
       azureServiceBus.jvm,
       awsSQS.jvm,
       gcpPubSub.jvm,
-      otel4s.jvm)
+      otel4s.jvm,
+      testing.jvm)
   )

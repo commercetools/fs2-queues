@@ -16,7 +16,6 @@
 
 package com.commercetools.queue
 
-import cats.collections.Heap
 import cats.effect.IO
 import cats.effect.std.AtomicCell
 import cats.effect.testkit.TestControl
@@ -31,14 +30,10 @@ import scala.concurrent.duration._
 class SubscriberSuite extends CatsEffectSuite {
 
   val queueSub = ResourceFixture(
-    AtomicCell[IO]
-      .of(testing.QueueState[String](Heap.empty, List.empty, Map.empty))
-      .map { state =>
-        val queue =
-          new TestQueue[String](name = "test-queue", state = state, messageTTL = 15.minutes, lockTTL = 1.minute)
-        (queue, new TestQueueSubscriber(queue), new TestQueuePublisher(queue))
-      }
-      .toResource)
+    TestQueue[String](name = "test-queue", messageTTL = 15.minutes, lockTTL = 1.minute).toResource
+      .map { queue =>
+        (queue, TestQueueSubscriber(queue), TestQueuePublisher(queue))
+      })
 
   queueSub.test("Successful messages must be acked") { case (queue, subscriber, _) =>
     TestControl
