@@ -26,6 +26,16 @@ import fs2.Chunk
 import scala.annotation.tailrec
 import scala.concurrent.duration.FiniteDuration
 
+/**
+ * In-memory queue for testing purpose only.
+ * Use this as a queue implementation in unit tests. This queue can then be used to create:
+ *  - a [[TestQueuePuller]]
+ *  - a [[TestQueueSubscriber]]
+ *  - a [[TestQueuePusher]]
+ *  - a [[TestQueuePublisher]]
+ *
+ *  It provides accessors to its internal state to check it during tests. It also provides way to set the state to desired values directly.
+ */
 class TestQueue[T](
   val name: String,
   state: AtomicCell[IO, QueueState[T]],
@@ -136,5 +146,18 @@ class TestQueue[T](
           } reverse_::: state.delayed)
       }
     }
+
+}
+
+object TestQueue {
+
+  def apply[T](
+    name: String,
+    messageTTL: FiniteDuration,
+    lockTTL: FiniteDuration
+  ): IO[TestQueue[T]] =
+    AtomicCell[IO]
+      .of(QueueState[T](Heap.empty, List.empty, Map.empty))
+      .map(new TestQueue[T](name, _, messageTTL, lockTTL))
 
 }

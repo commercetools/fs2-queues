@@ -20,7 +20,7 @@ import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import cats.syntax.traverse._
-import com.commercetools.queue.{QueuePusher, Serializer}
+import com.commercetools.queue.{Serializer, UnsealedQueuePusher}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{MessageAttributeValue, SendMessageBatchRequest, SendMessageBatchRequestEntry, SendMessageRequest}
 
@@ -34,7 +34,7 @@ private class SQSPusher[F[_], T](
 )(implicit
   serializer: Serializer[T],
   F: Async[F])
-  extends QueuePusher[F, T] {
+  extends UnsealedQueuePusher[F, T] {
 
   override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] =
     F.fromCompletableFuture {

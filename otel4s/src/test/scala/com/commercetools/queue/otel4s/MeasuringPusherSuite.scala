@@ -19,11 +19,10 @@ package com.commercetools.queue.otel4s
 import cats.data.Chain
 import cats.effect.IO
 import com.commercetools.queue.QueuePusher
+import com.commercetools.queue.testing.TestQueuePusher
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.trace.Tracer
-
-import scala.concurrent.duration.FiniteDuration
 
 class MeasuringPusherSuite extends CatsEffectSuite {
   self =>
@@ -32,17 +31,8 @@ class MeasuringPusherSuite extends CatsEffectSuite {
 
   val queueAttribute = Attribute("queue", queueName)
 
-  def pusher(result: IO[Unit]) = new QueuePusher[IO, String] {
-
-    override def queueName: String = self.queueName
-
-    override def push(message: String, metadata: Map[String, String], delay: Option[FiniteDuration]): IO[Unit] =
-      result
-
-    override def push(messages: List[(String, Map[String, String])], delay: Option[FiniteDuration]): IO[Unit] =
-      result
-
-  }
+  def pusher(result: IO[Unit]): QueuePusher[IO, String] =
+    TestQueuePusher.fromPush[String]((_, _, _) => result)
 
   test("Successfully pushing one message results in incrementing the counter") {
     NaiveCounter.create.flatMap { counter =>
