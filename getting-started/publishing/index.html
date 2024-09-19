@@ -121,7 +121,7 @@
       <main class="content">
 
         <h1 id="publishing-data" class="title">Publishing Data</h1>
-        <p>Publishing data is made using a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueuePublisher.html">QueuePublisher</a>. You can acquire one through a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueueClient.html">QueueClient</a> by using the <code>publish()</code> method. A <code>QueuePublisher</code> is associated to a specific queue, which is provided when creating the publisher.</p>
+        <p>Publishing data is made using a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueuePublisher.html">QueuePublisher</a>. You can acquire one through a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueueClient.html">QueueClient</a> by using the <code>publish()</code> method. A <code>QueuePublisher</code> is associated to a specific queue, which is provided when creating the publisher.</p>
         <p>The publisher also requires a <a href="../serialization/#data-serializer">data serializer</a> upon creation for the type of data you want to publish to it.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
 
@@ -135,7 +135,7 @@
   </span><span class="identifier">client</span><span>.</span><span class="identifier">publish</span><span>[</span><span class="type-name">String</span><span>](</span><span class="string-literal">&quot;my-queue&quot;</span><span>)</span></code></pre>
         
         <h2 id="pipe-a-stream-through-the-publisher-sink" class="section"><a class="anchor-link left" href="#pipe-a-stream-through-the-publisher-sink"><i class="icofont-laika link">&#xef71;</i></a>Pipe a stream through the publisher sink</h2>
-        <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueuePublisher.html">QueuePublisher</a> abstraction provides a <code>sink()</code> pipe, through which you can make your publishing source stream go.
+        <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueuePublisher.html">QueuePublisher</a> abstraction provides a <code>sink()</code> pipe, through which you can make your publishing source stream go.
         The pipe takes a parameter allowing for batching publications.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">fs2</span><span>.{</span><span class="type-name">Pipe</span><span>, </span><span class="type-name">Stream</span><span>}
 
@@ -152,7 +152,7 @@
         </div>
         
         <h2 id="explicit-publish" class="section"><a class="anchor-link left" href="#explicit-publish"><i class="icofont-laika link">&#xef71;</i></a>Explicit publish</h2>
-        <p>If you are integrating the library with an existing code base that performs explicit publications to the queue, you can access the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueuePusher.html">QueuePusher</a> lower level API, which exposes ways to publish a single message or a single batch.
+        <p>If you are integrating the library with an existing code base that performs explicit publications to the queue, you can access the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueuePusher.html">QueuePusher</a> lower level API, which exposes ways to publish a single message or a single batch.
         This abstraction comes in handy when the messages you produce do not come from a <code>Stream</code>, otherwise you should prefer the <code>sink()</code> pipe presented above.</p>
         <p>A <code>QueuePusher</code> is accessed as a <a href="https://typelevel.org/cats-effect/docs/std/resource"><code>Resource</code></a> as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">publisher</span><span>.</span><span class="identifier">pusher</span><span>.</span><span class="identifier">use</span><span> { </span><span class="identifier">queuePusher</span><span> =&gt;

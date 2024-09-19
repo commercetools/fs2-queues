@@ -126,23 +126,23 @@
         The proper string encoding/decoding is performed by the underlying SDK, allowing you to only focus on the string serialization part.</p>
         
         <h2 id="data-serializer" class="section"><a class="anchor-link left" href="#data-serializer"><i class="icofont-laika link">&#xef71;</i></a>Data <code>Serializer</code></h2>
-        <p>A <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Serializer.html">Serializer</a> is defined as a <em>SAM interface</em> that is basically a <code>T =&gt; String</code>. Defining a new one can be done easily by providing an implicit conversion function from the type <code>T</code> to serialize to a <code>String</code>.</p>
+        <p>A <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Serializer.html">Serializer</a> is defined as a <em>SAM interface</em> that is basically a <code>T =&gt; String</code>. Defining a new one can be done easily by providing an implicit conversion function from the type <code>T</code> to serialize to a <code>String</code>.</p>
         <p>For instance, adding a serializer for <code>Int</code>s can be done as follows.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="type-name">Serializer</span><span>
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">serializer</span><span>: </span><span class="type-name">Serializer</span><span>[</span><span class="type-name">Int</span><span>] = </span><span class="identifier">_</span><span>.</span><span class="identifier">toString</span><span>
-</span><span class="comment">// serializer: Serializer[Int] = repl.MdocSession$MdocApp$$anonfun$1@2f1687ff</span></code></pre>
+</span><span class="comment">// serializer: Serializer[Int] = repl.MdocSession$MdocApp$$anonfun$1@63d6e336</span></code></pre>
         <p>The library provides natively a <em>no-op</em> serializer for <code>String</code>s.</p>
         
         <h2 id="data-deserializer" class="section"><a class="anchor-link left" href="#data-deserializer"><i class="icofont-laika link">&#xef71;</i></a>Data <code>Deserializer</code></h2>
-        <p>A <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Deserializer.html">Deserializer</a> is defined as a <em>SAM interface</em> that is basically a <code>String =&gt; Either[Throwable, T]</code>. Defining a new one can be done easily by providing an implicit conversion function from a <code>String</code> to serialize to either a value of the type <code>T</code> or an exception.</p>
+        <p>A <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Deserializer.html">Deserializer</a> is defined as a <em>SAM interface</em> that is basically a <code>String =&gt; Either[Throwable, T]</code>. Defining a new one can be done easily by providing an implicit conversion function from a <code>String</code> to serialize to either a value of the type <code>T</code> or an exception.</p>
         <p>For instance, adding a deserializer for <code>Int</code>s can be done as follows.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">syntax</span><span>.</span><span class="identifier">either</span><span>.</span><span class="identifier">_</span><span>
 
 </span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="type-name">Deserializer</span><span>
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">deserializer</span><span>: </span><span class="type-name">Deserializer</span><span>[</span><span class="type-name">Int</span><span>] = </span><span class="identifier">s</span><span> =&gt; </span><span class="type-name">Either</span><span>.</span><span class="identifier">catchNonFatal</span><span>(</span><span class="identifier">s</span><span>.</span><span class="identifier">toInt</span><span>)
-</span><span class="comment">// deserializer: Deserializer[Int] = repl.MdocSession$MdocApp$$anonfun$2@14472aed</span></code></pre>
+</span><span class="comment">// deserializer: Deserializer[Int] = repl.MdocSession$MdocApp$$anonfun$2@7aabecec</span></code></pre>
         <p>The library provides natively a <em>no-op</em> deserializer for <code>String</code>s.</p>
         
         <h2 id="library-integration" class="section"><a class="anchor-link left" href="#library-integration"><i class="icofont-laika link">&#xef71;</i></a>Library integration</h2>

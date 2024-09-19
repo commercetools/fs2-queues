@@ -123,7 +123,7 @@
       <main class="content">
 
         <h1 id="receiving-data" class="title">Receiving Data</h1>
-        <p>Receiving data is achieved through a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueueSubscriber.html">QueueSubscriber</a>. You can acquire one throuh a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueueClient.html">QueueClient</a> by using the <code>subscribe()</code> method. A <code>QueueSubscriber</code> is associated with a specific queue, which is provided when creating the subscriber.</p>
+        <p>Receiving data is achieved through a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueueSubscriber.html">QueueSubscriber</a>. You can acquire one throuh a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueueClient.html">QueueClient</a> by using the <code>subscribe()</code> method. A <code>QueueSubscriber</code> is associated with a specific queue, which is provided when creating the subscriber.</p>
         <p>The subscriber also requires a <a href="../serialization/#data-deserializer">data deserializer</a> upon creation, to deserialize the message payload received from the queue.</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
 </span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">syntax</span><span>.</span><span class="identifier">all</span><span>.</span><span class="identifier">_</span><span>
@@ -146,7 +146,7 @@
         <p>In the following, we explain what kind of control flow handling is provided by the library.</p>
         
         <h2 id="processors" class="section"><a class="anchor-link left" href="#processors"><i class="icofont-laika link">&#xef71;</i></a>Processors</h2>
-        <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueueSubscriber.html">QueueSubscriber</a> abstraction provides a <code>processWithAutoAck()</code> method, which automatically handles the control flow part for you. You only need to provide the processing function, allowing you to focus on your business logic.</p>
+        <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueueSubscriber.html">QueueSubscriber</a> abstraction provides a <code>processWithAutoAck()</code> method, which automatically handles the control flow part for you. You only need to provide the processing function, allowing you to focus on your business logic.</p>
         <div class="callout info">
           <i class="icofont-laika info">&#xef4e;</i>
           <p>The <code>payload</code> is effectful as it performs data deserialization, which can fail when a message payload is malformed.
@@ -158,15 +158,15 @@
     </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>).</span><span class="identifier">as</span><span>(</span><span class="identifier">message</span><span>.</span><span class="identifier">messageId</span><span>)
   }
 }</span></code></pre>
-        <p>The processing function receives a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Message.html">Message</a>, which gives access to the content and some metadata of the received messages.</p>
+        <p>The processing function receives a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Message.html">Message</a>, which gives access to the content and some metadata of the received messages.</p>
         <p>The result is a <code>Stream</code> of the processing results, emitted in the order the messages where received. Only the successfully processed messages are emitted down-stream. The stream is failed upon the first failed processing.</p>
         <p>The <code>processWithAutoAck</code> method performs automatic acking/nacking for you depending on the processing outcome. It comes in handy to implement at least once delivery startegies, releasing the message to be reprocessed by another subscriber in case of error.</p>
         <p>If you wish to implement a stream that does not fail upon error, you can use the <code>attemptProcessWithAutoAck()</code> methods, which emits the results of the processing as an <code>Either[Throwable, T]</code>. The resulting stream does not fail if some processing fails. Otherwise it has the same behavior as the stream above.</p>
         <p>For more flexibility in terms of what to do with each received messages, you can also check <code>process()</code> and <code>processWithImmediateDecision()</code>, 
-        that will give access to the content and some metadata of the received messages, apply some effects and return a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Decision.html">Decision</a>, 
-        to dictate whether each message should be confirmed (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Decision/Ok.html">Ok</a>), dropped (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Decision/Drop.html">Drop</a>, 
-        considered as failed (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Decision/Fail.html">Fail</a>), or if the message should be re-enqueued (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/Decision/Reenqueue.html">Reenqueue</a>).
-        An <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/ImmediateDecision.html">ImmediateDecision</a> is a kind of decision that won&#39;t allow messages to get re-enqueued.</p>
+        that will give access to the content and some metadata of the received messages, apply some effects and return a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Decision.html">Decision</a>, 
+        to dictate whether each message should be confirmed (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Decision/Ok.html">Ok</a>), dropped (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Decision/Drop.html">Drop</a>, 
+        considered as failed (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Decision/Fail.html">Fail</a>), or if the message should be re-enqueued (see <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/Decision/Reenqueue.html">Reenqueue</a>).
+        An <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/ImmediateDecision.html">ImmediateDecision</a> is a kind of decision that won&#39;t allow messages to get re-enqueued.</p>
         <p>These variants of processors can be as involved as needed, and allow to cover a wide range of use cases, declaratively.</p>
         <pre><code class="nohighlight"><span class="identifier">subscriber</span><span>.</span><span class="identifier">process</span><span>[</span><span class="type-name">Int</span><span>](
   </span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">5</span><span>,
@@ -197,7 +197,7 @@
         
         <h2 id="raw-message-stream" class="section"><a class="anchor-link left" href="#raw-message-stream"><i class="icofont-laika link">&#xef71;</i></a>Raw message stream</h2>
         <p>If you want more fine-grained tuning of the control flow part, you can resort to the <code>messages()</code> stream available via the <code>QueueSubscriber</code>.
-        The stream emits a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/MessageContext.html">MessageContext</a> for each received message, giving access to the message content and metadata, as well as to message control methods.</p>
+        The stream emits a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/MessageContext.html">MessageContext</a> for each received message, giving access to the message content and metadata, as well as to message control methods.</p>
         <p>Using this stream, you can implement your processing strategy.</p>
         <div class="callout warning">
           <i class="icofont-laika warning">&#xf026;</i>
@@ -240,7 +240,7 @@
         </ol>
         
         <h2 id="explicit-pull" class="section"><a class="anchor-link left" href="#explicit-pull"><i class="icofont-laika link">&#xef71;</i></a>Explicit pull</h2>
-        <p>If you are integrating this library with an existing code base that performs explicit pulls from the queue, you can access the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/QueuePuller.html">QueuePuller</a> lower level API, which exposes ways to pull batch of messages.
+        <p>If you are integrating this library with an existing code base that performs explicit pulls from the queue, you can access the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/QueuePuller.html">QueuePuller</a> lower level API, which exposes ways to pull batch of messages.
         This abstraction comes in handy when your processing code is based on a callback approach and is not implemented as a <code>Stream</code>, otherwise you should prefer the streams presented above.</p>
         <p>A <code>QueuePuller</code> is accessed as a <a href="https://typelevel.org/cats-effect/docs/std/resource"><code>Resource</code></a> as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.</p>
         <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">Outcome</span><span>

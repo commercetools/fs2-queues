@@ -126,18 +126,18 @@
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-testing&quot;</span><span> % </span><span class="string-literal">&quot;0.4.0&quot;</span></code></pre>
         
         <h2 id="using-testqueue" class="section"><a class="anchor-link left" href="#using-testqueue"><i class="icofont-laika link">&#xef71;</i></a>Using <code>TestQueue</code></h2>
-        <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/testing/TestQueue.html">TestQueue</a> class implements an in-memory queue system. A <code>TestQueue</code> can be wrapped to create a:</p>
+        <p>The <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/testing/TestQueue.html">TestQueue</a> class implements an in-memory queue system. A <code>TestQueue</code> can be wrapped to create a:</p>
         <ul>
-          <li>puller via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/testing/TestQueuePuller.html">TestQueuePuller</a> <code>apply</code> method</li>
+          <li>puller via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/testing/TestQueuePuller$.html">TestQueuePuller</a> <code>apply</code> method</li>
         </ul>
         <ul>
-          <li>pusher via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/testing/TestQueuePusher.html">TestQueuePusher</a> <code>apply</code> method</li>
+          <li>pusher via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/testing/TestQueuePusher$.html">TestQueuePusher</a> <code>apply</code> method</li>
         </ul>
         <ul>
-          <li>subscriber via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/testing/TestQueueSubscriber.html">TestQueueSubscriber</a> <code>apply</code> method</li>
+          <li>subscriber via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/testing/TestQueueSubscriber$.html">TestQueueSubscriber</a> <code>apply</code> method</li>
         </ul>
         <ul>
-          <li>publisher via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/testing/TestQueuePublisher.html">TestQueuePublisher</a> <code>apply</code> method</li>
+          <li>publisher via <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/testing/TestQueuePublisher$.html">TestQueuePublisher</a> <code>apply</code> method</li>
         </ul>
         <p>The <code>TestQueue</code> and the various test tools are designed to work well when used with the <a href="https://typelevel.org/cats-effect/docs/core/test-runtime">cats-effect test runtime</a></p>
         <p>For instance, if you want to test code that needs to publish with delays, you can use the following approach:</p>
@@ -184,7 +184,7 @@
         <p>These variants are available on test entities.</p>
         
         <h2 id="testing-message-contexts" class="section"><a class="anchor-link left" href="#testing-message-contexts"><i class="icofont-laika link">&#xef71;</i></a>Testing message contexts</h2>
-        <p>If you need to unit test different behavior on message contexts, you can use the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/com/commercetools/queue/testing/TestingMessageContext.html">TestingMessageContext</a> class.
+        <p>If you need to unit test different behavior on message contexts, you can use the <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.4.0/com/commercetools/queue/testing/TestingMessageContext.html">TestingMessageContext</a> class.
         It allows you to create a message context with different behaviors.</p>
         <p>For instance, if you want to check the behavior of a failing ack on a message, you can use this approach:</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">val</span><span> </span><span class="identifier">ctx</span><span> = </span><span class="type-name">TestingMessageContext</span><span>(</span><span class="string-literal">&quot;payload&quot;</span><span>).</span><span class="identifier">failing</span><span>(</span><span class="keyword">new</span><span> </span><span class="type-name">Exception</span><span>(</span><span class="string-literal">&quot;BOOM!&quot;</span><span>))
