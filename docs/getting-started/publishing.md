@@ -1,7 +1,7 @@
 {% nav = true %}
 # Publishing Data
 
-Publishing data is made using a @:api(com.commercetools.queue.QueuePublisher). You can acquire one through a @:api(com.commercetools.queue.QueueClient) by using the `publish()` method. A `QueuePublisher` is associated to a specific queue, which is provided when creating the publisher.
+Publishing data is made using a @:api(QueuePublisher). You can acquire one through a @:api(QueueClient) by using the `publish()` method. A `QueuePublisher` is associated to a specific queue, which is provided when creating the publisher.
 
 The publisher also requires a [data serializer][doc-serializer] upon creation for the type of data you want to publish to it.
 
@@ -20,7 +20,7 @@ def publisher: QueuePublisher[IO, String] =
 
 ## Pipe a stream through the publisher sink
 
-The @:api(com.commercetools.queue.QueuePublisher) abstraction provides a `sink()` pipe, through which you can make your publishing source stream go.
+The @:api(QueuePublisher) abstraction provides a `sink()` pipe, through which you can make your publishing source stream go.
 The pipe takes a parameter allowing for batching publications.
 
 ```scala mdoc:compile-only
@@ -41,7 +41,7 @@ Several `Stream`s can safely publish to the same sink concurrently, so you can r
 
 ## Explicit publish
 
-If you are integrating the library with an existing code base that performs explicit publications to the queue, you can access the @:api(com.commercetools.queue.QueuePusher) lower level API, which exposes ways to publish a single message or a single batch.
+If you are integrating the library with an existing code base that performs explicit publications to the queue, you can access the @:api(QueuePusher) lower level API, which exposes ways to publish a single message or a single batch.
 This abstraction comes in handy when the messages you produce do not come from a `Stream`, otherwise you should prefer the `sink()` pipe presented above.
 
 A `QueuePusher` is accessed as a [`Resource`][cats-effect-resource] as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.

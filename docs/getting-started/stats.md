@@ -1,7 +1,7 @@
 {% nav = true %}
 # Queue Statistics
 
-The library exposes a simple interface to access basic queue statistics through a @:api(com.commercetools.queue.QueueStatistics).
+The library exposes a simple interface to access basic queue statistics through a @:api(QueueStatistics).
 
 @:callout(warning)
 The numbers reported by the statistics are approximate numbers. Depending on the underlying system, there might be some delay in data availability.
@@ -41,7 +41,7 @@ If you want the stream to fail upon the first fetching error, you can use the `s
 
 ## Explicit fetch
 
-If you are integrating this library with an existing code base that performs explicit fetches for queue statistics, you can access the @:api(com.commercetools.queue.QueueStatsFetcher) lower level API, which exposes a way to fetch statistics explicitly.
+If you are integrating this library with an existing code base that performs explicit fetches for queue statistics, you can access the @:api(QueueStatsFetcher) lower level API, which exposes a way to fetch statistics explicitly.
 
 A `QueueStatsFetcher` is accessed as a [`Resource`][cats-effect-resource] as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.
 

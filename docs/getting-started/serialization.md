@@ -6,7 +6,7 @@ The proper string encoding/decoding is performed by the underlying SDK, allowing
 
 ## Data `Serializer`
 
-A @:api(com.commercetools.queue.Serializer) is defined as a _SAM interface_ that is basically a `T => String`. Defining a new one can be done easily by providing an implicit conversion function from the type `T` to serialize to a `String`.
+A @:api(Serializer) is defined as a _SAM interface_ that is basically a `T => String`. Defining a new one can be done easily by providing an implicit conversion function from the type `T` to serialize to a `String`.
 
 For instance, adding a serializer for `Int`s can be done as follows.
 
@@ -20,7 +20,7 @@ The library provides natively a _no-op_ serializer for `String`s.
 
 ## Data `Deserializer`
 
-A @:api(com.commercetools.queue.Deserializer) is defined as a _SAM interface_ that is basically a `String => Either[Throwable, T]`. Defining a new one can be done easily by providing an implicit conversion function from a `String` to serialize to either a value of the type `T` or an exception.
+A @:api(Deserializer) is defined as a _SAM interface_ that is basically a `String => Either[Throwable, T]`. Defining a new one can be done easily by providing an implicit conversion function from a `String` to serialize to either a value of the type `T` or an exception.
 
 For instance, adding a deserializer for `Int`s can be done as follows.
 
