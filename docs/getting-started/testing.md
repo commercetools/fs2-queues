@@ -9,12 +9,12 @@ libraryDependencies += "com.commercetools" %% "fs2-queues-testing" % "@VERSION@"
 
 ## Using `TestQueue`
 
-The @:api(com.commercetools.queue.testing.TestQueue) class implements an in-memory queue system. A `TestQueue` can be wrapped to create a:
+The @:api(testing.TestQueue) class implements an in-memory queue system. A `TestQueue` can be wrapped to create a:
 
-  - puller via @:api(com.commercetools.queue.testing.TestQueuePuller) `apply` method
-  - pusher via @:api(com.commercetools.queue.testing.TestQueuePusher) `apply` method
-  - subscriber via @:api(com.commercetools.queue.testing.TestQueueSubscriber) `apply` method
-  - publisher via @:api(com.commercetools.queue.testing.TestQueuePublisher) `apply` method
+  - puller via @:api(testing.TestQueuePuller$) `apply` method
+  - pusher via @:api(testing.TestQueuePusher$) `apply` method
+  - subscriber via @:api(testing.TestQueueSubscriber$) `apply` method
+  - publisher via @:api(testing.TestQueuePublisher$) `apply` method
 
 The `TestQueue` and the various test tools are designed to work well when used with the [cats-effect test runtime][test-runtime]
 
@@ -63,7 +63,7 @@ These variants are available on test entities.
 
 ## Testing message contexts
 
-If you need to unit test different behavior on message contexts, you can use the @:api(com.commercetools.queue.testing.TestingMessageContext) class.
+If you need to unit test different behavior on message contexts, you can use the @:api(testing.TestingMessageContext) class.
 It allows you to create a message context with different behaviors.
 
 For instance, if you want to check the behavior of a failing ack on a message, you can use this approach:

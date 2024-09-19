@@ -1,7 +1,7 @@
 {% nav = true %}
 # Managing Queues
 
-Managing queues is made using the @:api(com.commercetools.queue.QueueAdministration). You can acquire an instance through a @:api(com.commercetools.queue.QueueClient) by using the `administration()` method. A `QueueAdministration` instance is **not** associated to any specific queue. The queue to operate on will be provided in each administration method.
+Managing queues is made using the @:api(QueueAdministration). You can acquire an instance through a @:api(QueueClient) by using the `administration()` method. A `QueueAdministration` instance is **not** associated to any specific queue. The queue to operate on will be provided in each administration method.
 
 ```scala mdoc
 import cats.effect.IO

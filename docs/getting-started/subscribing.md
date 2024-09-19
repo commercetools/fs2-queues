@@ -1,7 +1,7 @@
 {% nav = true %}
 # Receiving Data
 
-Receiving data is achieved through a @:api(com.commercetools.queue.QueueSubscriber). You can acquire one throuh a @:api(com.commercetools.queue.QueueClient) by using the `subscribe()` method. A `QueueSubscriber` is associated with a specific queue, which is provided when creating the subscriber.
+Receiving data is achieved through a @:api(QueueSubscriber). You can acquire one throuh a @:api(QueueClient) by using the `subscribe()` method. A `QueueSubscriber` is associated with a specific queue, which is provided when creating the subscriber.
 
 The subscriber also requires a [data deserializer][doc-deserializer] upon creation, to deserialize the message payload received from the queue.
 
@@ -30,7 +30,7 @@ In the following, we explain what kind of control flow handling is provided by t
 
 ## Processors
 
-The @:api(com.commercetools.queue.QueueSubscriber) abstraction provides a `processWithAutoAck()` method, which automatically handles the control flow part for you. You only need to provide the processing function, allowing you to focus on your business logic.
+The @:api(QueueSubscriber) abstraction provides a `processWithAutoAck()` method, which automatically handles the control flow part for you. You only need to provide the processing function, allowing you to focus on your business logic.
 
 @:callout(info)
 The `payload` is effectful as it performs data deserialization, which can fail when a message payload is malformed.
@@ -47,7 +47,7 @@ subscriber.processWithAutoAck(batchSize = 10, waitingTime = 20.seconds) { messag
 }
 ```
 
-The processing function receives a @:api(com.commercetools.queue.Message), which gives access to the content and some metadata of the received messages.
+The processing function receives a @:api(Message), which gives access to the content and some metadata of the received messages.
 
 The result is a `Stream` of the processing results, emitted in the order the messages where received. Only the successfully processed messages are emitted down-stream. The stream is failed upon the first failed processing.
 
@@ -56,10 +56,10 @@ The `processWithAutoAck` method performs automatic acking/nacking for you depend
 If you wish to implement a stream that does not fail upon error, you can use the `attemptProcessWithAutoAck()` methods, which emits the results of the processing as an `Either[Throwable, T]`. The resulting stream does not fail if some processing fails. Otherwise it has the same behavior as the stream above.
 
 For more flexibility in terms of what to do with each received messages, you can also check `process()` and `processWithImmediateDecision()`, 
-that will give access to the content and some metadata of the received messages, apply some effects and return a @:api(com.commercetools.queue.Decision), 
-to dictate whether each message should be confirmed (see @:api(com.commercetools.queue.Decision.Ok)), dropped (see @:api(com.commercetools.queue.Decision.Drop), 
-considered as failed (see @:api(com.commercetools.queue.Decision.Fail)), or if the message should be re-enqueued (see @:api(com.commercetools.queue.Decision.Reenqueue)).
-An @:api(com.commercetools.queue.ImmediateDecision) is a kind of decision that won't allow messages to get re-enqueued.
+that will give access to the content and some metadata of the received messages, apply some effects and return a @:api(Decision), 
+to dictate whether each message should be confirmed (see @:api(Decision.Ok)), dropped (see @:api(Decision.Drop), 
+considered as failed (see @:api(Decision.Fail)), or if the message should be re-enqueued (see @:api(Decision.Reenqueue)).
+An @:api(ImmediateDecision) is a kind of decision that won't allow messages to get re-enqueued.
 
 These variants of processors can be as involved as needed, and allow to cover a wide range of use cases, declaratively.
 
@@ -95,7 +95,7 @@ subscriber.process[Int](
 ## Raw message stream
 
 If you want more fine-grained tuning of the control flow part, you can resort to the `messages()` stream available via the `QueueSubscriber`.
-The stream emits a @:api(com.commercetools.queue.MessageContext) for each received message, giving access to the message content and metadata, as well as to message control methods.
+The stream emits a @:api(MessageContext) for each received message, giving access to the message content and metadata, as well as to message control methods.
 
 Using this stream, you can implement your processing strategy.
 
@@ -142,7 +142,7 @@ There are three different methods that can be used to control the message lifecy
 
 ## Explicit pull
 
-If you are integrating this library with an existing code base that performs explicit pulls from the queue, you can access the @:api(com.commercetools.queue.QueuePuller) lower level API, which exposes ways to pull batch of messages.
+If you are integrating this library with an existing code base that performs explicit pulls from the queue, you can access the @:api(QueuePuller) lower level API, which exposes ways to pull batch of messages.
 This abstraction comes in handy when your processing code is based on a callback approach and is not implemented as a `Stream`, otherwise you should prefer the streams presented above.
 
 A `QueuePuller` is accessed as a [`Resource`][cats-effect-resource] as it usually implies using a connection pool. When the resource is released, the pools will be disposed properly.
