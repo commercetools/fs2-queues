@@ -19,6 +19,8 @@ package com.commercetools.queue
 import cats.effect.{MonadCancel, Resource}
 import fs2.Stream
 
+import scala.concurrent.duration.FiniteDuration
+
 /**
  * The interface to publish to a queue.
  */
@@ -41,10 +43,11 @@ sealed abstract class QueuePublisher[F[_], T](implicit F: MonadCancel[F, Throwab
    * produced data to the queue. The messages are published in batches, according
    * to the `batchSize` parameter.
    */
-  def sink(batchSize: Int = 10)(upstream: Stream[F, (T, Map[String, String])]): Stream[F, Nothing] =
+  def sink(batchSize: Int = 10, delay: Option[FiniteDuration] = None)(upstream: Stream[F, (T, Map[String, String])])
+    : Stream[F, Nothing] =
     Stream.resource(pusher).flatMap { pusher =>
       upstream.chunkN(batchSize).foreach { chunk =>
-        pusher.push(chunk.toList, None)
+        pusher.push(chunk.toList, delay)
       }
     }
 
