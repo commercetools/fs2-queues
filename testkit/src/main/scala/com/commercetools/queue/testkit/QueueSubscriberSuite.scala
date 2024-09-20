@@ -156,6 +156,29 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
     } yield ()
   }
 
+  withQueue.test("messageBatch ackAll/nackAll marks entire batch") { queueName =>
+    val client = clientFixture()
+    val totalMessages = 5
+    client.subscribe(queueName).puller.use { puller =>
+      for {
+        _ <- Stream
+          .emits(List.fill(totalMessages)((s"msg", Map.empty[String, String])))
+          .through(client.publish(queueName).sink(batchSize = totalMessages))
+          .compile
+          .drain
+        msgBatch <- puller.pullMessageBatch(totalMessages, 1.second)
+        _ = assertEquals(msgBatch.messages.size, totalMessages)
+        _ <- msgBatch.nackAll
+        msgBatchNack <- puller.pullMessageBatch(totalMessages, 1.second)
+        _ = assertEquals(msgBatchNack.messages.size, totalMessages)
+        _ <- msgBatchNack.ackAll
+        _ <- assertIOBoolean(
+          puller.pullMessageBatch(6, 1.second).map(_.messages.isEmpty)
+        )
+      } yield ()
+    }
+  }
+
   withQueue.test("process respects the decision from the handler") { queueName =>
     val client = clientFixture()
     for {

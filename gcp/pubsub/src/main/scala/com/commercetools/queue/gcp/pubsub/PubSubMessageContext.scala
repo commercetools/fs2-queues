@@ -29,7 +29,7 @@ import scala.jdk.CollectionConverters._
 private class PubSubMessageContext[F[_], T](
   subscriber: SubscriberStub,
   subscriptionName: SubscriptionName,
-  underlying: ReceivedMessage,
+  val underlying: ReceivedMessage,
   lockDurationSeconds: Int,
   val payload: F[T],
   queueName: String

@@ -18,8 +18,9 @@ package com.commercetools.queue.otel4s
 
 import cats.data.Chain
 import cats.effect.IO
+import cats.implicits.toFoldableOps
 import com.commercetools.queue.testing.TestingMessageContext
-import com.commercetools.queue.{MessageContext, UnsealedQueuePuller}
+import com.commercetools.queue.{Message, MessageBatch, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attribute
@@ -40,6 +41,15 @@ class MeasuringPullerSuite extends CatsEffectSuite {
 
     override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): IO[Chunk[MessageContext[IO, String]]] =
       batch
+
+    override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): IO[MessageBatch[IO, String]] =
+      pullBatch(batchSize, waitingTime).map { batch =>
+        new MessageBatch[IO, String] {
+          override def messages: Chunk[Message[IO, String]] = batch
+          override def ackAll: IO[Unit] = batch.traverse_(_.ack())
+          override def nackAll: IO[Unit] = batch.traverse_(_.nack())
+        }
+      }
   }
 
   test("Successful pulling results in incrementing the counter") {
@@ -58,6 +68,30 @@ class MeasuringPullerSuite extends CatsEffectSuite {
       )
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
+        _ <- assertIO(fiber.join.map(_.isSuccess), true)
+        _ <- assertIO(
+          counter.records.get,
+          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.success))))
+      } yield ()
+    }
+  }
+
+  test("Successful batch pulling results in incrementing the counter") {
+    NaiveCounter.create.flatMap { counter =>
+      val measuringPuller = new MeasuringQueuePuller[IO, String](
+        puller(
+          IO.pure(
+            Chunk.from(
+              List(
+                TestingMessageContext("first").noop,
+                TestingMessageContext("second").noop,
+                TestingMessageContext("third").noop,
+                TestingMessageContext("forth").noop)))),
+        new QueueMetrics(queueName, counter),
+        Tracer.noop
+      )
+      for {
+        fiber <- measuringPuller.pullMessageBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
           counter.records.get,
