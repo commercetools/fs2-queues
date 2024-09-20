@@ -27,6 +27,6 @@ class PubSubClientSuite extends QueueClientSuite {
   override val queueUpdateSupported = false
 
   override def client: Resource[IO, QueueClient[IO]] =
-    PubSubClient("test-project", NoCredentialsProvider.create(), endpoint = Some("http://localhost:8042"))
+    PubSubClient("test-project", NoCredentialsProvider.create(), endpoint = Some("localhost:8042"))
 
 }
