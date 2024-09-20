@@ -53,6 +53,10 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-core",
+    // TODO: Remove once next version is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueuePublisher.sink")
+    ),
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2
     )
