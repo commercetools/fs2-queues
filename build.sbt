@@ -38,7 +38,7 @@ ThisBuild / tlSitePublishBranch := Some("main")
 val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
-    "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect % Test,
+    "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
     "org.typelevel" %%% "cats-effect-testkit" % "3.5.3" % Test
   ),
   scalacOptions += (scalaVersion.value match {
@@ -84,7 +84,7 @@ lazy val testkit = crossProject(JVMPlatform)
     name := "fs2-queues-testkit",
     libraryDependencies ++= List(
       "org.scalameta" %%% "munit" % Versions.munit,
-      "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect
+      "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect
     )
   )
   .dependsOn(core)
