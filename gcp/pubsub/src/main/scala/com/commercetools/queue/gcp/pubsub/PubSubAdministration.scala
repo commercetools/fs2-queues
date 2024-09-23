@@ -28,7 +28,6 @@ import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, Expi
 import scala.concurrent.duration._
 
 private class PubSubAdministration[F[_]](
-  useGrpc: Boolean,
   project: String,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
@@ -38,26 +37,20 @@ private class PubSubAdministration[F[_]](
 
   private val adminClient = Resource.fromAutoCloseable(F.delay {
     val builder =
-      if (useGrpc)
-        TopicAdminSettings.newBuilder()
-      else
-        TopicAdminSettings.newHttpJsonBuilder()
-    builder
-      .setCredentialsProvider(credentials)
-      .setTransportChannelProvider(channelProvider)
+      TopicAdminSettings
+        .newBuilder()
+        .setCredentialsProvider(credentials)
+        .setTransportChannelProvider(channelProvider)
     endpoint.foreach(builder.setEndpoint(_))
     TopicAdminClient.create(builder.build())
   })
 
   private val subscriptionClient = Resource.fromAutoCloseable(F.delay {
     val builder =
-      if (useGrpc)
-        SubscriptionAdminSettings.newBuilder()
-      else
-        SubscriptionAdminSettings.newHttpJsonBuilder()
-    builder
-      .setCredentialsProvider(credentials)
-      .setTransportChannelProvider(channelProvider)
+      SubscriptionAdminSettings
+        .newBuilder()
+        .setCredentialsProvider(credentials)
+        .setTransportChannelProvider(channelProvider)
     endpoint.foreach(builder.setEndpoint(_))
     SubscriptionAdminClient.create(builder.build())
   })
