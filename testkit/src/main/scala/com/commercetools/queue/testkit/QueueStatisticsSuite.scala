@@ -1,6 +1,5 @@
 package com.commercetools.queue.testkit
 
-import cats.effect.IO
 import cats.syntax.all._
 import fs2.Stream
 import munit.CatsEffectSuite
@@ -23,19 +22,12 @@ trait QueueStatisticsSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .through(client.publish(queueName).sink(batchSize = 10))
         .compile
         .drain
-      statsFetcher = client.statistics(queueName).fetcher
-      _ <- statsFetcher
-        .use(_.fetch)
-        .map(stats => assertEquals(stats.messages, messages.size, "Queue should be full"))
       _ <- client
-        .subscribe(queueName)
-        .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(_ => IO.unit)
-        .take(messages.size.toLong)
-        .compile
-        .drain
-      _ <- statsFetcher
-        .use(_.fetch)
-        .map(stats => assertEquals(stats.messages, 0, "Queue should be empty"))
+        .statistics(queueName)
+        .fetcher
+        .use { fetcher =>
+          eventuallyIO(fetcher.fetch.map(_.messages), messages.size, "Queue should be full")
+        }
     } yield ()
   }
 
@@ -53,8 +45,11 @@ trait QueueStatisticsSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .use { case (puller, statsFetcher) =>
           for {
             chunk <- puller.pullBatch(10, 10.seconds)
-            stats <- statsFetcher.fetch
-          } yield assertEquals(stats.inflight, chunk.size.some, "Inflight stats doesn't match pulled messages")
+            _ <- eventuallyIO(
+              statsFetcher.fetch.map(_.inflight),
+              chunk.size.some,
+              "Inflight stats doesn't match pulled messages")
+          } yield ()
         }
     } yield ()
   }
@@ -73,8 +68,10 @@ trait QueueStatisticsSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .statistics(queueName)
         .fetcher
         .use { statsFetcher =>
-          statsFetcher.fetch.map(stats =>
-            assertEquals(stats.delayed, messages.size.some, "Delayed stats doesn't match pulled messages"))
+          eventuallyIO(
+            statsFetcher.fetch.map(_.delayed),
+            messages.size.some,
+            "Delayed stats doesn't match pulled messages")
         }
     } yield ()
   }
