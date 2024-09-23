@@ -21,7 +21,6 @@ import cats.effect.syntax.concurrent._
 import cats.syntax.all._
 import com.commercetools.queue.{Deserializer, MessageContext, UnsealedQueuePuller}
 import com.google.api.gax.grpc.GrpcCallContext
-import com.google.api.gax.httpjson.HttpJsonCallContext
 import com.google.api.gax.retrying.RetrySettings
 import com.google.api.gax.rpc.{ApiCallContext, DeadlineExceededException}
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
@@ -35,7 +34,6 @@ import scala.jdk.CollectionConverters._
 
 private class PubSubPuller[F[_], T](
   val queueName: String,
-  useGrpc: Boolean,
   subscriptionName: SubscriptionName,
   subscriber: SubscriberStub,
   lockTTLSeconds: Int
@@ -45,16 +43,9 @@ private class PubSubPuller[F[_], T](
   extends UnsealedQueuePuller[F, T] {
 
   private def callContext(waitingTime: FiniteDuration): ApiCallContext =
-    if (useGrpc)
-      GrpcCallContext
-        .createDefault()
-        .withRetrySettings(
-          RetrySettings.newBuilder().setLogicalTimeout(Duration.ofMillis(waitingTime.toMillis)).build())
-    else
-      HttpJsonCallContext
-        .createDefault()
-        .withRetrySettings(
-          RetrySettings.newBuilder().setLogicalTimeout(Duration.ofMillis(waitingTime.toMillis)).build())
+    GrpcCallContext
+      .createDefault()
+      .withRetrySettings(RetrySettings.newBuilder().setLogicalTimeout(Duration.ofMillis(waitingTime.toMillis)).build())
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
     wrapFuture(F.delay {

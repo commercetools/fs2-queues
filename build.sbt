@@ -39,7 +39,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.5.3" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.5.4" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
@@ -84,7 +84,8 @@ lazy val testkit = crossProject(JVMPlatform)
     name := "fs2-queues-testkit",
     libraryDependencies ++= List(
       "org.scalameta" %%% "munit" % Versions.munit,
-      "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect
+      "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect,
+      "org.slf4j" % "slf4j-simple" % "2.0.16"
     )
   )
   .dependsOn(core)
@@ -137,10 +138,21 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.0"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.3"
     )
   )
   .dependsOn(core, testkit % Test)
+
+lazy val azureServiceBusIt = project
+  .in(file("azure/service-bus/integration"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= List(
+      "com.azure" % "azure-identity" % "1.11.1"
+    )
+  )
+  .dependsOn(azureServiceBus.jvm % Test, testkit.jvm % Test)
 
 lazy val awsSQS = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
@@ -149,7 +161,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.25.50"
+      "software.amazon.awssdk" % "sqs" % "2.25.70"
     )
   )
   .dependsOn(core)
@@ -166,9 +178,21 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-gcp-pubsub",
+    // TODO: Remove once next version is published
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.gcp.pubsub.PubSubAdministration.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged$default$5"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubPublisher.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubPuller.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubSubscriber.this")
+    ),
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.129.3",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.47.0"
+      "com.google.cloud" % "google-cloud-pubsub" % "1.129.7",
+      "com.google.cloud" % "google-cloud-monitoring" % "3.50.0"
     )
   )
   .dependsOn(core)
