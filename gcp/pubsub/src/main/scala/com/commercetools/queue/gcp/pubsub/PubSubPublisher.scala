@@ -39,10 +39,10 @@ private class PubSubPublisher[F[_], T](
       .fromAutoCloseable {
         F.blocking {
           val builder =
-            PublisherStubSettings.newBuilder()
-          builder
-            .setCredentialsProvider(credentials)
-            .setTransportChannelProvider(channelProvider)
+            PublisherStubSettings
+              .newBuilder()
+              .setCredentialsProvider(credentials)
+              .setTransportChannelProvider(channelProvider)
           endpoint.foreach(builder.setEndpoint(_))
           GrpcPublisherStub.create(builder.build())
         }

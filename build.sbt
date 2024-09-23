@@ -84,7 +84,8 @@ lazy val testkit = crossProject(JVMPlatform)
     name := "fs2-queues-testkit",
     libraryDependencies ++= List(
       "org.scalameta" %%% "munit" % Versions.munit,
-      "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect
+      "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect,
+      "org.slf4j" % "slf4j-simple" % "2.0.16"
     )
   )
   .dependsOn(core)
@@ -141,6 +142,17 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     )
   )
   .dependsOn(core, testkit % Test)
+
+lazy val azureServiceBusIt = project
+  .in(file("azure/service-bus/integration"))
+  .enablePlugins(NoPublishPlugin)
+  .settings(commonSettings)
+  .settings(
+    libraryDependencies ++= List(
+      "com.azure" % "azure-identity" % "1.11.1"
+    )
+  )
+  .dependsOn(azureServiceBus.jvm % Test, testkit.jvm % Test)
 
 lazy val awsSQS = crossProject(JVMPlatform)
   .crossType(CrossType.Pure)
