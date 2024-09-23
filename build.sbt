@@ -39,7 +39,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect-3" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.5.3" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.5.4" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
