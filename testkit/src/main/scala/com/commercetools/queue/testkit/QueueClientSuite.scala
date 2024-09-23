@@ -3,6 +3,7 @@ package com.commercetools.queue.testkit
 import cats.effect.std.{Env, Random}
 import cats.effect.{IO, Resource, SyncIO}
 import com.commercetools.queue.QueueClient
+import munit.catseffect.IOFixture
 
 import scala.concurrent.duration._
 
@@ -25,7 +26,7 @@ abstract class QueueClientSuite
   def booleanOrDefault(varName: String, default: Boolean): IO[Boolean] =
     optBoolean(varName).map(_.getOrElse(default))
 
-  override def munitTimeout: Duration = 1.minute
+  override def munitIOTimeout: Duration = 1.minute
 
   /** Override these if the given provider is not supporting these features */
   val queueUpdateSupported: Boolean = true
@@ -39,9 +40,9 @@ abstract class QueueClientSuite
   /** Provide a way to acquire a queue client for the provider under test. */
   def client: Resource[IO, QueueClient[IO]]
 
-  final val clientFixture: Fixture[QueueClient[IO]] = ResourceSuiteLocalFixture("queue-client", client)
+  final val clientFixture: IOFixture[QueueClient[IO]] = ResourceSuiteLocalFixture("queue-client", client)
   final lazy val withQueue: SyncIO[FunFixture[String]] =
-    ResourceFixture(
+    ResourceFunFixture(
       Resource.make(
         IO.randomUUID
           .map(uuid => s"queue-$uuid")
@@ -49,7 +50,7 @@ abstract class QueueClientSuite
             clientFixture().administration
               .create(queueName, originalMessageTTL, originalLockTTL)
           })(queueName => clientFixture().administration.delete(queueName)))
-  final override def munitFixtures: List[Fixture[QueueClient[IO]]] = List(clientFixture)
+  final override def munitFixtures: List[IOFixture[QueueClient[IO]]] = List(clientFixture)
 
   final def randomMessages(n: Int): IO[List[(String, Map[String, String])]] = for {
     random <- Random.scalaUtilRandom[IO]

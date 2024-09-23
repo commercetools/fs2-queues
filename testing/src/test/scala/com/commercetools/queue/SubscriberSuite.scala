@@ -29,7 +29,7 @@ import scala.concurrent.duration._
 
 class SubscriberSuite extends CatsEffectSuite {
 
-  val queueSub = ResourceFixture(
+  val queueSub = ResourceFunFixture(
     TestQueue[String](name = "test-queue", messageTTL = 15.minutes, lockTTL = 1.minute).toResource
       .map { queue =>
         (queue, TestQueueSubscriber(queue), TestQueuePublisher(queue))
