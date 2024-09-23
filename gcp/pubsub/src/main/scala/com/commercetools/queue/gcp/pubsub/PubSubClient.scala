@@ -17,33 +17,32 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
+import com.commercetools.queue._
 import com.google.api.gax.core.CredentialsProvider
-import com.google.api.gax.httpjson.{HttpJsonTransportChannel, ManagedHttpJsonChannel}
+import com.google.api.gax.grpc.GrpcTransportChannel
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
 import com.google.pubsub.v1.{SubscriptionName, TopicName}
+import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
 
 private class PubSubClient[F[_]: Async] private (
   project: String,
   channelProvider: TransportChannelProvider,
-  useGrpc: Boolean,
   credentials: CredentialsProvider,
   endpoint: Option[String])
   extends UnsealedQueueClient[F] {
 
   override def administration: QueueAdministration[F] =
-    new PubSubAdministration[F](useGrpc, project, channelProvider, credentials, endpoint)
+    new PubSubAdministration[F](project, channelProvider, credentials, endpoint)
 
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(name, SubscriptionName.of(project, s"fs2-queue-$name"), channelProvider, credentials, endpoint)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new PubSubPublisher[F, T](name, useGrpc, TopicName.of(project, name), channelProvider, credentials, endpoint)
+    new PubSubPublisher[F, T](name, TopicName.of(project, name), channelProvider, credentials, endpoint)
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new PubSubSubscriber[F, T](
       name,
-      useGrpc,
       SubscriptionName.of(project, s"fs2-queue-$name"),
       channelProvider,
       credentials,
@@ -53,31 +52,34 @@ private class PubSubClient[F[_]: Async] private (
 
 object PubSubClient {
 
-  private def makeDefaultTransportChannel(endpoint: Option[String]): HttpJsonTransportChannel =
-    HttpJsonTransportChannel.create(
-      ManagedHttpJsonChannel.newBuilder().setEndpoint(endpoint.getOrElse("https://pubsub.googleapis.com")).build())
+  private def makeDefaultTransportChannel(endpoint: Option[String]): GrpcTransportChannel =
+    GrpcTransportChannel.create(
+      NettyChannelBuilder
+        .forTarget(endpoint.getOrElse("https://pubsub.googleapis.com"))
+        .usePlaintext()
+        .build()
+    )
 
   def apply[F[_]](
     project: String,
     credentials: CredentialsProvider,
     endpoint: Option[String] = None,
-    mkTransportChannel: Option[String] => HttpJsonTransportChannel = makeDefaultTransportChannel _
+    mkTransportChannel: Option[String] => GrpcTransportChannel = makeDefaultTransportChannel
   )(implicit F: Async[F]
   ): Resource[F, QueueClient[F]] =
     Resource
       .fromAutoCloseable(F.blocking(mkTransportChannel(endpoint)))
       .map { channel =>
-        new PubSubClient[F](project, FixedTransportChannelProvider.create(channel), false, credentials, endpoint)
+        new PubSubClient[F](project, FixedTransportChannelProvider.create(channel), credentials, endpoint)
       }
 
   def unmanaged[F[_]](
     project: String,
     credentials: CredentialsProvider,
     channelProvider: TransportChannelProvider,
-    useGrpc: Boolean,
     endpoint: Option[String] = None
   )(implicit F: Async[F]
   ): QueueClient[F] =
-    new PubSubClient[F](project, channelProvider, useGrpc, credentials, endpoint)
+    new PubSubClient[F](project, channelProvider, credentials, endpoint)
 
 }
