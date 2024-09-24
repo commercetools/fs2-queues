@@ -161,7 +161,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.25.70"
+      "software.amazon.awssdk" % "sqs" % "2.28.7"
     )
   )
   .dependsOn(core)
