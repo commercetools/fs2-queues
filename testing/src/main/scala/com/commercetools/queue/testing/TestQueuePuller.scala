@@ -17,8 +17,8 @@
 package com.commercetools.queue.testing
 
 import cats.effect.IO
-import cats.syntax.foldable._
-import com.commercetools.queue.{Message, MessageBatch, MessageContext, QueuePuller, UnsealedQueuePuller}
+import cats.syntax.foldable.*
+import com.commercetools.queue.{Message, MessageBatch, MessageContext, QueuePuller, UnsealedMessageBatch, UnsealedQueuePuller}
 import fs2.Chunk
 
 import scala.concurrent.duration.FiniteDuration
