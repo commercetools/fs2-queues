@@ -38,7 +38,7 @@ class PubSubClientSuite extends QueueClientSuite {
       ifTrue = IO.pure(("test-project", NoCredentialsProvider.create(), Some("localhost:8042"))),
       ifFalse = for {
         project <- string("GCP_PUBSUB_PROJECT")
-        credentials = NoCredentialsProvider.create()
+        credentials = NoCredentialsProvider.create() // TODO
       } yield (project, credentials, None)
     )
 
