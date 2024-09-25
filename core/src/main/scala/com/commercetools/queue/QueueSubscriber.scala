@@ -59,6 +59,18 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
       Stream.repeatEval(puller.pullBatch(batchSize, waitingTime)).unchunks
     }
 
+  /**
+   * The stream of messages published in the subscribed queue.
+   * The [[MessageBatch]] gives an interface to interact with the
+   * batch messages in bulk.
+   *
+   * The stream emits chunks of size `batchSize` max, and waits for
+   * elements during `waitingTime` before emitting a chunk.
+   *
+   * '''Note:''' message batches returned by this stream must be
+   * manually managed (ack'ed, nack'ed) but in contrast to `messages`,
+   * the entire batch must be acknowledged as a whole..
+   */
   final def messageBatches(batchSize: Int, waitingTime: FiniteDuration): Stream[F, MessageBatch[F, T]] =
     Stream.resource(puller).flatMap { puller =>
       Stream.repeatEval(puller.pullMessageBatch(batchSize, waitingTime))
