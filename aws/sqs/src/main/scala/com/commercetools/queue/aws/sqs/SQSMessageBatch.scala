@@ -18,7 +18,7 @@ package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
 import cats.implicits.toFunctorOps
-import com.commercetools.queue.{Message, MessageBatch}
+import com.commercetools.queue.{Message, UnsealedMessageBatch}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchRequestEntry, DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry}
@@ -28,7 +28,7 @@ private class SQSMessageBatch[F[_], T](
   client: SqsAsyncClient,
   queueUrl: String
 )(implicit F: Async[F])
-  extends MessageBatch[F, T] {
+  extends UnsealedMessageBatch[F, T] {
 
   override def messages: Chunk[Message[F, T]] = payload
 

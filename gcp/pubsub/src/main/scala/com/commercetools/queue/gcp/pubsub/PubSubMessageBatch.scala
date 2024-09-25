@@ -18,7 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.Async
 import cats.implicits.toFunctorOps
-import com.commercetools.queue.{Message, MessageBatch}
+import com.commercetools.queue.{Message, UnsealedMessageBatch}
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
 import com.google.pubsub.v1.{AcknowledgeRequest, ModifyAckDeadlineRequest, SubscriptionName}
 import fs2.Chunk
@@ -28,7 +28,7 @@ private class PubSubMessageBatch[F[_], T](
   subscriptionName: SubscriptionName,
   subscriber: SubscriberStub
 )(implicit F: Async[F])
-  extends MessageBatch[F, T] {
+  extends UnsealedMessageBatch[F, T] {
   override def messages: Chunk[Message[F, T]] = payload
 
   override def ackAll: F[Unit] =

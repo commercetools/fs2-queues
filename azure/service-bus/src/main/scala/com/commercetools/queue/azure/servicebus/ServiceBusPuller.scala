@@ -17,17 +17,17 @@
 package com.commercetools.queue.azure.servicebus
 
 import cats.effect.Async
-import cats.effect.syntax.concurrent._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
-import cats.syntax.monadError._
+import cats.effect.syntax.concurrent.*
+import cats.syntax.flatMap.*
+import cats.syntax.functor.*
+import cats.syntax.monadError.*
 import com.azure.messaging.servicebus.ServiceBusReceiverClient
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 
 import java.time.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 private class ServiceBusPuller[F[_], Data](
   val queueName: String,

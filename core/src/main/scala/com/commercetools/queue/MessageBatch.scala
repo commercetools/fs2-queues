@@ -27,7 +27,7 @@ import fs2.Chunk
  * `ackAll` and `nackAll` methods do not guarantee atomicity and will
  * fallback to using per-message calls.
  */
-trait MessageBatch[F[_], T] {
+sealed trait MessageBatch[F[_], T] {
   def messages: Chunk[Message[F, T]]
 
   /**
@@ -40,3 +40,5 @@ trait MessageBatch[F[_], T] {
    */
   def nackAll: F[Unit]
 }
+
+private[queue] trait UnsealedMessageBatch[F[_], T] extends MessageBatch[F, T]

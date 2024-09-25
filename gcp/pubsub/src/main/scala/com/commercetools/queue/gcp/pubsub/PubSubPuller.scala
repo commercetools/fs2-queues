@@ -17,8 +17,8 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.Async
-import cats.effect.syntax.concurrent._
-import cats.syntax.all._
+import cats.effect.syntax.concurrent.*
+import cats.syntax.all.*
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
 import com.google.api.gax.grpc.GrpcCallContext
 import com.google.api.gax.retrying.RetrySettings
@@ -30,7 +30,7 @@ import org.threeten.bp.Duration
 
 import java.time
 import scala.concurrent.duration.FiniteDuration
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 private class PubSubPuller[F[_], T](
   val queueName: String,

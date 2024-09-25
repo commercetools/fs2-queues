@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.effect.implicits.monadCancelOps
-import com.commercetools.queue.{Message, MessageBatch}
+import com.commercetools.queue.{Message, MessageBatch, UnsealedMessageBatch}
 import fs2.Chunk
 import org.typelevel.otel4s.trace.Tracer
 
@@ -27,7 +27,7 @@ private class MeasuringMessageBatch[F[_], T](
   metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
-  extends MessageBatch[F, T] {
+  extends UnsealedMessageBatch[F, T] {
   override def messages: Chunk[Message[F, T]] = underlying.messages
 
   /**

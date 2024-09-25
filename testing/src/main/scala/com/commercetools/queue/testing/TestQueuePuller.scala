@@ -37,7 +37,7 @@ final private class TestQueuePuller[T](queue: TestQueue[T]) extends UnsealedQueu
 
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): IO[MessageBatch[IO, T]] =
     pullBatch(batchSize, waitingTime).map { batch =>
-      new MessageBatch[IO, T] {
+      new UnsealedMessageBatch[IO, T] {
         override def messages: Chunk[Message[IO, T]] = batch
         override def ackAll: IO[Unit] = batch.traverse_(_.ack())
         override def nackAll: IO[Unit] = batch.traverse_(_.nack())
@@ -65,7 +65,7 @@ object TestQueuePuller {
 
       override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): IO[MessageBatch[IO, T]] =
         pullBatch(batchSize, waitingTime).map { batch =>
-          new MessageBatch[IO, T] {
+          new UnsealedMessageBatch[IO, T] {
             override def messages: Chunk[Message[IO, T]] = batch
             override def ackAll: IO[Unit] = batch.traverse_(_.ack())
             override def nackAll: IO[Unit] = batch.traverse_(_.nack())

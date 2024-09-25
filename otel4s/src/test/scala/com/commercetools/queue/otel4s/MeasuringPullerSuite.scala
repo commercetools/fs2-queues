@@ -20,7 +20,7 @@ import cats.data.Chain
 import cats.effect.IO
 import cats.syntax.foldable._
 import com.commercetools.queue.testing.TestingMessageContext
-import com.commercetools.queue.{Message, MessageBatch, MessageContext, UnsealedQueuePuller}
+import com.commercetools.queue.{Message, MessageBatch, MessageContext, UnsealedMessageBatch, UnsealedQueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attribute
@@ -44,7 +44,7 @@ class MeasuringPullerSuite extends CatsEffectSuite {
 
     override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): IO[MessageBatch[IO, String]] =
       pullBatch(batchSize, waitingTime).map { batch =>
-        new MessageBatch[IO, String] {
+        new UnsealedMessageBatch[IO, String] {
           override def messages: Chunk[Message[IO, String]] = batch
           override def ackAll: IO[Unit] = batch.traverse_(_.ack())
           override def nackAll: IO[Unit] = batch.traverse_(_.nack())
