@@ -50,7 +50,7 @@ class SubscriberSuite extends CatsEffectSuite {
         _ <- produceMessages(queue, 5)
         // ack first batch, nack second
         _ <- subscriber
-          .messageBatch(batchSize = 3, waitingTime = 40.millis)
+          .messageBatches(batchSize = 3, waitingTime = 40.millis)
           .zipWithIndex
           .evalTap { case (batch, index) =>
             index match {

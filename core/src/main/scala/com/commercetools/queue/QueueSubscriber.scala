@@ -59,7 +59,7 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
       Stream.repeatEval(puller.pullBatch(batchSize, waitingTime)).unchunks
     }
 
-  final def messageBatch(batchSize: Int, waitingTime: FiniteDuration): Stream[F, MessageBatch[F, T]] =
+  final def messageBatches(batchSize: Int, waitingTime: FiniteDuration): Stream[F, MessageBatch[F, T]] =
     Stream.resource(puller).flatMap { puller =>
       Stream.repeatEval(puller.pullMessageBatch(batchSize, waitingTime))
     }
