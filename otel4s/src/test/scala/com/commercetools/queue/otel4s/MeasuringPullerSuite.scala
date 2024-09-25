@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.data.Chain
 import cats.effect.IO
-import cats.implicits.toFoldableOps
+import cats.syntax.foldable._
 import com.commercetools.queue.testing.TestingMessageContext
 import com.commercetools.queue.{Message, MessageBatch, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
