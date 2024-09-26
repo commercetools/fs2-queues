@@ -17,16 +17,18 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
+import cats.syntax.all._
 import com.commercetools.queue._
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.grpc.GrpcTransportChannel
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
 import com.google.pubsub.v1.{SubscriptionName, TopicName}
-import io.grpc.netty.shaded.io.grpc.netty.NettyChannelBuilder
+import io.grpc.netty.shaded.io.grpc.netty.{GrpcSslContexts, NettyChannelBuilder}
 
 private class PubSubClient[F[_]: Async] private (
   project: String,
   channelProvider: TransportChannelProvider,
+  monitoringChannelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
   endpoint: Option[String])
   extends UnsealedQueueClient[F] {
@@ -35,7 +37,12 @@ private class PubSubClient[F[_]: Async] private (
     new PubSubAdministration[F](project, channelProvider, credentials, endpoint)
 
   override def statistics(name: String): QueueStatistics[F] =
-    new PubSubStatistics(name, SubscriptionName.of(project, s"fs2-queue-$name"), channelProvider, credentials, endpoint)
+    new PubSubStatistics(
+      name,
+      SubscriptionName.of(project, s"fs2-queue-$name"),
+      monitoringChannelProvider,
+      credentials,
+      endpoint)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
     new PubSubPublisher[F, T](name, TopicName.of(project, name), channelProvider, credentials, endpoint)
@@ -52,34 +59,62 @@ private class PubSubClient[F[_]: Async] private (
 
 object PubSubClient {
 
-  private def makeDefaultTransportChannel(endpoint: Option[String]): GrpcTransportChannel =
+  private def makeDefaultTransportChannel(endpoint: Option[String]): GrpcTransportChannel = {
+    val builder = endpoint match {
+      case Some(value) =>
+        NettyChannelBuilder
+          .forTarget(value)
+          .usePlaintext()
+      case None =>
+        NettyChannelBuilder
+          .forTarget("pubsub.googleapis.com:443")
+          .sslContext(GrpcSslContexts.forClient().build())
+    }
+    GrpcTransportChannel.create(builder.build)
+  }
+
+  private def makeDefaultMonitoringTransportChannel: GrpcTransportChannel =
     GrpcTransportChannel.create(
       NettyChannelBuilder
-        .forTarget(endpoint.getOrElse("https://pubsub.googleapis.com"))
-        .usePlaintext()
-        .build()
+        .forTarget("monitoring.googleapis.com:443")
+        .sslContext(GrpcSslContexts.forClient().build())
+        .build
     )
 
   def apply[F[_]](
     project: String,
     credentials: CredentialsProvider,
     endpoint: Option[String] = None,
-    mkTransportChannel: Option[String] => GrpcTransportChannel = makeDefaultTransportChannel
+    mkTransportChannel: Option[String] => GrpcTransportChannel = makeDefaultTransportChannel,
+    mkMonitoringTransportChannel: => GrpcTransportChannel = makeDefaultMonitoringTransportChannel
   )(implicit F: Async[F]
   ): Resource[F, QueueClient[F]] =
-    Resource
-      .fromAutoCloseable(F.blocking(mkTransportChannel(endpoint)))
-      .map { channel =>
-        new PubSubClient[F](project, FixedTransportChannelProvider.create(channel), credentials, endpoint)
+    (
+      Resource.fromAutoCloseable(F.blocking(mkTransportChannel(endpoint))),
+      Resource.fromAutoCloseable(F.blocking(mkMonitoringTransportChannel)))
+      .mapN { (channel, monitoringChannel) =>
+        new PubSubClient[F](
+          project = project,
+          channelProvider = FixedTransportChannelProvider.create(channel),
+          monitoringChannelProvider = FixedTransportChannelProvider.create(monitoringChannel),
+          credentials = credentials,
+          endpoint = endpoint
+        )
       }
 
   def unmanaged[F[_]](
     project: String,
     credentials: CredentialsProvider,
     channelProvider: TransportChannelProvider,
+    monitoringChannelProvider: TransportChannelProvider,
     endpoint: Option[String] = None
   )(implicit F: Async[F]
   ): QueueClient[F] =
-    new PubSubClient[F](project, channelProvider, credentials, endpoint)
+    new PubSubClient[F](
+      project = project,
+      channelProvider = channelProvider,
+      monitoringChannelProvider = monitoringChannelProvider,
+      credentials = credentials,
+      endpoint = endpoint)
 
 }

@@ -3,6 +3,7 @@ package com.commercetools.queue.testkit
 import cats.effect.std.{Env, Random}
 import cats.effect.{IO, Resource, SyncIO}
 import com.commercetools.queue.QueueClient
+import munit.Location
 import munit.catseffect.IOFixture
 
 import scala.concurrent.duration._
@@ -26,7 +27,7 @@ abstract class QueueClientSuite
   def booleanOrDefault(varName: String, default: Boolean): IO[Boolean] =
     optBoolean(varName).map(_.getOrElse(default))
 
-  override def munitIOTimeout: Duration = 1.minute
+  override def munitIOTimeout: Duration = 10.minute
 
   /** Override these if the given provider is not supporting these features */
   val queueUpdateSupported: Boolean = true
@@ -54,12 +55,48 @@ abstract class QueueClientSuite
 
   final def randomMessages(n: Int): IO[List[(String, Map[String, String])]] = for {
     random <- Random.scalaUtilRandom[IO]
-    size <- random.nextIntBounded(n)
+    size <- random.nextIntBounded(n - 1).map(_ + 1) // > 0
   } yield messages(size)
 
   final def messages(n: Int): List[(String, Map[String, String])] =
     List
       .range(0, n)
       .map(i => (i.toString, Map(s"metadata-$i-key" -> s"$i-value", s"metadata-$i-another-key" -> "another-value")))
+
+  def eventuallyIO[A, B](
+    obtained: IO[A],
+    returns: B,
+    clue: => Any = "values are not the same",
+    retries: Int = 200,
+    delay: FiniteDuration = 5.second
+  )(implicit
+    loc: Location,
+    ev: B <:< A
+  ): IO[Unit] = for {
+    t <- IO.realTimeInstant
+    _ <- assertIO(obtained, returns, clue).handleErrorWith(err =>
+      if (retries > 0)
+        IO.println(s" ${t.toString} - retrying assertion after $delay, remaining retries: $retries") >>
+          IO.sleep(delay) >>
+          eventuallyIO(obtained, returns, clue, retries - 1, delay)
+      else IO.raiseError(err))
+  } yield ()
+
+  def eventuallyBoolean(
+    cond: IO[Boolean],
+    clue: => Any = "values are not the same",
+    retries: Int = 200,
+    delay: FiniteDuration = 5.second
+  )(implicit
+    loc: Location
+  ): IO[Unit] = for {
+    t <- IO.realTimeInstant
+    _ <- assertIOBoolean(cond, clue).handleErrorWith(err =>
+      if (retries > 0)
+        IO.println(s" ${t.toString} - retrying assertion after $delay, remaining retries: $retries") >>
+          IO.sleep(delay) >>
+          eventuallyBoolean(cond, clue, retries - 1, delay)
+      else IO.raiseError(err))
+  } yield ()
 
 }

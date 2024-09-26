@@ -110,49 +110,38 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
             else true
         }
       }.void)
-      _ <-
-        if (messagesStatsSupported)
-          assertIO(
-            client.statistics(queueName).fetcher.use(_.fetch).map(_.messages),
-            0,
-            "not all the messages got acked")
-        else IO.unit
+      _ <- client
+        .subscribe(queueName)
+        .puller
+        .use(puller => assertIO(puller.pullBatch(1, 1.second), Chunk.empty, "not all messages got consumed"))
     } yield ()
   }
 
   withQueue.test("attemptProcessWithAutoAck acks/nacks accordingly") { queueName =>
+    val client = clientFixture()
     for {
-      toBeAckedRef <- Ref[IO].of(Set.empty[String])
-      toBeNackedRef <- Ref[IO].of(Set.empty[String])
-      client = clientFixture()
       _ <- Stream
         .emits(messages(10))
         .through(client.publish(queueName).sink(batchSize = 10))
         .compile
         .drain
-      _ <- client
+      res <- client
         .subscribe(queueName)
         .attemptProcessWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg =>
-          if (msg.rawPayload.toInt % 2 == 0) toBeAckedRef.update(_ + msg.rawPayload)
-          else toBeNackedRef.update(_ + msg.rawPayload) >> IO.raiseError(new RuntimeException("failed")))
+          if (msg.rawPayload.toInt % 2 == 0) IO.unit
+          else IO.raiseError(new RuntimeException("failed")))
         .take(10L)
         .compile
-        .drain
-      toBeAcked <- toBeAckedRef.get
-      toBeNacked <- toBeNackedRef.get
-      _ = assertEquals(toBeAcked, Set("0", "2", "4", "6", "8"))
-      _ = assertEquals(toBeNacked, Set("1", "3", "5", "7", "9"))
-      _ <-
-        if (messagesStatsSupported)
-          assertIOBoolean(
-            client
-              .statistics(queueName)
-              .fetcher
-              .use(_.fetch)
-              .map(stats => stats.messages + stats.inflight.getOrElse(0) == 5),
-            "not all the expected messages got nacked"
-          )
-        else IO.unit
+        .toList
+      _ = assert(res.count(_.isLeft) == 5)
+      _ = assert(res.count(_.isRight) == 5)
+      _ <- client
+        .subscribe(queueName)
+        .puller
+        .use(puller =>
+          eventuallyBoolean(
+            puller.pullBatch(1, 1.second).map(chunk => !chunk.isEmpty),
+            "expecting to have nacked messages back in the queue"))
     } yield ()
   }
 

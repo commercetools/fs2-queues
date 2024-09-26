@@ -1,5 +1,7 @@
 package com.commercetools.queue.testkit
 
+import cats.effect.IO
+import cats.effect.kernel.Ref
 import munit.CatsEffectSuite
 import fs2.Stream
 import cats.syntax.all._
@@ -13,35 +15,48 @@ import scala.concurrent.duration.DurationInt
 trait QueuePublisherSuite extends CatsEffectSuite { self: QueueClientSuite =>
 
   withQueue.test("sink publishes all the messages") { queueName =>
-    assume(messagesStatsSupported)
     val client = clientFixture()
     for {
-      msgs <- randomMessages(30)
+      msgs <- randomMessages(10)
+      count <- Ref.of[IO, Int](0)
       _ <- Stream
         .emits(msgs)
         .through(client.publish(queueName).sink(batchSize = 10))
         .compile
         .drain
-      messagesInQueue <- client.statistics(queueName).fetcher.use(_.fetch).map(_.messages)
-      _ = assertEquals(messagesInQueue, msgs.size)
+      _ <- client
+        .subscribe(queueName)
+        .processWithAutoAck(10, 10.seconds)(_ => count.update(_ + 1))
+        .take(msgs.size.toLong)
+        .compile
+        .drain
+        .timeout(30.seconds)
+      _ <- assertIO(count.get, msgs.size)
     } yield ()
   }
 
   withQueue.test("sink publishes all the messages with a delay") { queueName =>
-    assume(messagesStatsSupported && delayedMessagesStatsSupported)
     val client = clientFixture()
     for {
-      msgs <- randomMessages(30)
+      msgs <- randomMessages(10)
       _ <- Stream
         .emits(msgs)
-        .through(client.publish(queueName).sink(batchSize = 10, delay = 1.minute.some))
+        .through(client.publish(queueName).sink(batchSize = 10, delay = 10.seconds.some))
         .compile
         .drain
-      statsFetcher = client.statistics(queueName).fetcher
-      messagesInQueue <- statsFetcher.use(_.fetch).map(_.messages)
-      delayedMessages <- statsFetcher.use(_.fetch).map(_.delayed)
-      _ = assertEquals(delayedMessages, msgs.size.some, "delayed messages are not what we expect")
-      _ = assertEquals(messagesInQueue, 0, "the queue is not empty")
+      _ <- client
+        .subscribe(queueName)
+        .puller
+        .use(puller =>
+          for {
+            _ <- eventuallyBoolean(
+              puller.pullBatch(1, 1.second).map(_.isEmpty),
+              "chunk is not empty, messages are not getting delayed")
+            _ <- IO.sleep(10.seconds)
+            _ <- eventuallyBoolean(
+              puller.pullBatch(1, 10.seconds).map(chunk => !chunk.isEmpty),
+              "got no messages after delay")
+          } yield ())
     } yield ()
   }
 

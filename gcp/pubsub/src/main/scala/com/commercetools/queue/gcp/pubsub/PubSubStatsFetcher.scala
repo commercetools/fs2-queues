@@ -59,12 +59,15 @@ private class PubSubStatsFetcher[F[_]](
         })
       }
       .flatMap { response =>
-        val datapoints: List[Point] = response.getTimeSeries(0).getPointsList().asScala.toList
-        datapoints.sortBy(-_.getInterval().getEndTime().getSeconds()).headOption match {
-          case Some(value) =>
-            F.pure(QueueStats(value.getValue().getInt64Value().toInt, None, None))
-          case None =>
-            F.raiseError(MalformedQueueConfigurationException(queueName, "messages", "<missing>"))
+        if (response.getTimeSeriesCount == 0) F.pure(QueueStats(0, None, None))
+        else {
+          val datapoints: List[Point] = response.getTimeSeries(0).getPointsList().asScala.toList
+          datapoints.sortBy(-_.getInterval().getEndTime().getSeconds()).headOption match {
+            case Some(value) =>
+              F.pure(QueueStats(value.getValue().getInt64Value().toInt, None, None))
+            case None =>
+              F.raiseError(MalformedQueueConfigurationException(queueName, "messages", "<missing>"))
+          }
         }
       }
 
