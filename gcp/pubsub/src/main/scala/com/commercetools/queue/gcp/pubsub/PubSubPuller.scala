@@ -19,7 +19,7 @@ package com.commercetools.queue.gcp.pubsub
 import cats.effect.Async
 import cats.effect.syntax.concurrent._
 import cats.syntax.all._
-import com.commercetools.queue.{Deserializer, MessageContext, UnsealedQueuePuller}
+import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
 import com.google.api.gax.grpc.GrpcCallContext
 import com.google.api.gax.retrying.RetrySettings
 import com.google.api.gax.rpc.{ApiCallContext, DeadlineExceededException}
@@ -48,6 +48,9 @@ private class PubSubPuller[F[_], T](
       .withRetrySettings(RetrySettings.newBuilder().setLogicalTimeout(Duration.ofMillis(waitingTime.toMillis)).build())
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
+    pullBatchInternal(batchSize, waitingTime).widen[Chunk[MessageContext[F, T]]]
+
+  private def pullBatchInternal(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[PubSubMessageContext[F, T]]] =
     wrapFuture(F.delay {
       subscriber
         .pullCallable()
@@ -100,7 +103,9 @@ private class PubSubPuller[F[_], T](
               .map(new PubSubMessageContext(subscriber, subscriptionName, msg, lockTTLSeconds, _, queueName))
           }
       }
-      .widen[Chunk[MessageContext[F, T]]]
       .adaptError(makePullQueueException(_, queueName))
 
+  override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]] =
+    pullBatchInternal(batchSize, waitingTime).map(payload =>
+      new PubSubMessageBatch[F, T](payload, subscriptionName, subscriber))
 }

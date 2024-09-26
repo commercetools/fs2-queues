@@ -43,6 +43,15 @@ sealed trait QueuePuller[F[_], T] {
    */
   def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]]
 
+  /**
+   * Pulls batch of messages with the same semantics as `pullBatch`
+   * with the difference in message lifecycle control. Messages pulled this
+   * way can only be managed (ack'ed, nack'ed) in bulk by batching acknowledgements
+   * if the underlying implementation supports it, otherwise it falls back to
+   * non-atomic, per-message management.
+   */
+  def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]]
+
 }
 
 private[queue] trait UnsealedQueuePuller[F[_], T] extends QueuePuller[F, T]

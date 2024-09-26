@@ -55,7 +55,8 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
     name := "fs2-queues-core",
     // TODO: Remove once next version is published
     mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueuePublisher.sink")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueuePublisher.sink"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueuePuller.pullMessageBatch")
     ),
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2

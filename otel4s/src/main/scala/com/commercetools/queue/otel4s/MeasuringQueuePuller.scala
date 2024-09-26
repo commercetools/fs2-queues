@@ -19,7 +19,7 @@ package com.commercetools.queue.otel4s
 import cats.effect.Temporal
 import cats.effect.syntax.monadCancel._
 import cats.syntax.functor._
-import com.commercetools.queue.{MessageContext, QueuePuller, UnsealedQueuePuller}
+import com.commercetools.queue.{MessageBatch, MessageContext, QueuePuller, UnsealedQueuePuller}
 import fs2.Chunk
 import org.typelevel.otel4s.trace.Tracer
 
@@ -44,4 +44,14 @@ private class MeasuringQueuePuller[F[_], T](
       }
       .guaranteeCase(metrics.receive)
 
+  override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]] =
+    tracer
+      .span("queue.pullBatch")
+      .surround {
+        underlying
+          .pullMessageBatch(batchSize, waitingTime)
+          .map(new MeasuringMessageBatch[F, T](_, metrics, tracer))
+          .widen[MessageBatch[F, T]]
+      }
+      .guaranteeCase(metrics.receive)
 }

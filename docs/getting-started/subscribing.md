@@ -132,6 +132,30 @@ subscriber
   }
 ```
 
+For high throughput scenarios where acknowledging individual messages wouldn't be optimal, consider using `messageBatches()`.
+
+Batching method exposes `MessageBatch` giving user control over entire batch as a whole allowing for batched acknowledgement if the implementation supports it.
+
+Chunked messages can be accessed via `messages`.
+
+```scala mdoc:compile-only
+import cats.effect.Outcome
+
+subscriber
+  .messageBatches(batchSize = 10, waitingTime = 20.seconds)
+  .evalMap { batch =>
+    batch.messages.parTraverse_ { msg =>
+      msg.payload.flatTap { payload => 
+        IO.println(s"Received $payload")
+      }
+    }.guaranteeCase {
+      case Outcome.Succeeded(_) => batch.ackAll
+      case _ => batch.nackAll
+    }
+  }
+```
+
+
 ### `MessageContext` control flow
 
 There are three different methods that can be used to control the message lifecycle from the subscriber point of view:
@@ -139,6 +163,14 @@ There are three different methods that can be used to control the message lifecy
  1. `MessageContext.ack()` acknowledges the message, and marks it as successfully processed in the queue system. It will be permanently removed and no other subscriber will ever receive it.
  2. `MessageContext.nack()` marks the message as not processed, releasing the lock in the queue system. It will be viewable for other subscribers to receive and process.
  3. `MessageContext.extendLock()` extends the currently owned lock by the queue level configured duration. This can be called as many times as you want, as long as you still own the lock. As long as the lock is extended, the message will not be distributed to any other subscriber by the queue system.
+
+### `MessageBatch` control flow
+
+Methods have the same semantics to `MessageContext` ones with the difference that they act on all messages from the batch at once. Whether the action is atomic across all messages depends on the underlying implementation.
+
+1. `MessageContext.ackAll()` acknowledges all the messages from the batch.
+2. `MessageContext.nackAll()` marks all the messages from the batch as not processed.
+
 
 ## Explicit pull
 
@@ -168,7 +200,6 @@ subscriber.puller.use { queuePuller =>
         }
       }
     }
-
 }
 ```
 
@@ -207,6 +238,29 @@ subscriber.puller.use { queuePuller =>
 }
 ```
 @:@
+
+To pull batches that can be acknowledged in batches, use `pullMessageBatch()`
+
+```scala mdoc:compile-only
+import cats.effect.Outcome
+
+subscriber.puller.use { queuePuller =>
+
+  queuePuller
+    .pullMessageBatch(batchSize = 10, waitingTime = 20.seconds)
+    .flatMap { batch =>
+      batch.messages.traverse_ { message =>
+        message.payload.flatMap { payload =>
+          IO.println(s"Received $payload")
+        }.guaranteeCase {
+          case Outcome.Succeeded(_) => batch.ackAll
+          case _ => batch.nackAll
+        }
+      }
+    }
+  
+}
+```
 
 [cats-effect-resource]: https://typelevel.org/cats-effect/docs/std/resource
 [cats-effect-supervisor]: https://typelevel.org/cats-effect/docs/std/supervisor

@@ -30,7 +30,7 @@ private class SQSMessageContext[F[_], T](
   val rawPayload: String,
   val enqueuedAt: Instant,
   val metadata: Map[String, String],
-  receiptHandle: String,
+  val receiptHandle: String,
   val messageId: String,
   lockTTL: Int,
   queueName: String,

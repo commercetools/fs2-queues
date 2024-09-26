@@ -35,14 +35,43 @@ class SubscriberSuite extends CatsEffectSuite {
         (queue, TestQueueSubscriber(queue), TestQueuePublisher(queue))
       })
 
+  def produceMessages(queue: TestQueue[String], count: Int): IO[List[TestMessage[String]]] =
+    List
+      .range(0, count)
+      .traverse { i =>
+        IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
+      }
+      .flatTap(queue.setAvailableMessages)
+
+  queueSub.test("Successful message batch must be acked/nacked") { case (queue, subscriber, _) =>
+    TestControl
+      .executeEmbed(for {
+        // first populate the queue
+        _ <- produceMessages(queue, 5)
+        // ack first batch, nack second
+        _ <- subscriber
+          .messageBatches(batchSize = 3, waitingTime = 40.millis)
+          .zipWithIndex
+          .evalTap { case (batch, index) =>
+            index match {
+              case 1 => batch.nackAll
+              case _ => batch.ackAll
+            }
+          }
+          .take(2)
+          .compile
+          .drain
+        _ <- assertIO(queue.getAvailableMessages.map(_.map(_.payload)), List("3", "4"))
+        _ <- assertIO(queue.getLockedMessages, Nil)
+        _ <- assertIO(queue.getDelayedMessages, Nil)
+      } yield ())
+  }
+
   queueSub.test("Successful messages must be acked") { case (queue, subscriber, _) =>
     TestControl
       .executeEmbed(for {
         // first populate the queue
-        messages <- List.range(0, 100).traverse { i =>
-          IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(s"message-$i", _))
-        }
-        _ <- queue.setAvailableMessages(messages)
+        _ <- produceMessages(queue, 100)
         // then process messages in batches of 5
         // processing is (virtually) instantaneous in this case,
         // so messages are immediately acked, from the mocked time PoV
@@ -70,14 +99,11 @@ class SubscriberSuite extends CatsEffectSuite {
       TestControl
         .executeEmbed(for {
           // first populate the queue
-          messages <- List.range(0, 100).traverse { i =>
-            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(s"message-$i", _))
-          }
-          _ <- queue.setAvailableMessages(messages)
+          messages <- produceMessages(queue, 100)
           result <- subscriber
             // take all messages in one big batch
             .processWithAutoAck(batchSize = 100, waitingTime = 40.millis)(m =>
-              IO.raiseWhen(m.rawPayload == "message-43")(new Exception("BOOM")).as(m))
+              IO.raiseWhen(m.rawPayload == "43")(new Exception("BOOM")).as(m))
             .attempt
             .compile
             .toList
@@ -99,10 +125,7 @@ class SubscriberSuite extends CatsEffectSuite {
       TestControl
         .executeEmbed(for {
           // first populate the queue
-          messages <- List.range(0, 100).traverse { i =>
-            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
-          }
-          _ <- queue.setAvailableMessages(messages)
+          _ <- produceMessages(queue, 100)
           result <- subscriber
             .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
               if (msg.rawPayload.toInt % 2 == 0) IO.pure(Decision.Drop)
@@ -124,10 +147,7 @@ class SubscriberSuite extends CatsEffectSuite {
       TestControl
         .executeEmbed(for {
           // first populate the queue
-          messages <- List.range(0, 100).traverse { i =>
-            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
-          }
-          _ <- queue.setAvailableMessages(messages)
+          _ <- produceMessages(queue, 100)
           result <- subscriber
             .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
               if (msg.rawPayload.toInt % 2 == 0) IO.pure(Decision.Ok(1))
@@ -147,11 +167,7 @@ class SubscriberSuite extends CatsEffectSuite {
   queueSub.test("Messages consumed and requeued should follow the decision") { case (queue, subscriber, publisher) =>
     TestControl
       .executeEmbed(for {
-        // first populate the queue
-        messages <- List.range(0, 100).traverse { i =>
-          IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
-        }
-        _ <- queue.setAvailableMessages(messages)
+        _ <- produceMessages(queue, 100)
         opCounter <- AtomicCell[IO].of(0)
         result <- subscriber
           .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
@@ -179,10 +195,7 @@ class SubscriberSuite extends CatsEffectSuite {
       TestControl
         .executeEmbed(for {
           // first populate the queue
-          messages <- List.range(0, 100).traverse { i =>
-            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
-          }
-          _ <- queue.setAvailableMessages(messages)
+          _ <- produceMessages(queue, 100)
           result <- subscriber
             .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
               IO.pure(Decision.Fail(new Throwable(s"failed ${msg.rawPayload}"), ack = true)))
@@ -204,10 +217,7 @@ class SubscriberSuite extends CatsEffectSuite {
       TestControl
         .executeEmbed(for {
           // first populate the queue
-          messages <- List.range(0, 100).traverse { i =>
-            IO.sleep(10.millis) *> IO.realTimeInstant.map(TestMessage(i.toString, _))
-          }
-          _ <- queue.setAvailableMessages(messages)
+          _ <- produceMessages(queue, 100)
           result <- subscriber
             .process[Int](batchSize = 5, waitingTime = 40.millis, publisher)((msg: Message[IO, String]) =>
               IO.pure(Decision.Fail(new Throwable(s"failed ${msg.rawPayload}"), ack = false)))
