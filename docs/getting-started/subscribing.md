@@ -139,6 +139,8 @@ Batching method exposes `MessageBatch` giving user control over entire batch as 
 Chunked messages can be accessed via `messages`.
 
 ```scala mdoc:compile-only
+import cats.effect.Outcome
+
 subscriber
   .messageBatches(batchSize = 10, waitingTime = 20.seconds)
   .evalMap { batch =>
@@ -147,7 +149,7 @@ subscriber
         IO.println(s"Received $payload")
       }
     }.guaranteeCase {
-      case Outcome.Succeeded(_) => batch.ackAll()
+      case Outcome.Succeeded(_) => batch.ackAll
       case _ => batch.nackAll
     }
   }
@@ -240,6 +242,8 @@ subscriber.puller.use { queuePuller =>
 To pull batches that can be acknowledged in batches, use `pullMessageBatch()`
 
 ```scala mdoc:compile-only
+import cats.effect.Outcome
+
 subscriber.puller.use { queuePuller =>
 
   queuePuller
@@ -249,8 +253,8 @@ subscriber.puller.use { queuePuller =>
         message.payload.flatMap { payload =>
           IO.println(s"Received $payload")
         }.guaranteeCase {
-          case Outcome.Succeeded(_) => batch.ackAll()
-          case _ => batch.nackAll()
+          case Outcome.Succeeded(_) => batch.ackAll
+          case _ => batch.nackAll
         }
       }
     }
