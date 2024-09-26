@@ -112,6 +112,7 @@
     <li class="level1 nav-leaf"><a href="#processors">Processors</a></li>
     <li class="level1 nav-node"><a href="#raw-message-stream">Raw message stream</a></li>
     <li class="level2 nav-leaf"><a href="#messagecontext-control-flow"><code>MessageContext</code> control flow</a></li>
+    <li class="level2 nav-leaf"><a href="#messagebatch-control-flow"><code>MessageBatch</code> control flow</a></li>
     <li class="level1 nav-leaf"><a href="#explicit-pull">Explicit pull</a></li>
   </ul>
 
@@ -226,6 +227,23 @@
       </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">context</span><span>.</span><span class="identifier">nack</span><span>()
     }
   }</span></code></pre>
+        <p>For high throughput scenarios where acknowledging individual messages wouldn&#39;t be optimal, consider using <code>messageBatches()</code>.</p>
+        <p>Batching method exposes <code>MessageBatch</code> giving user control over entire batch as a whole allowing for batched acknowledgement if the implementation supports it.</p>
+        <p>Chunked messages can be accessed via <code>messages</code>.</p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">Outcome</span><span>
+
+</span><span class="identifier">subscriber</span><span>
+  .</span><span class="identifier">messageBatches</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>, </span><span class="identifier">waitingTime</span><span> = </span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>)
+  .</span><span class="identifier">evalMap</span><span> { </span><span class="identifier">batch</span><span> =&gt;
+    </span><span class="identifier">batch</span><span>.</span><span class="identifier">messages</span><span>.</span><span class="identifier">parTraverse_</span><span> { </span><span class="identifier">msg</span><span> =&gt;
+      </span><span class="identifier">msg</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatTap</span><span> { </span><span class="identifier">payload</span><span> =&gt; 
+        </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
+      }
+    }.</span><span class="identifier">guaranteeCase</span><span> {
+      </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">ackAll</span><span>
+      </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">nackAll</span><span>
+    }
+  }</span></code></pre>
         
         <h3 id="messagecontext-control-flow" class="section"><a class="anchor-link left" href="#messagecontext-control-flow"><i class="icofont-laika link">&#xef71;</i></a><code>MessageContext</code> control flow</h3>
         <p>There are three different methods that can be used to control the message lifecycle from the subscriber point of view:</p>
@@ -237,6 +255,13 @@
         </ol>
         <ol class="arabic">
           <li><code>MessageContext.extendLock()</code> extends the currently owned lock by the queue level configured duration. This can be called as many times as you want, as long as you still own the lock. As long as the lock is extended, the message will not be distributed to any other subscriber by the queue system.</li>
+        </ol>
+        
+        <h3 id="messagebatch-control-flow" class="section"><a class="anchor-link left" href="#messagebatch-control-flow"><i class="icofont-laika link">&#xef71;</i></a><code>MessageBatch</code> control flow</h3>
+        <p>Methods have the same semantics to <code>MessageContext</code> ones with the difference that they act on all messages from the batch at once. Whether the action is atomic across all messages depends on the underlying implementation.</p>
+        <ol class="arabic">
+          <li><code>MessageContext.ackAll()</code> acknowledges all the messages from the batch.</li>
+          <li><code>MessageContext.nackAll()</code> marks all the messages from the batch as not processed.</li>
         </ol>
         
         <h2 id="explicit-pull" class="section"><a class="anchor-link left" href="#explicit-pull"><i class="icofont-laika link">&#xef71;</i></a>Explicit pull</h2>
@@ -263,7 +288,6 @@
         }
       }
     }
-
 }</span></code></pre>
         <div class="callout warning">
           <i class="icofont-laika warning">&#xf026;</i>
@@ -298,6 +322,25 @@
   }
 }</span></code></pre>
         </div>
+        <p>To pull batches that can be acknowledged in batches, use <code>pullMessageBatch()</code></p>
+        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">Outcome</span><span>
+
+</span><span class="identifier">subscriber</span><span>.</span><span class="identifier">puller</span><span>.</span><span class="identifier">use</span><span> { </span><span class="identifier">queuePuller</span><span> =&gt;
+
+  </span><span class="identifier">queuePuller</span><span>
+    .</span><span class="identifier">pullMessageBatch</span><span>(</span><span class="identifier">batchSize</span><span> = </span><span class="number-literal">10</span><span>, </span><span class="identifier">waitingTime</span><span> = </span><span class="number-literal">20</span><span>.</span><span class="identifier">seconds</span><span>)
+    .</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">batch</span><span> =&gt;
+      </span><span class="identifier">batch</span><span>.</span><span class="identifier">messages</span><span>.</span><span class="identifier">traverse_</span><span> { </span><span class="identifier">message</span><span> =&gt;
+        </span><span class="identifier">message</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">payload</span><span> =&gt;
+          </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
+        }.</span><span class="identifier">guaranteeCase</span><span> {
+          </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">ackAll</span><span>
+          </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">nackAll</span><span>
+        }
+      }
+    }
+  
+}</span></code></pre>
 
         
 <hr class="footer-rule"/>
