@@ -132,8 +132,10 @@ subscriber
   }
 ```
 
-For high throughput scenarios where acknowledging individual messages wouldn't be optimal, consider using `messageBatches()`. 
+For high throughput scenarios where acknowledging individual messages wouldn't be optimal, consider using `messageBatches()`.
+
 Batching method exposes `MessageBatch` giving user control over entire batch as a whole allowing for batched acknowledgement if the implementation supports it.
+
 Chunked messages can be accessed via `messages`.
 
 ```scala mdoc:compile-only
@@ -164,8 +166,8 @@ There are three different methods that can be used to control the message lifecy
 
 Methods have the same semantics to `MessageContext` ones with the difference that they act on all messages from the batch at once. Whether the action is atomic across all messages depends on the underlying implementation.
 
-1. `MessageContext.ackAll()` acknowledges the message, and marks it as successfully processed in the queue system. It will be permanently removed and no other subscriber will ever receive it.
-2. `MessageContext.nackAll()` marks the message as not processed, releasing the lock in the queue system. It will be viewable for other subscribers to receive and process.
+1. `MessageContext.ackAll()` acknowledges all the messages from the batch.
+2. `MessageContext.nackAll()` marks all the messages from the batch as not processed.
 
 
 ## Explicit pull
