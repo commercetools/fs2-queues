@@ -17,10 +17,10 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
-import cats.effect.syntax.concurrent.*
-import cats.syntax.flatMap.*
-import cats.syntax.functor.*
-import cats.syntax.monadError.*
+import cats.effect.syntax.concurrent._
+import cats.syntax.flatMap._
+import cats.syntax.functor._
+import cats.syntax.monadError._
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
@@ -29,7 +29,7 @@ import software.amazon.awssdk.services.sqs.model.{MessageSystemAttributeName, Re
 import java.time.Instant
 import scala.annotation.nowarn
 import scala.concurrent.duration.FiniteDuration
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 
 private class SQSPuller[F[_], T](
   val queueName: String,

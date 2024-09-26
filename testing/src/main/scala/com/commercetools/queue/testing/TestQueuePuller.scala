@@ -17,7 +17,7 @@
 package com.commercetools.queue.testing
 
 import cats.effect.IO
-import cats.syntax.foldable.*
+import cats.syntax.foldable._
 import com.commercetools.queue.{Message, MessageBatch, MessageContext, QueuePuller, UnsealedMessageBatch, UnsealedQueuePuller}
 import fs2.Chunk
 
