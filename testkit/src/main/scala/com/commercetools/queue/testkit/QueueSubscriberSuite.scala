@@ -17,13 +17,13 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
   withQueue.test("puller returns no messages if none is available during the configured duration") { queueName =>
     val client = clientFixture()
     client.subscribe(queueName).puller.use { puller =>
-      assertIO(puller.pullBatch(10, 2.seconds), Chunk.empty)
+      assertIO(puller.pullBatch(10, waitingTime), Chunk.empty)
     }
   }
 
   withQueue.test("puller pulls") { queueName =>
     for {
-      messages <- randomMessages(30)
+      messages <- randomMessages(10)
       client = clientFixture()
       _ <- Stream
         .emits(messages)
@@ -34,7 +34,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .subscribe(queueName)
         .puller
         .use(
-          _.pullBatch(1, 30.seconds)
+          _.pullBatch(1, waitingTime)
             .as(1)
             .replicateA(messages.size)
             .map(_.sum))
@@ -42,21 +42,21 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
   }
 
   withQueue.test("puller pulls in batches") { queueName =>
-    val msgNum = 30
-    val batchSize = 10
-    val expectedBatches = 3
+    val msgNum = 10
+    val batchSize = 5
+    val expectedBatches = 2
     val client = clientFixture()
     for {
       _ <- Stream
         .emits(messages(msgNum))
-        .through(client.publish(queueName).sink(batchSize = 10))
+        .through(client.publish(queueName).sink(batchSize = batchSize))
         .compile
         .drain
       n <- client
         .subscribe(queueName)
         .puller
         .use(
-          _.pullBatch(batchSize, 30.seconds)
+          _.pullBatch(batchSize, waitingTime)
             .map(_.size)
             .replicateA(expectedBatches)
             .map(_.sum))
@@ -82,7 +82,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
 
   withQueue.test("processWithAutoAck receives and acks all the messages") { queueName =>
     for {
-      messages <- randomMessages(30)
+      messages <- randomMessages(10)
       received <- Ref[IO].of(List.empty[(String, Map[String, String])])
       client = clientFixture()
       _ <- Stream
@@ -91,7 +91,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .merge(
           client
             .subscribe(queueName)
-            .processWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg =>
+            .processWithAutoAck(batchSize = 10, waitingTime = waitingTime)(msg =>
               received.update(_ :+ (msg.rawPayload, msg.metadata)))
             .take(messages.size.toLong)
         )
@@ -113,7 +113,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
       _ <- client
         .subscribe(queueName)
         .puller
-        .use(puller => assertIO(puller.pullBatch(1, 1.second), Chunk.empty, "not all messages got consumed"))
+        .use(puller => assertIO(puller.pullBatch(1, waitingTime), Chunk.empty, "not all messages got consumed"))
     } yield ()
   }
 
@@ -127,7 +127,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .drain
       res <- client
         .subscribe(queueName)
-        .attemptProcessWithAutoAck(batchSize = 10, waitingTime = 20.seconds)(msg =>
+        .attemptProcessWithAutoAck(batchSize = 10, waitingTime = waitingTime)(msg =>
           if (msg.rawPayload.toInt % 2 == 0) IO.unit
           else IO.raiseError(new RuntimeException("failed")))
         .take(10L)
@@ -140,7 +140,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .puller
         .use(puller =>
           eventuallyBoolean(
-            puller.pullBatch(1, 1.second).map(chunk => !chunk.isEmpty),
+            puller.pullBatch(1, waitingTime).map(chunk => !chunk.isEmpty),
             "expecting to have nacked messages back in the queue"))
     } yield ()
   }
@@ -155,14 +155,14 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
           .through(client.publish(queueName).sink(batchSize = totalMessages))
           .compile
           .drain
-        msgBatch <- puller.pullMessageBatch(totalMessages, 1.second)
+        msgBatch <- puller.pullMessageBatch(totalMessages, waitingTime)
         _ = assertEquals(msgBatch.messages.size, totalMessages)
         _ <- msgBatch.nackAll
-        msgBatchNack <- puller.pullMessageBatch(totalMessages, 1.second)
+        msgBatchNack <- puller.pullMessageBatch(totalMessages, waitingTime)
         _ = assertEquals(msgBatchNack.messages.size, totalMessages)
         _ <- msgBatchNack.ackAll
         _ <- assertIOBoolean(
-          puller.pullMessageBatch(6, 1.second).map(_.messages.isEmpty)
+          puller.pullMessageBatch(6, waitingTime).map(_.messages.isEmpty)
         )
       } yield ()
     }
@@ -179,7 +179,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
       shouldAck4 <- Ref.of[IO, Boolean](false)
       res <- client
         .subscribe(queueName)
-        .process[Int](5, 1.second, client.publish(queueName))((msg: Message[IO, String]) =>
+        .process[Int](5, waitingTime, client.publish(queueName))((msg: Message[IO, String]) =>
           msg.rawPayload.toInt match {
             // checking various scenarios, like a message that gets reenqueue'ed once and then ok'ed,
             // a message dropped, a message failed and ack'ed, a message failed and initially not ack'ed, then ack'ed

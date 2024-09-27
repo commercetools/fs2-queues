@@ -26,7 +26,7 @@ trait QueuePublisherSuite extends CatsEffectSuite { self: QueueClientSuite =>
         .drain
       _ <- client
         .subscribe(queueName)
-        .processWithAutoAck(10, 10.seconds)(_ => count.update(_ + 1))
+        .processWithAutoAck(10, waitingTime)(_ => count.update(_ + 1))
         .take(msgs.size.toLong)
         .compile
         .drain
@@ -54,7 +54,7 @@ trait QueuePublisherSuite extends CatsEffectSuite { self: QueueClientSuite =>
               "chunk is not empty, messages are not getting delayed")
             _ <- IO.sleep(10.seconds)
             _ <- eventuallyBoolean(
-              puller.pullBatch(1, 10.seconds).map(chunk => !chunk.isEmpty),
+              puller.pullBatch(1, waitingTime).map(chunk => !chunk.isEmpty),
               "got no messages after delay")
           } yield ())
     } yield ()
