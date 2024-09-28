@@ -194,7 +194,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.apply")
     ),
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.132.2",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.132.3",
       "com.google.cloud" % "google-cloud-monitoring" % "3.50.0"
     )
   )
