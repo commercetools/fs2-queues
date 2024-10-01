@@ -70,7 +70,7 @@ lazy val testing = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-testing",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "cats-collections-core" % "0.9.8"
+      "org.typelevel" %%% "cats-collections-core" % "0.9.9"
     ),
     tlVersionIntroduced := Map("3" -> "0.4.0", "2.13" -> "0.4.0")
   )
