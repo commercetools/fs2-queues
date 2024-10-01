@@ -139,7 +139,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.3"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.4"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -195,7 +195,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     ),
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.132.3",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.50.0"
+      "com.google.cloud" % "google-cloud-monitoring" % "3.52.0"
     )
   )
   .dependsOn(core)
