@@ -34,7 +34,7 @@ final private class TestQueuePuller[T](queue: TestQueue[T]) extends UnsealedQueu
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): IO[Chunk[MessageContext[IO, T]]] =
     queue.getAvailableMessages.map(_.size).flatMap { totalAvailable =>
-      IO.unlessA(totalAvailable > batchSize)(IO.sleep(waitingTime)) *> queue.lockMessages(batchSize)
+      IO.unlessA(totalAvailable >= batchSize)(IO.sleep(waitingTime)) *> queue.lockMessages(batchSize)
     }
 
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): IO[MessageBatch[IO, T]] =
