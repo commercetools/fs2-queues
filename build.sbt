@@ -6,7 +6,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.4"
+ThisBuild / tlBaseVersion := "0.5"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -53,11 +53,6 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-core",
-    // TODO: Remove once next version is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueuePublisher.sink"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueuePuller.pullMessageBatch")
-    ),
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2
     )
@@ -71,8 +66,7 @@ lazy val testing = crossProject(JVMPlatform)
     name := "fs2-queues-testing",
     libraryDependencies ++= List(
       "org.typelevel" %%% "cats-collections-core" % "0.9.9"
-    ),
-    tlVersionIntroduced := Map("3" -> "0.4.0", "2.13" -> "0.4.0")
+    )
   )
   .dependsOn(core)
 
@@ -179,20 +173,6 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(commonSettings)
   .settings(
     name := "fs2-queues-gcp-pubsub",
-    // TODO: Remove once next version is published
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubAdministration.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged$default$5"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubPublisher.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubPuller.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubSubscriber.this"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.apply")
-    ),
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.132.4",
       "com.google.cloud" % "google-cloud-monitoring" % "3.52.0"
