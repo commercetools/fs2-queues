@@ -96,8 +96,8 @@
     <li class="level2 nav-leaf"><a href="../../systems/service-bus/">Azure Service Bus Queues</a></li>
     <li class="level2 nav-leaf"><a href="../../systems/pubsub/">GCP PubSub</a></li>
     <li class="level1 nav-header">Library Integrations</li>
-    <li class="level2 nav-leaf"><a href="../../integrations/otel4s/">Otel4s</a></li>
     <li class="level2 nav-leaf"><a href="../../integrations/circe/">Circe</a></li>
+    <li class="level2 nav-leaf"><a href="../../integrations/otel4s/">Otel4s</a></li>
   </ul>
 
 </nav>
@@ -131,7 +131,7 @@
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="type-name">Serializer</span><span>
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">serializer</span><span>: </span><span class="type-name">Serializer</span><span>[</span><span class="type-name">Int</span><span>] = </span><span class="identifier">_</span><span>.</span><span class="identifier">toString</span><span>
-</span><span class="comment">// serializer: Serializer[Int] = repl.MdocSession$MdocApp$$anonfun$1@4601740f</span></code></pre>
+</span><span class="comment">// serializer: Serializer[Int] = repl.MdocSession$MdocApp$$anonfun$1@4c6b38fd</span></code></pre>
         <p>The library provides natively a <em>no-op</em> serializer for <code>String</code>s.</p>
         
         <h2 id="data-deserializer" class="section"><a class="anchor-link left" href="#data-deserializer"><i class="icofont-laika link">&#xef71;</i></a>Data <code>Deserializer</code></h2>
@@ -142,7 +142,7 @@
 </span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="type-name">Deserializer</span><span>
 
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">deserializer</span><span>: </span><span class="type-name">Deserializer</span><span>[</span><span class="type-name">Int</span><span>] = </span><span class="identifier">s</span><span> =&gt; </span><span class="type-name">Either</span><span>.</span><span class="identifier">catchNonFatal</span><span>(</span><span class="identifier">s</span><span>.</span><span class="identifier">toInt</span><span>)
-</span><span class="comment">// deserializer: Deserializer[Int] = repl.MdocSession$MdocApp$$anonfun$2@3084605b</span></code></pre>
+</span><span class="comment">// deserializer: Deserializer[Int] = repl.MdocSession$MdocApp$$anonfun$2@61719345</span></code></pre>
         <p>The library provides natively a <em>no-op</em> deserializer for <code>String</code>s.</p>
         
         <h2 id="library-integration" class="section"><a class="anchor-link left" href="#library-integration"><i class="icofont-laika link">&#xef71;</i></a>Library integration</h2>
