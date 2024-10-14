@@ -88,7 +88,11 @@ lazy val testkit = crossProject(JVMPlatform)
 // for sqs integration test, start a localstack with sqs
 ThisBuild / githubWorkflowBuildPreamble := List(
   WorkflowStep.Use(
-    UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "main"),
+    UseRef.Public(owner = "actions", repo = "setup-python", ref = "v5"),
+    name = Some("Install Python 3.10"),
+    params = Map("python-version" -> "3.10.15")),
+  WorkflowStep.Use(
+    UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "v0.2.3"),
     name = Some("Install localstack"),
     params = Map("image-tag" -> "latest"),
     env = Map("SERVICES" -> "sqs")

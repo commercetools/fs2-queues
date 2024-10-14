@@ -55,10 +55,15 @@ jobs:
         if: matrix.java == 'temurin@8' && steps.setup-java-temurin-8.outputs.cache-hit == 'false'
         run: sbt +update
 
+      - name: Install Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.10.15
+
       - name: Install localstack
         env:
           SERVICES: sqs
-        uses: LocalStack/setup-localstack@main
+        uses: LocalStack/setup-localstack@v0.2.3
         with:
           image-tag: latest
 
