@@ -33,43 +33,47 @@ private class SQSMessageBatch[F[_], T](
   override def messages: Chunk[Message[F, T]] = payload
 
   override def ackAll: F[Unit] =
-    F.fromCompletableFuture {
-      F.delay {
-        client.deleteMessageBatch(
-          DeleteMessageBatchRequest
-            .builder()
-            .queueUrl(queueUrl)
-            .entries(payload.map { m =>
-              DeleteMessageBatchRequestEntry
-                .builder()
-                .receiptHandle(m.receiptHandle)
-                .id(m.messageId)
-                .build()
-            }.asJava)
-            .build()
-        )
+    F.unlessA(payload.isEmpty) {
+      F.fromCompletableFuture {
+        F.delay {
+          client.deleteMessageBatch(
+            DeleteMessageBatchRequest
+              .builder()
+              .queueUrl(queueUrl)
+              .entries(payload.map { m =>
+                DeleteMessageBatchRequestEntry
+                  .builder()
+                  .receiptHandle(m.receiptHandle)
+                  .id(m.messageId)
+                  .build()
+              }.asJava)
+              .build()
+          )
+        }
       }
     }.void
 
-  override def nackAll: F[Unit] = F.fromCompletableFuture {
-    F.delay {
-      val req = ChangeMessageVisibilityBatchRequest
-        .builder()
-        .queueUrl(queueUrl)
-        .entries(
-          payload.map { m =>
-            ChangeMessageVisibilityBatchRequestEntry
-              .builder()
-              .id(m.messageId)
-              .receiptHandle(m.receiptHandle)
-              .visibilityTimeout(0)
-              .build()
-          }.asJava
+  override def nackAll: F[Unit] = F.unlessA(payload.isEmpty) {
+    F.fromCompletableFuture {
+      F.delay {
+        val req = ChangeMessageVisibilityBatchRequest
+          .builder()
+          .queueUrl(queueUrl)
+          .entries(
+            payload.map { m =>
+              ChangeMessageVisibilityBatchRequestEntry
+                .builder()
+                .id(m.messageId)
+                .receiptHandle(m.receiptHandle)
+                .visibilityTimeout(0)
+                .build()
+            }.asJava
+          )
+          .build()
+        client.changeMessageVisibilityBatch(
+          req
         )
-        .build()
-      client.changeMessageVisibilityBatch(
-        req
-      )
-    }
-  }.void
+      }
+    }.void
+  }
 }
