@@ -18,9 +18,9 @@ package com.commercetools.queue.pubsub
 
 import cats.effect.{IO, Resource}
 import com.commercetools.queue.QueueClient
-import com.commercetools.queue.gcp.pubsub.PubSubClient
+import com.commercetools.queue.gcp.pubsub.{PubSubClient, PubSubConfig}
 import com.commercetools.queue.testkit.QueueClientSuite
-import com.google.api.gax.core.{GoogleCredentialsProvider, NoCredentialsProvider}
+import com.google.api.gax.core.{CredentialsProvider, GoogleCredentialsProvider, NoCredentialsProvider}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.jdk.CollectionConverters._
@@ -39,9 +39,10 @@ class PubSubClientSuite extends QueueClientSuite {
   // stats require a long time to be propagated and be available
   override def munitIOTimeout: Duration = 15.minutes
 
-  private def config =
+  private def config: IO[(String, CredentialsProvider, Option[String], PubSubConfig)] =
     booleanOrDefault(isEmulatorEnvVar, default = isEmulatorDefault).ifM(
-      ifTrue = IO.pure(("test-project", NoCredentialsProvider.create(), Some("localhost:8042"))),
+      ifTrue =
+        IO.pure(("test-project", NoCredentialsProvider.create(), Some("localhost:8042"), PubSubConfig("test-suite"))),
       ifFalse = for {
         project <- string("GCP_PUBSUB_PROJECT")
         credentials = GoogleCredentialsProvider
@@ -51,12 +52,12 @@ class PubSubClientSuite extends QueueClientSuite {
             "https://www.googleapis.com/auth/monitoring.read" // monitoring (for fetching stats)
           ).asJava)
           .build()
-      } yield (project, credentials, None)
+      } yield (project, credentials, None, PubSubConfig("test-suite"))
     )
 
   override def client: Resource[IO, QueueClient[IO]] =
-    config.toResource.flatMap { case (project, credentials, endpoint) =>
-      PubSubClient(project, credentials, endpoint = endpoint)
+    config.toResource.flatMap { case (project, credentials, endpoint, configs) =>
+      PubSubClient(project, credentials, endpoint = endpoint, configs = configs)
     }
 
 }
