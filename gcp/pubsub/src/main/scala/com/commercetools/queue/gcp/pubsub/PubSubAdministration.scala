@@ -31,7 +31,8 @@ private class PubSubAdministration[F[_]](
   project: String,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
-  endpoint: Option[String]
+  endpoint: Option[String],
+  configs: PubSubConfig
 )(implicit F: Async[F])
   extends UnsealedQueueAdministration[F] {
 
@@ -72,7 +73,7 @@ private class PubSubAdministration[F[_]](
             Subscription
               .newBuilder()
               .setTopic(topicName.toString())
-              .setName(SubscriptionName.of(project, s"fs2-queue-$name").toString())
+              .setName(SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name").toString())
               .setAckDeadlineSeconds(lockTTL.toSeconds.toInt)
               .setMessageRetentionDuration(ttl)
               // An empty expiration policy (no TTL set) ensures the subscription is never deleted
@@ -84,7 +85,7 @@ private class PubSubAdministration[F[_]](
     .adaptError(makeQueueException(_, name))
 
   override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] = {
-    val subscriptionName = SubscriptionName.of(project, s"fs2-queue-$name")
+    val subscriptionName = SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name")
     val updateSubscriptionRequest = (messageTTL, lockTTL) match {
       case (Some(messageTTL), Some(lockTTL)) =>
         val mttl = Duration.newBuilder().setSeconds(messageTTL.toSeconds).build()
@@ -150,7 +151,7 @@ private class PubSubAdministration[F[_]](
   override def configuration(name: String): F[QueueConfiguration] =
     subscriptionClient.use { client =>
       wrapFuture[F, Subscription](F.delay {
-        val subscriptionName = SubscriptionName.of(project, s"fs2-queue-$name")
+        val subscriptionName = SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name")
         client
           .getSubscriptionCallable()
           .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())
@@ -178,7 +179,7 @@ private class PubSubAdministration[F[_]](
           .futureCall(
             DeleteSubscriptionRequest
               .newBuilder()
-              .setSubscription(SubscriptionName.of(project, s"fs2-queue-$name").toString())
+              .setSubscription(SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name").toString())
               .build())
       })
     }.void
