@@ -30,16 +30,17 @@ private class PubSubClient[F[_]: Async] private (
   channelProvider: TransportChannelProvider,
   monitoringChannelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
-  endpoint: Option[String])
+  endpoint: Option[String],
+  configs: PubSubConfig)
   extends UnsealedQueueClient[F] {
 
   override def administration: QueueAdministration[F] =
-    new PubSubAdministration[F](project, channelProvider, credentials, endpoint)
+    new PubSubAdministration[F](project, channelProvider, credentials, endpoint, configs)
 
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(
       name,
-      SubscriptionName.of(project, s"fs2-queue-$name"),
+      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name"),
       monitoringChannelProvider,
       credentials,
       endpoint)
@@ -50,7 +51,7 @@ private class PubSubClient[F[_]: Async] private (
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new PubSubSubscriber[F, T](
       name,
-      SubscriptionName.of(project, s"fs2-queue-$name"),
+      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name"),
       channelProvider,
       credentials,
       endpoint)
@@ -86,7 +87,8 @@ object PubSubClient {
     credentials: CredentialsProvider,
     endpoint: Option[String] = None,
     mkTransportChannel: Option[String] => GrpcTransportChannel = makeDefaultTransportChannel,
-    mkMonitoringTransportChannel: => GrpcTransportChannel = makeDefaultMonitoringTransportChannel
+    mkMonitoringTransportChannel: => GrpcTransportChannel = makeDefaultMonitoringTransportChannel,
+    configs: PubSubConfig = PubSubConfig.default
   )(implicit F: Async[F]
   ): Resource[F, QueueClient[F]] =
     (
@@ -98,7 +100,8 @@ object PubSubClient {
           channelProvider = FixedTransportChannelProvider.create(channel),
           monitoringChannelProvider = FixedTransportChannelProvider.create(monitoringChannel),
           credentials = credentials,
-          endpoint = endpoint
+          endpoint = endpoint,
+          configs = configs
         )
       }
 
@@ -107,7 +110,8 @@ object PubSubClient {
     credentials: CredentialsProvider,
     channelProvider: TransportChannelProvider,
     monitoringChannelProvider: TransportChannelProvider,
-    endpoint: Option[String] = None
+    endpoint: Option[String] = None,
+    configs: PubSubConfig = PubSubConfig.default
   )(implicit F: Async[F]
   ): QueueClient[F] =
     new PubSubClient[F](
@@ -115,6 +119,8 @@ object PubSubClient {
       channelProvider = channelProvider,
       monitoringChannelProvider = monitoringChannelProvider,
       credentials = credentials,
-      endpoint = endpoint)
+      endpoint = endpoint,
+      configs = configs
+    )
 
 }
