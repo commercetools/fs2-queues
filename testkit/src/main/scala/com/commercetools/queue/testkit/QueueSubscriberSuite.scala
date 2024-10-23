@@ -155,9 +155,11 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
           .through(client.publish(queueName).sink(batchSize = totalMessages))
           .compile
           .drain
+        _ <- IO.sleep(3.seconds)
         msgBatch <- puller.pullMessageBatch(totalMessages, waitingTime)
         _ = assertEquals(msgBatch.messages.size, totalMessages)
         _ <- msgBatch.nackAll
+        _ <- IO.sleep(3.seconds)
         msgBatchNack <- puller.pullMessageBatch(totalMessages, waitingTime)
         _ = assertEquals(msgBatchNack.messages.size, totalMessages)
         _ <- msgBatchNack.ackAll

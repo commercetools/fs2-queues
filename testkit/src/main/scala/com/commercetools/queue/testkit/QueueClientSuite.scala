@@ -34,7 +34,7 @@ abstract class QueueClientSuite
   val messagesStatsSupported: Boolean = true
   val inFlightMessagesStatsSupported: Boolean = true
   val delayedMessagesStatsSupported: Boolean = true
-  val waitingTime: FiniteDuration = 10.seconds
+  val waitingTime: FiniteDuration = 20.seconds
 
   final val originalMessageTTL: FiniteDuration = 10.minutes
   final val originalLockTTL: FiniteDuration = 2.minutes

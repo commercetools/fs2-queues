@@ -21,7 +21,7 @@ import cats.syntax.all._
 import com.commercetools.queue.QueueClient
 import com.commercetools.queue.aws.sqs.SQSClient
 import com.commercetools.queue.testkit.QueueClientSuite
-import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsBasicCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsSessionCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
 
 import java.net.URI
@@ -40,9 +40,12 @@ class SqsClientSuite extends QueueClientSuite {
           .asScala
           .find(_.id == awsRegion)
           .liftTo[IO](new IllegalArgumentException(s"Cannot find any suitable AWS region from $awsRegion value!"))
-        credentials <- (string("AWS_SQS_ACCESS_KEY"), string("AWS_SQS_ACCESS_SECRET")).mapN((accessKey, accessSecret) =>
+        accessKey <- string("AWS_SQS_ACCESS_KEY")
+        accessSecret <- string("AWS_SQS_ACCESS_SECRET")
+        sessionToken <- string("AWS_SQS_SESSION_TOKEN")
+        credentials <- IO.pure(
           StaticCredentialsProvider.create(
-            AwsBasicCredentials.create(accessKey, accessSecret)
+            AwsSessionCredentials.create(accessKey, accessSecret, sessionToken)
           ))
       } yield (region, credentials, None)
     )
