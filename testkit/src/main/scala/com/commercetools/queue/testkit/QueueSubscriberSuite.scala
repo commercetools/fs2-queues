@@ -13,7 +13,6 @@ import scala.concurrent.duration._
  * implemented for a concrete client.
  */
 trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
-  val waitingTime: FiniteDuration = 20.seconds
 
   withQueue.test("puller returns no messages if none is available during the configured duration") { queueName =>
     val client = clientFixture()
