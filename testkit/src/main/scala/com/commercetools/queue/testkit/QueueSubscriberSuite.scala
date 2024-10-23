@@ -47,6 +47,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
     val expectedBatches = 2
     val client = clientFixture()
     for {
+      _ <- eventuallyIO(client.administration.exists(queueName), true, "Queue is not ready", 10, 3.seconds)
       _ <- Stream
         .emits(messages(msgNum))
         .through(client.publish(queueName).sink(batchSize = batchSize))
@@ -85,7 +86,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
       messages <- randomMessages(10)
       received <- Ref[IO].of(List.empty[(String, Map[String, String])])
       client = clientFixture()
-      _ <- assertIO(client.administration.exists(queueName), true)
+      _ <- eventuallyIO(client.administration.exists(queueName), true, "Queue is not ready", 10, 3.seconds)
       _ <- Stream
         .emits(messages)
         .through(client.publish(queueName).sink(batchSize = 10))
@@ -121,6 +122,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
   withQueue.test("attemptProcessWithAutoAck acks/nacks accordingly") { queueName =>
     val client = clientFixture()
     for {
+      _ <- eventuallyIO(client.administration.exists(queueName), true, "Queue is not ready", 10, 3.seconds)
       _ <- Stream
         .emits(messages(10))
         .through(client.publish(queueName).sink(batchSize = 10))
@@ -151,6 +153,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
     val totalMessages = 5
     client.subscribe(queueName).puller.use { puller =>
       for {
+        _ <- eventuallyIO(client.administration.exists(queueName), true, "Queue is not ready", 10, 3.seconds)
         _ <- Stream
           .emits(List.fill(totalMessages)((s"msg", Map.empty[String, String])))
           .through(client.publish(queueName).sink(batchSize = totalMessages))
