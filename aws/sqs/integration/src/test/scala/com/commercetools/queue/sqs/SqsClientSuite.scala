@@ -17,7 +17,7 @@
 package com.commercetools.queue.sqs
 
 import cats.effect.{IO, Resource}
-import cats.syntax.all.*
+import cats.syntax.all._
 import com.commercetools.queue.QueueClient
 import com.commercetools.queue.aws.sqs.SQSClient
 import com.commercetools.queue.testkit.QueueClientSuite
