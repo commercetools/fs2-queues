@@ -85,6 +85,7 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
       messages <- randomMessages(10)
       received <- Ref[IO].of(List.empty[(String, Map[String, String])])
       client = clientFixture()
+      _ <- assertIO(client.administration.exists(queueName), true)
       _ <- Stream
         .emits(messages)
         .through(client.publish(queueName).sink(batchSize = 10))
