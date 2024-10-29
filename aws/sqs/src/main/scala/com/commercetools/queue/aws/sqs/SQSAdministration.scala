@@ -43,7 +43,9 @@ private class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: Strin
             .queueName(name)
             .attributes(Map(
               QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.toSeconds.toString(),
-              QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.toSeconds.toString()).asJava)
+              QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.toSeconds.toString(),
+              QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS -> "20" // this is meant to enable long polling https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html (see: Receive message wait time)
+            ).asJava)
             .build())
       }
     }.void

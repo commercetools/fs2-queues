@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.effect.implicits.monadCancelOps
-import com.commercetools.queue.{Message, MessageBatch, UnsealedMessageBatch}
+import com.commercetools.queue.{Message, MessageBatch, MessageId, UnsealedMessageBatch}
 import fs2.Chunk
 import org.typelevel.otel4s.trace.Tracer
 
@@ -31,9 +31,9 @@ private class MeasuringMessageBatch[F[_], T](
   override def messages: Chunk[Message[F, T]] = underlying.messages
 
   /**
-   * Acknowledges all the messages in the chunk.
+   * Acknowledges all the messages in the chunk. It returns a list of messageIds for which the ack operation failed.
    */
-  override def ackAll: F[Unit] = tracer
+  override def ackAll: F[List[MessageId]] = tracer
     .span("queue.message.batch.ack")
     .surround {
       underlying.ackAll
@@ -41,9 +41,9 @@ private class MeasuringMessageBatch[F[_], T](
     .guaranteeCase(metrics.ackAll)
 
   /**
-   * Mark all messages from the chunk as non acknowledged.
+   * Mark all messages from the chunk as non acknowledged. It returns a list of messageIds for which the nack operation failed..
    */
-  override def nackAll: F[Unit] = tracer
+  override def nackAll: F[List[MessageId]] = tracer
     .span("queue.message.batch.nack")
     .surround {
       underlying.nackAll

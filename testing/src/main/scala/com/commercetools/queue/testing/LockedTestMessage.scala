@@ -18,7 +18,7 @@ package com.commercetools.queue.testing
 
 import cats.effect.IO
 import cats.effect.std.AtomicCell
-import com.commercetools.queue.UnsealedMessageContext
+import com.commercetools.queue.{MessageId, UnsealedMessageContext}
 
 import java.time.Instant
 import java.util.UUID
@@ -32,7 +32,7 @@ final case class LockedTestMessage[T](
   state: AtomicCell[IO, QueueState[T]])
   extends UnsealedMessageContext[IO, T] {
 
-  override def messageId: String = lock.toString
+  override def messageId: MessageId = MessageId(lock.toString)
 
   override def payload: IO[T] = IO.pure(msg.payload)
 

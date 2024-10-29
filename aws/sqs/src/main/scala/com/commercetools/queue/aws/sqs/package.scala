@@ -16,7 +16,7 @@
 
 package com.commercetools.queue.aws
 
-import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
+import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, MessageId, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
 import software.amazon.awssdk.services.sqs.model.{QueueDoesNotExistException => AwsQueueDoesNotExistException, QueueNameExistsException}
 
 package object sqs {
@@ -37,7 +37,7 @@ package object sqs {
       case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
     }
 
-  private[sqs] def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action)
+  private[sqs] def makeMessageException(t: Throwable, queueName: String, msgId: MessageId, action: Action)
     : QueueException =
     t match {
       case t: QueueException => t
