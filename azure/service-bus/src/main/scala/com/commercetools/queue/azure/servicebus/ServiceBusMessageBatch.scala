@@ -32,14 +32,18 @@ private class ServiceBusMessageBatch[F[_], T](
   override def ackAll: F[List[MessageId]] =
     payload.toList.foldLeft(F.pure(List[MessageId]())) { (accF, mCtx) =>
       accF.flatMap { acc =>
-        F.pure(receiver.complete(mCtx.underlying)).as(acc).handleError(_ => acc :+ MessageId(mCtx.underlying.getMessageId))
+        F.pure(receiver.complete(mCtx.underlying))
+          .as(acc)
+          .handleError(_ => acc :+ MessageId(mCtx.underlying.getMessageId))
       }
     }
 
   override def nackAll: F[List[MessageId]] =
     payload.toList.foldLeft(F.pure(List[MessageId]())) { (accF, mCtx) =>
       accF.flatMap { acc =>
-        F.pure(receiver.abandon(mCtx.underlying)).as(acc).handleError(_ => acc :+ MessageId(mCtx.underlying.getMessageId))
+        F.pure(receiver.abandon(mCtx.underlying))
+          .as(acc)
+          .handleError(_ => acc :+ MessageId(mCtx.underlying.getMessageId))
       }
     }
 }
