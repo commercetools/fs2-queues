@@ -51,7 +51,7 @@ private class PubSubClient[F[_]: Async] private (
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new PubSubSubscriber[F, T](
       name,
-      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name"),
+      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}$name"),
       channelProvider,
       credentials,
       endpoint)
