@@ -19,5 +19,5 @@ package com.commercetools.queue.gcp.pubsub
 case class PubSubConfig(subscriptionNamePrefix: String)
 
 object PubSubConfig {
-  val default: PubSubConfig = PubSubConfig("fs2-queue")
+  val default: PubSubConfig = PubSubConfig("fs2-queue-")
 }
