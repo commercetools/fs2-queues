@@ -240,8 +240,8 @@
         </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
       }
     }.</span><span class="identifier">guaranteeCase</span><span> {
-      </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">ackAll</span><span>
-      </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">nackAll</span><span>
+      </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">ackAll</span><span>.</span><span class="identifier">as</span><span>(())
+      </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">nackAll</span><span>.</span><span class="identifier">as</span><span>(())
     }
   }</span></code></pre>
         
@@ -334,8 +334,8 @@
         </span><span class="identifier">message</span><span>.</span><span class="identifier">payload</span><span>.</span><span class="identifier">flatMap</span><span> { </span><span class="identifier">payload</span><span> =&gt;
           </span><span class="type-name">IO</span><span>.</span><span class="identifier">println</span><span>(</span><span class="string-literal">s&quot;Received </span><span class="substitution">$payload</span><span class="string-literal">&quot;</span><span>)
         }.</span><span class="identifier">guaranteeCase</span><span> {
-          </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">ackAll</span><span>
-          </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">nackAll</span><span>
+          </span><span class="keyword">case</span><span> </span><span class="type-name">Outcome</span><span>.</span><span class="type-name">Succeeded</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">ackAll</span><span>.</span><span class="identifier">as</span><span>(())
+          </span><span class="keyword">case</span><span> </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">batch</span><span>.</span><span class="identifier">nackAll</span><span>.</span><span class="identifier">as</span><span>(())
         }
       }
     }
