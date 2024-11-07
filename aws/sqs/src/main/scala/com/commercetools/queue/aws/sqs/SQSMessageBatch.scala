@@ -18,10 +18,12 @@ package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
 import cats.implicits.toFunctorOps
-import com.commercetools.queue.{Message, UnsealedMessageBatch}
+import com.commercetools.queue.{Message, MessageId, UnsealedMessageBatch}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchRequestEntry, DeleteMessageBatchRequest, DeleteMessageBatchRequestEntry}
+import software.amazon.awssdk.services.sqs.model._
+
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 private class SQSMessageBatch[F[_], T](
   payload: Chunk[SQSMessageContext[F, T]],
@@ -32,7 +34,7 @@ private class SQSMessageBatch[F[_], T](
 
   override def messages: Chunk[Message[F, T]] = payload
 
-  override def ackAll: F[Unit] =
+  override def ackAll: F[List[MessageId]] =
     F.fromCompletableFuture {
       F.delay {
         client.deleteMessageBatch(
@@ -43,33 +45,33 @@ private class SQSMessageBatch[F[_], T](
               DeleteMessageBatchRequestEntry
                 .builder()
                 .receiptHandle(m.receiptHandle)
-                .id(m.messageId)
+                .id(m.messageId.value)
                 .build()
             }.asJava)
             .build()
         )
       }
-    }.void
+    }.map(res => res.failed().asScala.map(message => MessageId(message.id())).toList)
 
-  override def nackAll: F[Unit] = F.fromCompletableFuture {
-    F.delay {
-      val req = ChangeMessageVisibilityBatchRequest
-        .builder()
-        .queueUrl(queueUrl)
-        .entries(
-          payload.map { m =>
-            ChangeMessageVisibilityBatchRequestEntry
-              .builder()
-              .id(m.messageId)
-              .receiptHandle(m.receiptHandle)
-              .visibilityTimeout(0)
-              .build()
-          }.asJava
+  override def nackAll: F[List[MessageId]] =
+    F.fromCompletableFuture {
+      F.delay {
+        client.changeMessageVisibilityBatch(
+          ChangeMessageVisibilityBatchRequest
+            .builder()
+            .queueUrl(queueUrl)
+            .entries(
+              payload.map { m =>
+                ChangeMessageVisibilityBatchRequestEntry
+                  .builder()
+                  .id(m.messageId.value)
+                  .receiptHandle(m.receiptHandle)
+                  .visibilityTimeout(0)
+                  .build()
+              }.asJava
+            )
+            .build()
         )
-        .build()
-      client.changeMessageVisibilityBatch(
-        req
-      )
-    }
-  }.void
+      }
+    }.map(res => res.failed().asScala.map(message => MessageId(message.id())).toList)
 }

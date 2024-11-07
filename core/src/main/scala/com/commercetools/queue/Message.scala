@@ -18,6 +18,8 @@ package com.commercetools.queue
 
 import java.time.Instant
 
+case class MessageId(value: String) extends AnyVal
+
 /**
  * Interface to access message data received from a queue.
  */
@@ -26,7 +28,7 @@ trait Message[F[_], T] {
   /**
    * Unique message identifier
    */
-  def messageId: String
+  def messageId: MessageId
 
   /**
    * The deserialized message payload

@@ -21,7 +21,7 @@ import cats.effect.syntax.concurrent._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
+import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, MessageId, UnsealedQueuePuller}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{MessageSystemAttributeName, ReceiveMessageRequest}
@@ -83,7 +83,7 @@ private class SQSPuller[F[_], T](
                   .collect { case (k, v) if v.dataType() == "String" => (k, v.stringValue()) }
                   .toMap,
                 receiptHandle = message.receiptHandle(),
-                messageId = message.messageId(),
+                messageId = MessageId(message.messageId()),
                 lockTTL = lockTTL,
                 queueName = queueName,
                 queueUrl = queueUrl,

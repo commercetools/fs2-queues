@@ -17,7 +17,7 @@
 package com.commercetools.queue.azure
 
 import com.azure.core.exception.{ResourceExistsException, ResourceNotFoundException}
-import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
+import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, MessageId, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
 
 package object servicebus {
 
@@ -38,7 +38,7 @@ package object servicebus {
       case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
     }
 
-  private[servicebus] def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action)
+  private[servicebus] def makeMessageException(t: Throwable, queueName: String, msgId: MessageId, action: Action)
     : QueueException =
     t match {
       case t: QueueException => t

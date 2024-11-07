@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.effect.syntax.monadCancel._
-import com.commercetools.queue.{MessageContext, UnsealedMessageContext}
+import com.commercetools.queue.{MessageContext, MessageId, UnsealedMessageContext}
 import org.typelevel.otel4s.trace.Tracer
 
 import java.time.Instant
@@ -30,7 +30,7 @@ private class MeasuringMessageContext[F[_], T](
 )(implicit F: Temporal[F])
   extends UnsealedMessageContext[F, T] {
 
-  override def messageId: String = underlying.messageId
+  override def messageId: MessageId = underlying.messageId
 
   override def payload: F[T] = underlying.payload
 

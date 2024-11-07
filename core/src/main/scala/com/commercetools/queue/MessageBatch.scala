@@ -33,12 +33,12 @@ sealed trait MessageBatch[F[_], T] {
   /**
    * Acknowledges all the messages in the chunk.
    */
-  def ackAll: F[Unit]
+  def ackAll: F[List[MessageId]]
 
   /**
    * Mark all messages from the chunk as non acknowledged.
    */
-  def nackAll: F[Unit]
+  def nackAll: F[List[MessageId]]
 }
 
 private[queue] trait UnsealedMessageBatch[F[_], T] extends MessageBatch[F, T]

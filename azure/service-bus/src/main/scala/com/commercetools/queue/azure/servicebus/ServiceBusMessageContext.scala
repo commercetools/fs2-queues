@@ -19,7 +19,7 @@ package com.commercetools.queue.azure.servicebus
 import cats.effect.Async
 import cats.syntax.functor._
 import com.azure.messaging.servicebus.{ServiceBusReceivedMessage, ServiceBusReceiverClient}
-import com.commercetools.queue.UnsealedMessageContext
+import com.commercetools.queue.{MessageId, UnsealedMessageContext}
 
 import java.time.Instant
 import scala.jdk.CollectionConverters.MapHasAsScala
@@ -49,6 +49,6 @@ private class ServiceBusMessageContext[F[_], T](
   override def extendLock(): F[Unit] =
     F.blocking(receiver.renewMessageLock(underlying)).void
 
-  override val messageId: String = underlying.getMessageId()
+  override val messageId: MessageId = MessageId(underlying.getMessageId())
 
 }
