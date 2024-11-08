@@ -40,7 +40,7 @@ private class PubSubClient[F[_]: Async] private (
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(
       name,
-      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}$name"),
+      SubscriptionName.of(project, configs.subscriptionNamePrefix.fold(name)(_ + name)),
       monitoringChannelProvider,
       credentials,
       endpoint)
@@ -51,7 +51,7 @@ private class PubSubClient[F[_]: Async] private (
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new PubSubSubscriber[F, T](
       name,
-      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}$name"),
+      SubscriptionName.of(project, configs.subscriptionNamePrefix.fold(name)(_ + name)),
       channelProvider,
       credentials,
       endpoint)
