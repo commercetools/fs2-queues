@@ -34,7 +34,9 @@ private class SQSMessageBatch[F[_], T](
 
   override def messages: Chunk[Message[F, T]] = payload
 
-  override def ackAll: F[List[MessageId]] =
+  override def ackAll: F[List[MessageId]] = if (payload.isEmpty) {
+    F.pure(List.empty[MessageId])
+  } else {
     F.fromCompletableFuture {
       F.delay {
         client.deleteMessageBatch(
@@ -52,8 +54,11 @@ private class SQSMessageBatch[F[_], T](
         )
       }
     }.map(res => res.failed().asScala.map(message => MessageId(message.id())).toList)
+  }
 
-  override def nackAll: F[List[MessageId]] =
+  override def nackAll: F[List[MessageId]] = if (payload.isEmpty) {
+    F.pure(List.empty[MessageId])
+  } else {
     F.fromCompletableFuture {
       F.delay {
         client.changeMessageVisibilityBatch(
@@ -74,4 +79,5 @@ private class SQSMessageBatch[F[_], T](
         )
       }
     }.map(res => res.failed().asScala.map(message => MessageId(message.id())).toList)
+  }
 }
