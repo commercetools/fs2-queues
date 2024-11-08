@@ -19,7 +19,7 @@ package com.commercetools.queue.gcp
 import cats.effect.Async
 import cats.syntax.either._
 import cats.syntax.functor._
-import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
+import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, MessageId, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
 import com.google.api.core.{ApiFuture, ApiFutureCallback, ApiFutures}
 import com.google.api.gax.rpc.{AlreadyExistsException, NotFoundException}
 import com.google.common.util.concurrent.MoreExecutors
@@ -69,7 +69,7 @@ package object pubsub {
       case _ => new CannotPullException(queueName, makeQueueException(t, queueName))
     }
 
-  private[pubsub] def makeMessageException(t: Throwable, queueName: String, msgId: String, action: Action)
+  private[pubsub] def makeMessageException(t: Throwable, queueName: String, msgId: MessageId, action: Action)
     : QueueException =
     t match {
       case t: QueueException => t

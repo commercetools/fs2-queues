@@ -19,7 +19,7 @@ package com.commercetools.queue.aws.sqs
 import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Action, UnsealedMessageContext}
+import com.commercetools.queue.{Action, MessageId, UnsealedMessageContext}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityRequest, DeleteMessageRequest}
 
@@ -31,7 +31,7 @@ private class SQSMessageContext[F[_], T](
   val enqueuedAt: Instant,
   val metadata: Map[String, String],
   val receiptHandle: String,
-  val messageId: String,
+  val messageId: MessageId,
   lockTTL: Int,
   queueName: String,
   queueUrl: String,

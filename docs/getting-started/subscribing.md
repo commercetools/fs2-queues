@@ -149,8 +149,8 @@ subscriber
         IO.println(s"Received $payload")
       }
     }.guaranteeCase {
-      case Outcome.Succeeded(_) => batch.ackAll
-      case _ => batch.nackAll
+      case Outcome.Succeeded(_) => batch.ackAll.as(())
+      case _ => batch.nackAll.as(())
     }
   }
 ```
@@ -253,8 +253,8 @@ subscriber.puller.use { queuePuller =>
         message.payload.flatMap { payload =>
           IO.println(s"Received $payload")
         }.guaranteeCase {
-          case Outcome.Succeeded(_) => batch.ackAll
-          case _ => batch.nackAll
+          case Outcome.Succeeded(_) => batch.ackAll.as(())
+          case _ => batch.nackAll.as(())
         }
       }
     }

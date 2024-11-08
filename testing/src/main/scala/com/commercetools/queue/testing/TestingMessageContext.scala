@@ -17,7 +17,7 @@
 package com.commercetools.queue.testing
 
 import cats.effect.IO
-import com.commercetools.queue.{MessageContext, UnsealedMessageContext}
+import com.commercetools.queue.{MessageContext, MessageId, UnsealedMessageContext}
 
 import java.time.Instant
 
@@ -27,14 +27,14 @@ import java.time.Instant
 case class TestingMessageContext[T](
   payload: T,
   enqueuedAt: Instant = Instant.EPOCH,
-  messageId: String = "",
+  messageId: MessageId = MessageId(""),
   metadata: Map[String, String] = Map.empty) {
   self =>
 
   /** A message context that performs the provided effects on every action. */
   def forEffects(onAck: IO[Unit], onNack: IO[Unit], onExtendLock: IO[Unit]): MessageContext[IO, T] =
     new UnsealedMessageContext[IO, T] {
-      override def messageId: String = self.messageId
+      override def messageId: MessageId = self.messageId
       override def payload: IO[T] = IO.pure(self.payload)
       override def rawPayload: String = self.payload.toString()
       override def enqueuedAt: Instant = self.enqueuedAt

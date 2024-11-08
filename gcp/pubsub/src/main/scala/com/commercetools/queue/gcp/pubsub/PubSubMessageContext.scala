@@ -19,7 +19,7 @@ package com.commercetools.queue.gcp.pubsub
 import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
-import com.commercetools.queue.{Action, UnsealedMessageContext}
+import com.commercetools.queue.{Action, MessageId, UnsealedMessageContext}
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
 import com.google.pubsub.v1.{AcknowledgeRequest, ModifyAckDeadlineRequest, ReceivedMessage, SubscriptionName}
 
@@ -36,7 +36,7 @@ private class PubSubMessageContext[F[_], T](
 )(implicit F: Async[F])
   extends UnsealedMessageContext[F, T] {
 
-  override def messageId: String = underlying.getAckId()
+  override def messageId: MessageId = MessageId(underlying.getAckId())
 
   override def rawPayload: String = underlying.getMessage().getData().toStringUtf8()
 

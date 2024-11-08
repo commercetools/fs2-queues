@@ -32,7 +32,7 @@ sealed trait QueuePuller[F[_], T] {
    * Pulls one batch of messages from the underlying queue system.
    *
    * The method returns chunks of size `batchSize` max, and (semantically)
-   * blocks for `waitingTime` before returning. The chunk might be empty
+   * blocks for `waitingTime` before returning any messages. The chunk might be empty
    * if no new messages are available during the waiting time.
    *
    * '''Note:''' the messages returned by this method must be manually
