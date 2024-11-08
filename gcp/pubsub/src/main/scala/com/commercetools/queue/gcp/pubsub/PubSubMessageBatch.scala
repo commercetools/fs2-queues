@@ -32,26 +32,30 @@ private class PubSubMessageBatch[F[_], T](
   override def messages: Chunk[Message[F, T]] = payload
 
   override def ackAll: F[Unit] =
+    F.unlessA(payload.isEmpty)(
+      wrapFuture(
+        F.delay(
+          subscriber
+            .acknowledgeCallable()
+            .futureCall(
+              AcknowledgeRequest
+                .newBuilder()
+                .setSubscription(subscriptionName.toString)
+                .addAllAckIds(payload.map(_.underlying.getAckId).asJava)
+                .build()))).void
+    )
+
+  override def nackAll: F[Unit] = F.unlessA(payload.isEmpty)(
     wrapFuture(
       F.delay(
         subscriber
-          .acknowledgeCallable()
+          .modifyAckDeadlineCallable()
           .futureCall(
-            AcknowledgeRequest
+            ModifyAckDeadlineRequest
               .newBuilder()
               .setSubscription(subscriptionName.toString)
+              .setAckDeadlineSeconds(0)
               .addAllAckIds(payload.map(_.underlying.getAckId).asJava)
               .build()))).void
-
-  override def nackAll: F[Unit] = wrapFuture(
-    F.delay(
-      subscriber
-        .modifyAckDeadlineCallable()
-        .futureCall(
-          ModifyAckDeadlineRequest
-            .newBuilder()
-            .setSubscription(subscriptionName.toString)
-            .setAckDeadlineSeconds(0)
-            .addAllAckIds(payload.map(_.underlying.getAckId).asJava)
-            .build()))).void
+  )
 }
