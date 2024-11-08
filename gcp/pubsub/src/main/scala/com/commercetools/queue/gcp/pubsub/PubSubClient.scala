@@ -40,7 +40,7 @@ private class PubSubClient[F[_]: Async] private (
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(
       name,
-      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}-$name"),
+      SubscriptionName.of(project, s"${configs.subscriptionNamePrefix}$name"),
       monitoringChannelProvider,
       credentials,
       endpoint)
