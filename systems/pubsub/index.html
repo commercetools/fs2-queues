@@ -119,11 +119,25 @@
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">project</span><span> = </span><span class="string-literal">&quot;my-project&quot;</span><span> </span><span class="comment">// your project
 </span><span class="keyword">val</span><span> </span><span class="identifier">credentials</span><span> = </span><span class="type-name">GoogleCredentialsProvider</span><span>.</span><span class="identifier">newBuilder</span><span>().</span><span class="identifier">build</span><span>() </span><span class="comment">// however you want to authenticate
+</span><span class="keyword">val</span><span> </span><span class="identifier">configs</span><span> = </span><span class="type-name">PubSubConfig</span><span>(</span><span class="identifier">subscriptionNamePrefix</span><span>=</span><span class="type-name">Some</span><span>(</span><span class="string-literal">&quot;us-central1-&quot;</span><span>)) </span><span class="comment">// Prefix for the subscription prefix. The prefix should contain also the desired separator
 </span><span>
-</span><span class="type-name">PubSubClient</span><span>[</span><span class="type-name">IO</span><span>](</span><span class="identifier">project</span><span>, </span><span class="identifier">credentials</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+</span><span class="type-name">PubSubClient</span><span>[</span><span class="type-name">IO</span><span>]( </span><span class="identifier">project</span><span>= </span><span class="identifier">project</span><span>, </span><span class="identifier">credentials</span><span>= </span><span class="identifier">credentials</span><span>,</span><span class="identifier">configs</span><span>= </span><span class="identifier">configs</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
   ???
 }</span></code></pre>
-        <p>The client is managed, meaning that it uses a dedicated HTTP connection pool that will get shut down upon resource release.</p>
+        <p>The client is managed, meaning that it uses a dedicated HTTP connection pool that will get shut down upon resource release.
+        The client accepts a <code>PubSubConfig</code> object that allows you to configure the prefix for the subscription name. if not provided it will use the default prefix <code>fs2-queues-</code> to avoid collisions.
+        You can also omit entirely the prefix by setting it to <code>None</code>.</p>
+        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="type-name">IO</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="identifier">gcp</span><span>.</span><span class="identifier">pubsub</span><span>.</span><span class="identifier">_</span><span>
+</span><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">google</span><span>.</span><span class="identifier">api</span><span>.</span><span class="identifier">gax</span><span>.</span><span class="identifier">core</span><span>.</span><span class="type-name">GoogleCredentialsProvider</span><span>
+
+</span><span class="keyword">val</span><span> </span><span class="identifier">project</span><span> = </span><span class="string-literal">&quot;my-project&quot;</span><span> </span><span class="comment">// your project
+</span><span class="keyword">val</span><span> </span><span class="identifier">credentials</span><span> = </span><span class="type-name">GoogleCredentialsProvider</span><span>.</span><span class="identifier">newBuilder</span><span>().</span><span class="identifier">build</span><span>() </span><span class="comment">// however you want to authenticate
+</span><span class="keyword">val</span><span> </span><span class="identifier">configs</span><span> = </span><span class="type-name">PubSubConfig</span><span>(</span><span class="identifier">subscriptionNamePrefix</span><span>= </span><span class="type-name">None</span><span>) 
+
+</span><span class="type-name">PubSubClient</span><span>[</span><span class="type-name">IO</span><span>]( </span><span class="identifier">project</span><span>= </span><span class="identifier">project</span><span>, </span><span class="identifier">credentials</span><span>= </span><span class="identifier">credentials</span><span>,</span><span class="identifier">configs</span><span>= </span><span class="identifier">configs</span><span>).</span><span class="identifier">use</span><span> { </span><span class="identifier">client</span><span> =&gt;
+  ???
+}</span></code></pre>
         <p>If integrating with an existing code base where you already have an instance of <code>TransportChannelProvider</code> that you would like to share, you can use the <code>unmanaged</code> construtor.
         In this case, it is up to you to manage the channel provider life cycle.</p>
 
