@@ -137,7 +137,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.5"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.6"
     )
   )
   .dependsOn(core, testkit % Test)
