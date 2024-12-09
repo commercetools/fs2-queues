@@ -39,7 +39,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.5.5" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.5.7" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
@@ -113,7 +113,7 @@ lazy val otel4s = crossProject(JVMPlatform)
     name := "fs2-queues-otel4s",
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "otel4s-core" % "0.11.0"
+      "org.typelevel" %%% "otel4s-core" % "0.11.2"
     )
   )
   .dependsOn(core, testing % Test)
@@ -137,7 +137,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.5"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.7"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -160,7 +160,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.29.7"
+      "software.amazon.awssdk" % "sqs" % "2.29.29"
     )
   )
   .dependsOn(core)
@@ -178,7 +178,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.134.1",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.134.2",
       "com.google.cloud" % "google-cloud-monitoring" % "3.55.0"
     ),
     // TODO: Remove once next version is published
@@ -216,7 +216,7 @@ lazy val docs = project
     tlFatalWarnings := false,
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1",
-      "org.typelevel" %% "cats-effect-testkit" % "3.5.5"
+      "org.typelevel" %% "cats-effect-testkit" % "3.5.7"
     )
   )
   .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testing.jvm)
