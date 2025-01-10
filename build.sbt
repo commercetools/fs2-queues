@@ -160,7 +160,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.29.31"
+      "software.amazon.awssdk" % "sqs" % "2.29.47"
     )
   )
   .dependsOn(core)
@@ -178,7 +178,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.134.2",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.135.0",
       "com.google.cloud" % "google-cloud-monitoring" % "3.55.0"
     )
   )
