@@ -42,6 +42,8 @@ private class PubSubPuller[F[_], T](
   deserializer: Deserializer[T])
   extends UnsealedQueuePuller[F, T] {
 
+  private val maxAckDeadlineSeconds = 600
+
   private def callContext(waitingTime: FiniteDuration): ApiCallContext =
     GrpcCallContext
       .createDefault()
@@ -87,7 +89,8 @@ private class PubSubPuller[F[_], T](
                           .newBuilder()
                           .addAckIds(msg.getAckId())
                           .setSubscription(subscriptionName.toString())
-                          .setAckDeadlineSeconds(time.Duration.between(now, until).getSeconds().toInt)
+                          .setAckDeadlineSeconds(
+                            Math.min(time.Duration.between(now, until).getSeconds().toInt, maxAckDeadlineSeconds))
                           .build()))).as(None)
               case _ => F.pure(Some(msg))
             }
