@@ -3,6 +3,6 @@ object Versions {
   val http4s = "0.23.25"
   val munit = "1.0.4"
   val munitCatsEffect = "2.0.0"
-  val circe = "0.14.10"
+  val circe = "0.14.12"
   val circeGenericExtras = "0.14.3"
 }
