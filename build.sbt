@@ -15,7 +15,7 @@ ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
 val Scala213 = "2.13.15"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.4")
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.6")
 ThisBuild / scalaVersion := Scala213
 
 ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeLegacy
