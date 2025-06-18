@@ -18,7 +18,8 @@ val Scala213 = "2.13.15"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.4")
 ThisBuild / scalaVersion := Scala213
 
-ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeLegacy
+ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 
 lazy val root =
   tlCrossRootProject.aggregate(
