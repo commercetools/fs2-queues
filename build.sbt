@@ -14,11 +14,12 @@ ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
-val Scala213 = "2.13.15"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.4")
+val Scala213 = "2.13.16"
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.6")
 ThisBuild / scalaVersion := Scala213
 
-ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeLegacy
+ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 
 lazy val root =
   tlCrossRootProject.aggregate(
@@ -39,7 +40,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.5.7" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.6.2" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
@@ -137,7 +138,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.8"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.12"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -160,7 +161,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.29.47"
+      "software.amazon.awssdk" % "sqs" % "2.29.52"
     )
   )
   .dependsOn(core)
@@ -178,8 +179,8 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.135.0",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.57.0"
+      "com.google.cloud" % "google-cloud-pubsub" % "1.141.0",
+      "com.google.cloud" % "google-cloud-monitoring" % "3.69.0"
     )
   )
   .dependsOn(core)
@@ -209,7 +210,7 @@ lazy val docs = project
     tlFatalWarnings := false,
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1",
-      "org.typelevel" %% "cats-effect-testkit" % "3.5.7"
+      "org.typelevel" %% "cats-effect-testkit" % "3.6.2"
     )
   )
   .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testing.jvm)
