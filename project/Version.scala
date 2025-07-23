@@ -1,5 +1,5 @@
 object Versions {
-  val fs2 = "3.11.0"
+  val fs2 = "3.12.0"
   val http4s = "0.23.25"
   val munit = "1.0.4"
   val munitCatsEffect = "2.0.0"
