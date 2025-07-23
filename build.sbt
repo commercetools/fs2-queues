@@ -40,7 +40,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.6.2" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.6.3" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
@@ -114,7 +114,8 @@ lazy val otel4s = crossProject(JVMPlatform)
     name := "fs2-queues-otel4s",
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "otel4s-core" % "0.11.2"
+      "org.typelevel" %%% "otel4s-core" % "0.13.1",
+      "org.typelevel" %%% "otel4s-sdk-testkit" % "0.13.1" % Test
     )
   )
   .dependsOn(core, testing % Test)
@@ -161,7 +162,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.29.52"
+      "software.amazon.awssdk" % "sqs" % "2.32.6"
     )
   )
   .dependsOn(core)
@@ -210,7 +211,7 @@ lazy val docs = project
     tlFatalWarnings := false,
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1",
-      "org.typelevel" %% "cats-effect-testkit" % "3.6.2"
+      "org.typelevel" %% "cats-effect-testkit" % "3.6.3"
     )
   )
   .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testing.jvm)
