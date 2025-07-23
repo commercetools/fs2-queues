@@ -16,19 +16,18 @@
 
 package com.commercetools.queue.otel4s
 
-import cats.data.Chain
 import cats.effect.IO
 import cats.syntax.foldable._
 import com.commercetools.queue.testing.TestingMessageContext
 import com.commercetools.queue.{Message, MessageBatch, MessageContext, MessageId, UnsealedMessageBatch, UnsealedQueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
-import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.{Attribute, Attributes}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
-class MeasuringPullerSuite extends CatsEffectSuite {
+class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
   self =>
 
   val queueName = "test-queue"
@@ -53,7 +52,7 @@ class MeasuringPullerSuite extends CatsEffectSuite {
   }
 
   test("Successful pulling results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("pull-counter").use { case (testkit, counter) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -70,14 +69,18 @@ class MeasuringPullerSuite extends CatsEffectSuite {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.success))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "pull-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.success)))))
+        )
       } yield ()
     }
   }
 
   test("Successful batch pulling results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("pull-counter").use { case (testkit, counter) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -94,14 +97,18 @@ class MeasuringPullerSuite extends CatsEffectSuite {
         fiber <- measuringPuller.pullMessageBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.success))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "pull-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.success)))))
+        )
       } yield ()
     }
   }
 
   test("Failed pulling results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("pull-counter").use { case (testkit, counter) =>
       val measuringPuller =
         new MeasuringQueuePuller[IO, String](
           puller(IO.raiseError(new Exception)),
@@ -111,14 +118,18 @@ class MeasuringPullerSuite extends CatsEffectSuite {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isError), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.failure))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "pull-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.failure)))))
+        )
       } yield ()
     }
   }
 
   test("Cancelled pulling results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("pull-counter").use { case (testkit, counter) =>
       val measuringPuller =
         new MeasuringQueuePuller[IO, String](
           puller(IO.canceled.as(Chunk.empty)),
@@ -128,8 +139,12 @@ class MeasuringPullerSuite extends CatsEffectSuite {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.receive, QueueMetrics.cancelation))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "pull-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.cancelation)))))
+        )
       } yield ()
     }
   }

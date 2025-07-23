@@ -14,7 +14,7 @@ ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
-val Scala213 = "2.13.15"
+val Scala213 = "2.13.16"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.4")
 ThisBuild / scalaVersion := Scala213
 
@@ -114,7 +114,8 @@ lazy val otel4s = crossProject(JVMPlatform)
     name := "fs2-queues-otel4s",
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "otel4s-core" % "0.13.1"
+      "org.typelevel" %%% "otel4s-core" % "0.13.1",
+      "org.typelevel" %%% "otel4s-sdk-testkit" % "0.13.1" % Test
     )
   )
   .dependsOn(core, testing % Test)
