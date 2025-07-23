@@ -16,15 +16,14 @@
 
 package com.commercetools.queue.otel4s
 
-import cats.data.Chain
 import cats.effect.IO
 import com.commercetools.queue.QueuePusher
 import com.commercetools.queue.testing.TestQueuePusher
 import munit.CatsEffectSuite
-import org.typelevel.otel4s.Attribute
 import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.{Attribute, Attributes}
 
-class MeasuringPusherSuite extends CatsEffectSuite {
+class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   self =>
 
   val queueName = "test-queue"
@@ -35,35 +34,43 @@ class MeasuringPusherSuite extends CatsEffectSuite {
     TestQueuePusher.fromPush[String]((_, _, _) => result)
 
   test("Successfully pushing one message results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.send, QueueMetrics.success))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "push-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.success)))))
+        )
       } yield ()
     }
   }
 
   test("Successfully pushing several messages results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.send, QueueMetrics.success))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "push-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.success)))))
+        )
       } yield ()
     }
   }
 
   test("Failing to push one message results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](
           pusher(IO.raiseError(new Exception)),
@@ -73,14 +80,18 @@ class MeasuringPusherSuite extends CatsEffectSuite {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.send, QueueMetrics.failure))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "push-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.failure)))))
+        )
       } yield ()
     }
   }
 
   test("Failing to push several messages results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](
           pusher(IO.raiseError(new Exception)),
@@ -90,36 +101,48 @@ class MeasuringPusherSuite extends CatsEffectSuite {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.send, QueueMetrics.failure))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "push-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.failure)))))
+        )
       } yield ()
     }
   }
 
   test("Canceling pushing one message results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.send, QueueMetrics.cancelation))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "push-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.cancelation)))))
+        )
       } yield ()
     }
   }
 
   test("Canceling pushing several messages results in incrementing the counter") {
-    NaiveCounter.create.flatMap { counter =>
+    testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
         _ <- assertIO(
-          counter.records.get,
-          Chain.one((1L, List(queueAttribute, QueueMetrics.send, QueueMetrics.cancelation))))
+          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
+          List(
+            CounterData(
+              "push-counter",
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.cancelation)))))
+        )
       } yield ()
     }
   }
