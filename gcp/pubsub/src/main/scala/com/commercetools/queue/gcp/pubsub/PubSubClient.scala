@@ -22,7 +22,7 @@ import com.commercetools.queue._
 import com.google.api.gax.core.CredentialsProvider
 import com.google.api.gax.grpc.GrpcTransportChannel
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
-import com.google.pubsub.v1.{SubscriptionName, TopicName}
+import com.google.pubsub.v1.TopicName
 import io.grpc.netty.shaded.io.grpc.netty.{GrpcSslContexts, NettyChannelBuilder}
 
 private class PubSubClient[F[_]: Async] private (
@@ -40,7 +40,7 @@ private class PubSubClient[F[_]: Async] private (
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(
       name,
-      SubscriptionName.of(project, configs.subscriptionNamePrefix.fold(name)(_ + name)),
+      configs.subscriptionName(project, name),
       monitoringChannelProvider,
       credentials,
       endpoint)
@@ -49,12 +49,7 @@ private class PubSubClient[F[_]: Async] private (
     new PubSubPublisher[F, T](name, TopicName.of(project, name), channelProvider, credentials, endpoint)
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
-    new PubSubSubscriber[F, T](
-      name,
-      SubscriptionName.of(project, configs.subscriptionNamePrefix.fold(name)(_ + name)),
-      channelProvider,
-      credentials,
-      endpoint)
+    new PubSubSubscriber[F, T](name, configs.subscriptionName(project, name), channelProvider, credentials, endpoint)
 
 }
 
