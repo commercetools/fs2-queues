@@ -42,7 +42,11 @@ class PubSubClientSuite extends QueueClientSuite {
   private def config: IO[(String, CredentialsProvider, Option[String], PubSubConfig)] =
     booleanOrDefault(isEmulatorEnvVar, default = isEmulatorDefault).ifM(
       ifTrue = IO.pure(
-        ("test-project", NoCredentialsProvider.create(), Some("localhost:8042"), PubSubConfig(Some("test-suite-")))),
+        (
+          "test-project",
+          NoCredentialsProvider.create(),
+          Some("localhost:8042"),
+          PubSubConfig(Some("test-suite-"), Some("-sub")))),
       ifFalse = for {
         project <- string("GCP_PUBSUB_PROJECT")
         credentials = GoogleCredentialsProvider
@@ -52,7 +56,7 @@ class PubSubClientSuite extends QueueClientSuite {
             "https://www.googleapis.com/auth/monitoring.read" // monitoring (for fetching stats)
           ).asJava)
           .build()
-      } yield (project, credentials, None, PubSubConfig(Some("test-suite-")))
+      } yield (project, credentials, None, PubSubConfig(Some("test-suite-"), Some("-sub")))
     )
 
   override def client: Resource[IO, QueueClient[IO]] =
