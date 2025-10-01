@@ -113,8 +113,8 @@ lazy val otel4s = crossProject(JVMPlatform)
     name := "fs2-queues-otel4s",
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "otel4s-core" % "0.13.1",
-      "org.typelevel" %%% "otel4s-sdk-testkit" % "0.13.1" % Test
+      "org.typelevel" %%% "otel4s-core" % "0.13.2",
+      "org.typelevel" %%% "otel4s-sdk-testkit" % "0.13.2" % Test
     )
   )
   .dependsOn(core, testing % Test)
