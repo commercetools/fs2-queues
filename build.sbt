@@ -1,12 +1,11 @@
 import sbtcrossproject.CrossProject
-import com.typesafe.tools.mima.core._
 
 import laika.config.PrettyURLs
 import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.6"
+ThisBuild / tlBaseVersion := "0.7"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -139,7 +138,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.12"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.13"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -162,7 +161,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.32.6"
+      "software.amazon.awssdk" % "sqs" % "2.38.6"
     )
   )
   .dependsOn(core)
@@ -180,8 +179,8 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.141.0",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.69.0"
+      "com.google.cloud" % "google-cloud-pubsub" % "1.141.5",
+      "com.google.cloud" % "google-cloud-monitoring" % "3.71.0"
     )
   )
   .dependsOn(core)

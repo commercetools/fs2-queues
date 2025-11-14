@@ -15,7 +15,7 @@ import com.google.api.gax.core.GoogleCredentialsProvider
 
 val project = "my-project" // your project
 val credentials = GoogleCredentialsProvider.newBuilder().build() // however you want to authenticate
-val configs = PubSubConfig(subscriptionNamePrefix=Some("us-central1-")) // Prefix for the subscription prefix. The prefix should contain also the desired separator
+val configs = PubSubConfig(subscriptionNamePrefix=Some("us-central1-"), subscriptionNameSuffix=Some("-sub")) // Prefix and suffix for the subscription. Both should contain also the desired separator
 
 PubSubClient[IO]( project= project, credentials= credentials,configs= configs).use { client =>
   ???
@@ -33,7 +33,7 @@ import com.google.api.gax.core.GoogleCredentialsProvider
 
 val project = "my-project" // your project
 val credentials = GoogleCredentialsProvider.newBuilder().build() // however you want to authenticate
-val configs = PubSubConfig(subscriptionNamePrefix= None) 
+val configs = PubSubConfig(subscriptionNamePrefix= None, subscriptionNameSuffix= None) 
 
 PubSubClient[IO]( project= project, credentials= credentials,configs= configs).use { client =>
   ???

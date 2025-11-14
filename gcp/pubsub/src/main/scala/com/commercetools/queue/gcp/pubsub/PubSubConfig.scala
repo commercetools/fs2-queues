@@ -15,9 +15,13 @@
  */
 
 package com.commercetools.queue.gcp.pubsub
+import com.google.pubsub.v1.SubscriptionName
 
-case class PubSubConfig(subscriptionNamePrefix: Option[String])
+case class PubSubConfig(subscriptionNamePrefix: Option[String], subscriptionNameSuffix: Option[String]) {
+  def subscriptionName(project: String, name: String): SubscriptionName =
+    SubscriptionName.of(project, subscriptionNamePrefix.getOrElse("") + name + subscriptionNameSuffix.getOrElse(""))
+}
 
 object PubSubConfig {
-  val default: PubSubConfig = PubSubConfig(Some("fs2-queue-"))
+  val default: PubSubConfig = PubSubConfig(Some("fs2-queue-"), Some("-sub"))
 }
