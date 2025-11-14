@@ -14,7 +14,7 @@ ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
 val Scala213 = "2.13.17"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.6")
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.7")
 ThisBuild / scalaVersion := Scala213
 
 ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
@@ -161,7 +161,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.32.12"
+      "software.amazon.awssdk" % "sqs" % "2.38.6"
     )
   )
   .dependsOn(core)
@@ -179,7 +179,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.141.1",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.141.5",
       "com.google.cloud" % "google-cloud-monitoring" % "3.71.0"
     )
   )
