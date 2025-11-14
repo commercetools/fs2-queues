@@ -17,7 +17,6 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
-import cats.effect.syntax.monadCancel._
 import cats.syntax.flatMap._
 import com.commercetools.queue.{MessageContext, MessageId, UnsealedMessageContext}
 import org.typelevel.otel4s.trace.SpanOps
@@ -42,27 +41,30 @@ private class MeasuringMessageContext[F[_], T](
   override def metadata: Map[String, String] = underlying.metadata
 
   override def ack(): F[Unit] =
-    settleSpanOps
-      .use { span =>
-        span.addAttribute(InternalMessagingAttributes.Ack) >>
-          underlying.ack()
-      }
-      .guaranteeCase(metrics.ack)
+    metrics.ack.surround {
+      settleSpanOps
+        .use { span =>
+          span.addAttribute(InternalMessagingAttributes.Ack) >>
+            underlying.ack()
+        }
+    }
 
   override def nack(): F[Unit] =
-    settleSpanOps
-      .use { span =>
-        span.addAttribute(InternalMessagingAttributes.Nack) >>
-          underlying.nack()
-      }
-      .guaranteeCase(metrics.nack)
+    metrics.nack.surround {
+      settleSpanOps
+        .use { span =>
+          span.addAttribute(InternalMessagingAttributes.Nack) >>
+            underlying.nack()
+        }
+    }
 
   override def extendLock(): F[Unit] =
-    settleSpanOps
-      .use { span =>
-        span.addAttribute(InternalMessagingAttributes.ExtendLock) >>
-          underlying.extendLock()
-      }
-      .guaranteeCase(metrics.extendLock)
+    metrics.extendLock.surround {
+      settleSpanOps
+        .use { span =>
+          span.addAttribute(InternalMessagingAttributes.ExtendLock) >>
+            underlying.extendLock()
+        }
+    }
 
 }

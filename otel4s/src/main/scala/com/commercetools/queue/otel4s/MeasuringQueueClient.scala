@@ -20,39 +20,37 @@ import cats.effect.Temporal
 import cats.syntax.functor._
 import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
 import org.typelevel.otel4s.Attributes
-import org.typelevel.otel4s.metrics.{Counter, Meter}
+import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
 import org.typelevel.otel4s.trace.Tracer
 
 private class MeasuringQueueClient[F[_]](
   private val underlying: QueueClient[F],
-  requestCounter: Counter[F, Long],
+  commonAttributes: Attributes,
+  metrics: QueueMetrics[F],
   tracer: Tracer[F]
 )(implicit F: Temporal[F])
   extends UnsealedQueueClient[F] {
 
   def systemName: String = underlying.systemName
 
-  val commonAttributes =
-    Attributes(MessagingExperimentalAttributes.MessagingSystem(systemName))
-
   override def administration: QueueAdministration[F] =
-    new MeasuringQueueAdministration[F](underlying.administration, requestCounter, tracer)
+    underlying.administration
 
   override def statistics(name: String): QueueStatistics[F] =
-    new MeasuringQueueStatistics[F](underlying.statistics(name), requestCounter, tracer)
+    underlying.statistics(name)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
     new MeasuringQueuePublisher[F, T](
       underlying.publish(name),
-      requestCounter,
+      metrics.forQueue(name),
       tracer,
       commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)))
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
     new MeasuringQueueSubscriber[F, T](
       underlying.subscribe(name),
-      requestCounter,
+      metrics.forQueue(name),
       tracer,
       commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)))
 
@@ -64,42 +62,21 @@ object MeasuringQueueClient {
   final val defaultRequestMetricsName = "queue.service.call"
 
   /** A client tracking only metrics. */
-  def metricsOnly[F[_]](
-    inner: QueueClient[F],
-    requestMetricsName: String = defaultRequestMetricsName
-  )(implicit
-    F: Temporal[F],
-    meter: Meter[F]
-  ): F[QueueClient[F]] =
-    wrap(inner, requestMetricsName)(F = F, meter = meter, tracer = Tracer.noop)
+  def metricsOnly[F[_]](inner: QueueClient[F])(implicit F: Temporal[F], meter: Meter[F]): F[QueueClient[F]] =
+    wrap(inner)(F = F, meter = meter, tracer = Tracer.noop)
 
   /** A client tracking only traces. */
-  def tracesOnly[F[_]](
-    inner: QueueClient[F]
-  )(implicit
-    F: Temporal[F],
-    tracer: Tracer[F]
-  ): F[QueueClient[F]] =
+  def tracesOnly[F[_]](inner: QueueClient[F])(implicit F: Temporal[F], tracer: Tracer[F]): F[QueueClient[F]] =
     wrap(inner)(F = F, meter = Meter.noop, tracer = tracer)
 
   /** A client tracking metrics and traces according to the provided `meter` and `tracer`. */
-  def wrap[F[_]](
-    inner: QueueClient[F],
-    requestMetricsName: String = defaultRequestMetricsName
-  )(implicit
-    F: Temporal[F],
-    meter: Meter[F],
-    tracer: Tracer[F]
-  ): F[QueueClient[F]] =
+  def wrap[F[_]](inner: QueueClient[F])(implicit F: Temporal[F], meter: Meter[F], tracer: Tracer[F])
+    : F[QueueClient[F]] =
     inner match {
       case inner: MeasuringQueueClient[F] => wrap(inner.underlying)
       case _ =>
-        meter
-          .counter[Long](requestMetricsName)
-          .withUnit("call")
-          .withDescription("Counts the calls to the underlying queue service")
-          .create
-          .map(new MeasuringQueueClient(inner, _, tracer))
+        val commonAttributes = Attributes(MessagingExperimentalAttributes.MessagingSystem(inner.systemName))
+        QueueMetrics[F](commonAttributes).map(new MeasuringQueueClient[F](inner, commonAttributes, _, tracer))
     }
 
 }

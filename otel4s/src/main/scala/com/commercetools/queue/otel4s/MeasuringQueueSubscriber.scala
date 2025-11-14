@@ -19,14 +19,13 @@ package com.commercetools.queue.otel4s
 import cats.effect.{Resource, Temporal}
 import com.commercetools.queue.{Decision, ImmediateDecision, Message, MessageHandler, QueuePublisher, QueuePuller, QueueSubscriber, UnsealedQueueSubscriber}
 import org.typelevel.otel4s.Attributes
-import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.{SpanKind, Tracer}
 
 import scala.concurrent.duration.FiniteDuration
 
 private class MeasuringQueueSubscriber[F[_], T](
   underlying: QueueSubscriber[F, T],
-  requestCounter: Counter[F, Long],
+  metrics: QueueMetrics[F],
   tracer: Tracer[F],
   commonAttributes: Attributes
 )(implicit F: Temporal[F])
@@ -68,13 +67,7 @@ private class MeasuringQueueSubscriber[F[_], T](
       .build
 
   override def puller: Resource[F, QueuePuller[F, T]] =
-    underlying.puller.map(
-      new MeasuringQueuePuller(
-        _,
-        new QueueMetrics[F](queueName, requestCounter),
-        pullSpanOps,
-        settleSpanOps,
-        settleBatchSpanBuilder))
+    underlying.puller.map(new MeasuringQueuePuller(_, metrics, pullSpanOps, settleSpanOps, settleBatchSpanBuilder))
 
   override def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
     : fs2.Stream[F, Res] =

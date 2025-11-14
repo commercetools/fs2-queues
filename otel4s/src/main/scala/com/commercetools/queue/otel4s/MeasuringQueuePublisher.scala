@@ -19,12 +19,11 @@ package com.commercetools.queue.otel4s
 import cats.effect.{MonadCancel, Resource}
 import com.commercetools.queue.{QueuePublisher, QueuePusher, UnsealedQueuePublisher}
 import org.typelevel.otel4s.Attributes
-import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.trace.{SpanKind, Tracer}
 
 private class MeasuringQueuePublisher[F[_], T](
   underlying: QueuePublisher[F, T],
-  requestCounter: Counter[F, Long],
+  metrics: QueueMetrics[F],
   tracer: Tracer[F],
   commonAttributes: Attributes
 )(implicit F: MonadCancel[F, Throwable])
@@ -41,6 +40,6 @@ private class MeasuringQueuePublisher[F[_], T](
     .build
 
   def pusher: Resource[F, QueuePusher[F, T]] =
-    underlying.pusher.map(new MeasuringQueuePusher(_, new QueueMetrics[F](queueName, requestCounter), pushSpanOps))
+    underlying.pusher.map(new MeasuringQueuePusher(_, metrics, pushSpanOps))
 
 }

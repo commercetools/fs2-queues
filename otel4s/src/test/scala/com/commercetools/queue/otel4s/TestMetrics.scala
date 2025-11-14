@@ -19,19 +19,18 @@ package com.commercetools.queue.otel4s
 import cats.effect.IO
 import cats.effect.kernel.Resource
 import org.typelevel.otel4s.Attributes
-import org.typelevel.otel4s.metrics.Counter
 import org.typelevel.otel4s.sdk.metrics.data.{MetricData, MetricPoints, PointData}
 import org.typelevel.otel4s.sdk.testkit.OpenTelemetrySdkTestkit
 
-trait TestMetrics {
+private trait TestMetrics {
 
-  def testkitCounter(counterName: String): Resource[IO, (OpenTelemetrySdkTestkit[IO], Counter[IO, Long])] =
+  val testkitMetrics: Resource[IO, (OpenTelemetrySdkTestkit[IO], QueueMetrics[IO])] =
     OpenTelemetrySdkTestkit.inMemory[IO]().evalMap { testkit =>
       for {
         id <- IO.randomUUID
         meter <- testkit.meterProvider.get(s"test-meter-$id")
-        counter <- meter.counter[Long](counterName).create
-      } yield (testkit, counter)
+        metrics <- QueueMetrics[IO](Attributes.empty)(IO.asyncForIO, meter)
+      } yield (testkit, metrics)
     }
 
 }

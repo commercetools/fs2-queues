@@ -17,7 +17,6 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
-import cats.effect.syntax.monadCancel._
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.commercetools.queue.{MessageBatch, MessageContext, QueuePuller, UnsealedQueuePuller}
@@ -39,33 +38,41 @@ private class MeasuringQueuePuller[F[_], T](
   override def queueName: String = underlying.queueName
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
-    pullSpanOps
-      .use { span =>
-        underlying
-          .pullBatch(batchSize, waitingTime)
-          .flatTap(chunk =>
-            span.addAttribute(MessagingExperimentalAttributes.MessagingBatchMessageCount(chunk.size.toLong)))
-          .map(_.map(new MeasuringMessageContext[F, T](_, metrics, settleSpanOps))
-            .widen[MessageContext[F, T]])
+    metrics.receive
+      .surround {
+        pullSpanOps
+          .use { span =>
+            underlying
+              .pullBatch(batchSize, waitingTime)
+              .flatTap(chunk =>
+                span.addAttribute(MessagingExperimentalAttributes.MessagingBatchMessageCount(chunk.size.toLong)))
+              .map(_.map(new MeasuringMessageContext[F, T](_, metrics, settleSpanOps))
+                .widen[MessageContext[F, T]])
+          }
       }
-      .guaranteeCase(metrics.receive)
+      .flatTap(chunk => metrics.consume(chunk.size.toLong))
 
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]] =
-    pullSpanOps
-      .use { span =>
-        underlying
-          .pullMessageBatch(batchSize, waitingTime)
-          .flatTap(chunk =>
-            span.addAttribute(MessagingExperimentalAttributes.MessagingBatchMessageCount(chunk.messages.size.toLong)))
-          .map { chunk =>
-            new MeasuringMessageBatch[F, T](
-              chunk,
-              metrics,
-              settleBatchSpanBuilder
-                .addAttribute(MessagingExperimentalAttributes.MessagingBatchMessageCount(chunk.messages.size.toLong))
-                .build)
+    metrics.receive
+      .surround {
+        pullSpanOps
+          .use { span =>
+            underlying
+              .pullMessageBatch(batchSize, waitingTime)
+              .flatTap(chunk =>
+                span.addAttribute(
+                  MessagingExperimentalAttributes.MessagingBatchMessageCount(chunk.messages.size.toLong)))
+              .map { chunk =>
+                new MeasuringMessageBatch[F, T](
+                  chunk,
+                  metrics,
+                  settleBatchSpanBuilder
+                    .addAttribute(
+                      MessagingExperimentalAttributes.MessagingBatchMessageCount(chunk.messages.size.toLong))
+                    .build)
+              }
+              .widen[MessageBatch[F, T]]
           }
-          .widen[MessageBatch[F, T]]
       }
-      .guaranteeCase(metrics.receive)
+      .flatTap(batch => metrics.consume(batch.messages.size.toLong))
 }

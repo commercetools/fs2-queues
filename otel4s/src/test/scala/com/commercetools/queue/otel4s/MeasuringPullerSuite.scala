@@ -22,8 +22,9 @@ import com.commercetools.queue.testing.TestingMessageContext
 import com.commercetools.queue.{Message, MessageBatch, MessageContext, MessageId, UnsealedMessageBatch, UnsealedQueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
+import org.typelevel.otel4s.Attributes
+import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
 import org.typelevel.otel4s.trace.Tracer
-import org.typelevel.otel4s.{Attribute, Attributes}
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
 
@@ -32,7 +33,7 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
 
   val queueName = "test-queue"
 
-  val queueAttribute = Attribute("queue", queueName)
+  val queueAttribute = MessagingExperimentalAttributes.MessagingDestinationName(queueName)
 
   val spanBuilder = Tracer.noop[IO].spanBuilder("")
   val spanOps = spanBuilder.build
@@ -55,7 +56,7 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
   }
 
   test("Successful pulling results in incrementing the counter") {
-    testkitCounter("pull-counter").use { case (testkit, counter) =>
+    testkitMetrics.use { case (testkit, metrics) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -65,7 +66,7 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
                 TestingMessageContext("second").noop,
                 TestingMessageContext("third").noop,
                 TestingMessageContext("forth").noop)))),
-        new QueueMetrics(queueName, counter),
+        metrics.forQueue(queueName),
         spanOps,
         spanOps,
         spanBuilder
@@ -77,15 +78,15 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
           List(
             CounterData(
-              "pull-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.success)))))
+              QueueMetrics.ConsumedMessagesCounterName,
+              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
         )
       } yield ()
     }
   }
 
   test("Successful batch pulling results in incrementing the counter") {
-    testkitCounter("pull-counter").use { case (testkit, counter) =>
+    testkitMetrics.use { case (testkit, metrics) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -95,7 +96,7 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
                 TestingMessageContext("second").noop,
                 TestingMessageContext("third").noop,
                 TestingMessageContext("forth").noop)))),
-        new QueueMetrics(queueName, counter),
+        metrics.forQueue(queueName),
         spanOps,
         spanOps,
         spanBuilder
@@ -107,56 +108,8 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
           List(
             CounterData(
-              "pull-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.success)))))
-        )
-      } yield ()
-    }
-  }
-
-  test("Failed pulling results in incrementing the counter") {
-    testkitCounter("pull-counter").use { case (testkit, counter) =>
-      val measuringPuller =
-        new MeasuringQueuePuller[IO, String](
-          puller(IO.raiseError(new Exception)),
-          new QueueMetrics(queueName, counter),
-          spanOps,
-          spanOps,
-          spanBuilder
-        )
-      for {
-        fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
-        _ <- assertIO(fiber.join.map(_.isError), true)
-        _ <- assertIO(
-          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
-          List(
-            CounterData(
-              "pull-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.failure)))))
-        )
-      } yield ()
-    }
-  }
-
-  test("Cancelled pulling results in incrementing the counter") {
-    testkitCounter("pull-counter").use { case (testkit, counter) =>
-      val measuringPuller =
-        new MeasuringQueuePuller[IO, String](
-          puller(IO.canceled.as(Chunk.empty)),
-          new QueueMetrics(queueName, counter),
-          spanOps,
-          spanOps,
-          spanBuilder
-        )
-      for {
-        fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
-        _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(
-          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
-          List(
-            CounterData(
-              "pull-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.receive, QueueMetrics.cancelation)))))
+              QueueMetrics.ConsumedMessagesCounterName,
+              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
         )
       } yield ()
     }
