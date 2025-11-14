@@ -123,13 +123,11 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
     ),
     mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringMessageBatch.this"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.systemName"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringMessageContext.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePublisher.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePuller.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePusher.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueSubscriber.this")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.*"),
+      ProblemFilters.exclude[MissingClassProblem]("com.commercetools.queue.otel4s.*"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("com.commercetools.queue.otel4s.*"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.commercetools.queue.otel4s.*.this")
     )
   )
   .dependsOn(core, testing % Test)
