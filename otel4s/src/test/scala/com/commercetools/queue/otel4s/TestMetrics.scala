@@ -22,9 +22,9 @@ import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.sdk.metrics.data.{MetricData, MetricPoints, PointData}
 import org.typelevel.otel4s.sdk.testkit.OpenTelemetrySdkTestkit
 
-private trait TestMetrics {
+trait TestMetrics {
 
-  val testkitMetrics: Resource[IO, (OpenTelemetrySdkTestkit[IO], QueueMetrics[IO])] =
+  private[otel4s] val testkitMetrics: Resource[IO, (OpenTelemetrySdkTestkit[IO], QueueMetrics[IO])] =
     OpenTelemetrySdkTestkit.inMemory[IO]().evalMap { testkit =>
       for {
         id <- IO.randomUUID
