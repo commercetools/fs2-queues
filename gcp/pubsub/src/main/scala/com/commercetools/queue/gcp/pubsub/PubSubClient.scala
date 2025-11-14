@@ -34,6 +34,8 @@ private class PubSubClient[F[_]: Async] private (
   configs: PubSubConfig)
   extends UnsealedQueueClient[F] {
 
+  def systemName: String = "gcp_pubsub"
+
   override def administration: QueueAdministration[F] =
     new PubSubAdministration[F](project, channelProvider, credentials, endpoint, configs)
 

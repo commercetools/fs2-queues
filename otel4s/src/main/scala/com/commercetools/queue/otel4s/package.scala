@@ -25,27 +25,16 @@ package object otel4s {
   implicit class ClientOps[F[_]](val client: QueueClient[F]) extends AnyVal {
 
     /** A client tracking only metrics. */
-    def withMetrics(
-      requestMetricsName: String = MeasuringQueueClient.defaultRequestMetricsName
-    )(implicit
-      F: Temporal[F],
-      meter: Meter[F]
-    ): F[QueueClient[F]] =
-      MeasuringQueueClient.metricsOnly(client, requestMetricsName)
+    def withMetrics(implicit F: Temporal[F], meter: Meter[F]): F[QueueClient[F]] =
+      MeasuringQueueClient.metricsOnly(client)
 
     /** A client tracking only traces. */
     def withTraces(implicit F: Temporal[F], tracer: Tracer[F]): F[QueueClient[F]] =
       MeasuringQueueClient.tracesOnly(client)
 
     /** A client tracking metrics and traces according to the provided `meter` and `tracer`. */
-    def withMetricsAndTraces(
-      requestMetricsName: String = MeasuringQueueClient.defaultRequestMetricsName
-    )(implicit
-      F: Temporal[F],
-      meter: Meter[F],
-      tracer: Tracer[F]
-    ): F[QueueClient[F]] =
-      MeasuringQueueClient.wrap(client, requestMetricsName)
+    def withMetricsAndTraces(implicit F: Temporal[F], meter: Meter[F], tracer: Tracer[F]): F[QueueClient[F]] =
+      MeasuringQueueClient.wrap(client)
 
   }
 

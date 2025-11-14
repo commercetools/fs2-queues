@@ -24,6 +24,11 @@ package com.commercetools.queue
 sealed trait QueueClient[F[_]] {
 
   /**
+   * Name of the concrete underlying system
+   */
+  def systemName: String
+
+  /**
    * Gives access to adminsitrative API.
    */
   def administration: QueueAdministration[F]
