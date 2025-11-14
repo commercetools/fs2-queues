@@ -71,11 +71,23 @@ private class MeasuringQueueSubscriber[F[_], T](
 
   override def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
     : fs2.Stream[F, Res] =
-    super.processWithAutoAck(batchSize, waitingTime)(msg => processSpanOps.surround(f(msg)))
+    super.processWithAutoAck(batchSize, waitingTime) { msg =>
+      metrics.process.surround {
+        processSpanOps.surround {
+          f(msg)
+        }
+      }
+    }
 
   override def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
     : fs2.Stream[F, Either[Throwable, Res]] =
-    super.attemptProcessWithAutoAck(batchSize, waitingTime)(msg => processSpanOps.surround(f(msg)))
+    super.attemptProcessWithAutoAck(batchSize, waitingTime) { msg =>
+      metrics.process.surround {
+        processSpanOps.surround {
+          f(msg)
+        }
+      }
+    }
 
   override def process[Res](
     batchSize: Int,
@@ -83,13 +95,25 @@ private class MeasuringQueueSubscriber[F[_], T](
     publisherForReenqueue: QueuePublisher[F, T]
   )(handler: MessageHandler[F, T, Res, Decision]
   ): fs2.Stream[F, Either[Throwable, Res]] =
-    super.process(batchSize, waitingTime, publisherForReenqueue)(msg => processSpanOps.surround(handler.handle(msg)))
+    super.process(batchSize, waitingTime, publisherForReenqueue) { msg =>
+      metrics.process.surround {
+        processSpanOps.surround {
+          handler.handle(msg)
+        }
+      }
+    }
 
   override def processWithImmediateDecision[Res](
     batchSize: Int,
     waitingTime: FiniteDuration
   )(handler: MessageHandler[F, T, Res, ImmediateDecision]
   ): fs2.Stream[F, Either[Throwable, Res]] =
-    super.processWithImmediateDecision(batchSize, waitingTime)(msg => processSpanOps.surround(handler.handle(msg)))
+    super.processWithImmediateDecision(batchSize, waitingTime) { msg =>
+      metrics.process.surround {
+        processSpanOps.surround {
+          handler.handle(msg)
+        }
+      }
+    }
 
 }
