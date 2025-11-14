@@ -34,6 +34,9 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
 
   val queueAttribute = Attribute("queue", queueName)
 
+  val spanBuilder = Tracer.noop[IO].spanBuilder("")
+  val spanOps = spanBuilder.build
+
   def puller(batch: IO[Chunk[MessageContext[IO, String]]]) = new UnsealedQueuePuller[IO, String] {
 
     override def queueName: String = self.queueName
@@ -63,7 +66,9 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
                 TestingMessageContext("third").noop,
                 TestingMessageContext("forth").noop)))),
         new QueueMetrics(queueName, counter),
-        Tracer.noop
+        spanOps,
+        spanOps,
+        spanBuilder
       )
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
@@ -91,7 +96,9 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
                 TestingMessageContext("third").noop,
                 TestingMessageContext("forth").noop)))),
         new QueueMetrics(queueName, counter),
-        Tracer.noop
+        spanOps,
+        spanOps,
+        spanBuilder
       )
       for {
         fiber <- measuringPuller.pullMessageBatch(0, Duration.Zero).start
@@ -113,7 +120,10 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringQueuePuller[IO, String](
           puller(IO.raiseError(new Exception)),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps,
+          spanOps,
+          spanBuilder
+        )
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -134,7 +144,10 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringQueuePuller[IO, String](
           puller(IO.canceled.as(Chunk.empty)),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps,
+          spanOps,
+          spanBuilder
+        )
       for {
         fiber <- measuringPuller.pullBatch(0, Duration.Zero).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)

@@ -17,20 +17,86 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.{Resource, Temporal}
-import com.commercetools.queue.{QueuePuller, QueueSubscriber, UnsealedQueueSubscriber}
+import com.commercetools.queue.{Decision, ImmediateDecision, Message, MessageHandler, QueuePublisher, QueuePuller, QueueSubscriber, UnsealedQueueSubscriber}
+import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.metrics.Counter
-import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.trace.{SpanKind, Tracer}
+
+import scala.concurrent.duration.FiniteDuration
 
 private class MeasuringQueueSubscriber[F[_], T](
   underlying: QueueSubscriber[F, T],
   requestCounter: Counter[F, Long],
-  tracer: Tracer[F]
+  tracer: Tracer[F],
+  commonAttributes: Attributes
 )(implicit F: Temporal[F])
   extends UnsealedQueueSubscriber[F, T] {
 
   override def queueName: String = underlying.queueName
 
+  // used by all pullers from this subscriber
+  private val pullSpanOps = tracer
+    .spanBuilder(s"receive $queueName")
+    .withSpanKind(SpanKind.Client)
+    .addAttributes(commonAttributes)
+    .addAttribute(InternalMessagingAttributes.Receive)
+    .build
+
+  // used for all messages pulled from this queue by pullers from this subscriber
+  private val settleSpanOps = tracer
+    .spanBuilder(s"settle $queueName")
+    .withSpanKind(SpanKind.Client)
+    .addAttributes(commonAttributes)
+    .addAttribute(InternalMessagingAttributes.BatchSingleton)
+    .addAttribute(InternalMessagingAttributes.Settle)
+    .build
+
+  // used for all message batches pulled from this queue by pullers from this subscriber
+  private val settleBatchSpanBuilder = tracer
+    .spanBuilder(s"settle $queueName")
+    .withSpanKind(SpanKind.Client)
+    .addAttributes(commonAttributes)
+    .addAttribute(InternalMessagingAttributes.Settle)
+
+  // used by the automated processing streams below
+  private val processSpanOps =
+    tracer
+      .spanBuilder(s"process $queueName")
+      .withSpanKind(SpanKind.Consumer)
+      .addAttributes(commonAttributes)
+      .addAttribute(InternalMessagingAttributes.Process)
+      .build
+
   override def puller: Resource[F, QueuePuller[F, T]] =
-    underlying.puller.map(new MeasuringQueuePuller(_, new QueueMetrics[F](queueName, requestCounter), tracer))
+    underlying.puller.map(
+      new MeasuringQueuePuller(
+        _,
+        new QueueMetrics[F](queueName, requestCounter),
+        pullSpanOps,
+        settleSpanOps,
+        settleBatchSpanBuilder))
+
+  override def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
+    : fs2.Stream[F, Res] =
+    super.processWithAutoAck(batchSize, waitingTime)(msg => processSpanOps.surround(f(msg)))
+
+  override def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
+    : fs2.Stream[F, Either[Throwable, Res]] =
+    super.attemptProcessWithAutoAck(batchSize, waitingTime)(msg => processSpanOps.surround(f(msg)))
+
+  override def process[Res](
+    batchSize: Int,
+    waitingTime: FiniteDuration,
+    publisherForReenqueue: QueuePublisher[F, T]
+  )(handler: MessageHandler[F, T, Res, Decision]
+  ): fs2.Stream[F, Either[Throwable, Res]] =
+    super.process(batchSize, waitingTime, publisherForReenqueue)(msg => processSpanOps.surround(handler.handle(msg)))
+
+  override def processWithImmediateDecision[Res](
+    batchSize: Int,
+    waitingTime: FiniteDuration
+  )(handler: MessageHandler[F, T, Res, ImmediateDecision]
+  ): fs2.Stream[F, Either[Throwable, Res]] =
+    super.processWithImmediateDecision(batchSize, waitingTime)(msg => processSpanOps.surround(handler.handle(msg)))
 
 }

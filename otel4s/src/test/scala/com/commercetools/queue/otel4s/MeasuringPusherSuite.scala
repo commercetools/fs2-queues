@@ -30,13 +30,15 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
 
   val queueAttribute = Attribute("queue", queueName)
 
+  val spanOps = Tracer.noop[IO].span("")
+
   def pusher(result: IO[Unit]): QueuePusher[IO, String] =
     TestQueuePusher.fromPush[String]((_, _, _) => result)
 
   test("Successfully pushing one message results in incrementing the counter") {
     testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), spanOps)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -54,7 +56,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   test("Successfully pushing several messages results in incrementing the counter") {
     testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), spanOps)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -75,7 +77,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringQueuePusher[IO, String](
           pusher(IO.raiseError(new Exception)),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -96,7 +98,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringQueuePusher[IO, String](
           pusher(IO.raiseError(new Exception)),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -114,7 +116,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   test("Canceling pushing one message results in incrementing the counter") {
     testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), spanOps)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
@@ -132,7 +134,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   test("Canceling pushing several messages results in incrementing the counter") {
     testkitCounter("push-counter").use { case (testkit, counter) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), spanOps)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)

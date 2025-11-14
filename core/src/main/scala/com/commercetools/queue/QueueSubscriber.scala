@@ -89,7 +89,7 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed sequentially, stopping at the first error.
    * All results up to the error will be emitted downstream before failing.
    */
-  final def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
+  def processWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
     : Stream[F, Res] = {
     // to have full control over nacking things in time after a failure, and emitting
     // results up to the error, we resort to a `Pull`, which allows this fine graind control
@@ -135,7 +135,7 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed in parallel but result is emitted in
    * order the messages were received.
    */
-  final def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
+  def attemptProcessWithAutoAck[Res](batchSize: Int, waitingTime: FiniteDuration)(f: Message[F, T] => F[Res])
     : Stream[F, Either[Throwable, Res]] =
     messages(batchSize, waitingTime).parEvalMap(batchSize)(ctx =>
       f(ctx).attempt.flatTap {
@@ -152,7 +152,7 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed in parallel but result is emitted in order the messages were received,
    * with the exclusion of the messages that have been reenqueu'ed and dropped.
    */
-  final def process[Res](
+  def process[Res](
     batchSize: Int,
     waitingTime: FiniteDuration,
     publisherForReenqueue: QueuePublisher[F, T]
@@ -184,7 +184,7 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed in parallel but result is emitted in order the messages were received,
    * with the exclusion of the messages that have been dropped.
    */
-  final def processWithImmediateDecision[Res](
+  def processWithImmediateDecision[Res](
     batchSize: Int,
     waitingTime: FiniteDuration
   )(handler: MessageHandler[F, T, Res, ImmediateDecision]

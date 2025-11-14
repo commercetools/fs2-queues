@@ -19,7 +19,9 @@ package com.commercetools.queue.otel4s
 import cats.effect.Temporal
 import cats.syntax.functor._
 import com.commercetools.queue.{Deserializer, QueueAdministration, QueueClient, QueuePublisher, QueueStatistics, QueueSubscriber, Serializer, UnsealedQueueClient}
+import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.metrics.{Counter, Meter}
+import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
 import org.typelevel.otel4s.trace.Tracer
 
 private class MeasuringQueueClient[F[_]](
@@ -29,6 +31,11 @@ private class MeasuringQueueClient[F[_]](
 )(implicit F: Temporal[F])
   extends UnsealedQueueClient[F] {
 
+  def systemName: String = underlying.systemName
+
+  val commonAttributes =
+    Attributes(MessagingExperimentalAttributes.MessagingSystem(systemName))
+
   override def administration: QueueAdministration[F] =
     new MeasuringQueueAdministration[F](underlying.administration, requestCounter, tracer)
 
@@ -36,10 +43,18 @@ private class MeasuringQueueClient[F[_]](
     new MeasuringQueueStatistics[F](underlying.statistics(name), requestCounter, tracer)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new MeasuringQueuePublisher[F, T](underlying.publish(name), requestCounter, tracer)
+    new MeasuringQueuePublisher[F, T](
+      underlying.publish(name),
+      requestCounter,
+      tracer,
+      commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)))
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
-    new MeasuringQueueSubscriber[F, T](underlying.subscribe(name), requestCounter, tracer)
+    new MeasuringQueueSubscriber[F, T](
+      underlying.subscribe(name),
+      requestCounter,
+      tracer,
+      commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)))
 
 }
 

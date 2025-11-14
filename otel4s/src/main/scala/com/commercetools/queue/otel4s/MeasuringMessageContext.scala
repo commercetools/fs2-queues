@@ -18,15 +18,16 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.effect.syntax.monadCancel._
+import cats.syntax.flatMap._
 import com.commercetools.queue.{MessageContext, MessageId, UnsealedMessageContext}
-import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.trace.SpanOps
 
 import java.time.Instant
 
 private class MeasuringMessageContext[F[_], T](
   underlying: MessageContext[F, T],
   metrics: QueueMetrics[F],
-  tracer: Tracer[F]
+  settleSpanOps: SpanOps[F]
 )(implicit F: Temporal[F])
   extends UnsealedMessageContext[F, T] {
 
@@ -41,26 +42,26 @@ private class MeasuringMessageContext[F[_], T](
   override def metadata: Map[String, String] = underlying.metadata
 
   override def ack(): F[Unit] =
-    tracer
-      .span("queue.message.ack")
-      .surround {
-        underlying.ack()
+    settleSpanOps
+      .use { span =>
+        span.addAttribute(InternalMessagingAttributes.Ack) >>
+          underlying.ack()
       }
       .guaranteeCase(metrics.ack)
 
   override def nack(): F[Unit] =
-    tracer
-      .span("queue.message.nack")
-      .surround {
-        underlying.nack()
+    settleSpanOps
+      .use { span =>
+        span.addAttribute(InternalMessagingAttributes.Nack) >>
+          underlying.nack()
       }
       .guaranteeCase(metrics.nack)
 
   override def extendLock(): F[Unit] =
-    tracer
-      .span("queue.message.extendLock")
-      .surround {
-        underlying.extendLock()
+    settleSpanOps
+      .use { span =>
+        span.addAttribute(InternalMessagingAttributes.ExtendLock) >>
+          underlying.extendLock()
       }
       .guaranteeCase(metrics.extendLock)
 

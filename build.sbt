@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import sbtcrossproject.CrossProject
 
 import laika.config.PrettyURLs
@@ -55,6 +56,9 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
     name := "fs2-queues-core",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2
+    ),
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.systemName")
     )
   )
 
@@ -113,8 +117,19 @@ lazy val otel4s = crossProject(JVMPlatform)
     name := "fs2-queues-otel4s",
     description := "Support for metrics and tracing using otel4s",
     libraryDependencies ++= List(
-      "org.typelevel" %%% "otel4s-core" % "0.13.1",
-      "org.typelevel" %%% "otel4s-sdk-testkit" % "0.13.1" % Test
+      "org.typelevel" %%% "otel4s-core" % Versions.otel4s,
+      "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
+      "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
+      "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
+    ),
+    mimaBinaryIssueFilters ++= List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringMessageBatch.this"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.systemName"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringMessageContext.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePublisher.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePuller.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueuePusher.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueSubscriber.this")
     )
   )
   .dependsOn(core, testing % Test)

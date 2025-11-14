@@ -18,35 +18,37 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.MonadCancel
 import cats.effect.syntax.monadCancel._
+import cats.syntax.flatMap._
 import com.commercetools.queue.{QueuePusher, UnsealedQueuePusher}
-import org.typelevel.otel4s.trace.Tracer
+import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
+import org.typelevel.otel4s.trace.SpanOps
 
 import scala.concurrent.duration.FiniteDuration
 
 private class MeasuringQueuePusher[F[_], T](
   underlying: QueuePusher[F, T],
   metrics: QueueMetrics[F],
-  tracer: Tracer[F]
+  pushSpanOps: SpanOps[F]
 )(implicit F: MonadCancel[F, Throwable])
   extends UnsealedQueuePusher[F, T] {
 
   override def queueName: String = underlying.queueName
 
   override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): F[Unit] =
-    tracer
-      .span("queue.pushMessage")
-      .surround {
-        underlying
-          .push(message, metadata, delay)
+    pushSpanOps
+      .use { span =>
+        span.addAttribute(InternalMessagingAttributes.BatchSingleton) >>
+          underlying
+            .push(message, metadata, delay)
       }
       .guaranteeCase(metrics.send)
 
   override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): F[Unit] =
-    tracer
-      .span("queue.pushMessages")
-      .surround {
-        underlying
-          .push(messages, delay)
+    pushSpanOps
+      .use { span =>
+        span.addAttribute(MessagingExperimentalAttributes.MessagingBatchMessageCount(messages.size.toLong)) >>
+          underlying
+            .push(messages, delay)
       }
       .guaranteeCase(metrics.send)
 

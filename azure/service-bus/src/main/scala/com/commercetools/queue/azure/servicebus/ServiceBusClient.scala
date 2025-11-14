@@ -30,6 +30,8 @@ private class ServiceBusClient[F[_]] private (
 )(implicit F: Async[F])
   extends UnsealedQueueClient[F] {
 
+  def systemName: String = "servicebus"
+
   override def administration: QueueAdministration[F] =
     new ServiceBusAdministration(adminBuilder.buildClient(), newQueueSettings)
 

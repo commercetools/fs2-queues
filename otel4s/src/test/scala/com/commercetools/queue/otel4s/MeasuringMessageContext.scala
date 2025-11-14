@@ -28,12 +28,14 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
 
   val queueAttribute = Attribute("queue", queueName)
 
+  val spanOps = Tracer.noop[IO].span("")
+
   test("Succesfully acking a message should increment the request counter") {
     testkitCounter("ack-counter").use { case (testkit, counter) =>
       val context = new MeasuringMessageContext[IO, String](
         TestingMessageContext("").noop,
         new QueueMetrics(queueName, counter),
-        Tracer.noop)
+        spanOps)
       for {
         fiber <- context.ack().start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -54,7 +56,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringMessageContext[IO, String](
           TestingMessageContext("").failing(new Exception),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps)
       for {
         fiber <- context.ack().start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -74,7 +76,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
       val context = new MeasuringMessageContext[IO, String](
         TestingMessageContext("").canceled,
         new QueueMetrics(queueName, counter),
-        Tracer.noop)
+        spanOps)
       for {
         fiber <- context.ack().start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
@@ -94,7 +96,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
       val context = new MeasuringMessageContext[IO, String](
         TestingMessageContext("").noop,
         new QueueMetrics(queueName, counter),
-        Tracer.noop)
+        spanOps)
       for {
         fiber <- context.nack().start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -115,7 +117,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringMessageContext[IO, String](
           TestingMessageContext("").failing(new Exception),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps)
       for {
         fiber <- context.nack().start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -135,7 +137,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
       val context = new MeasuringMessageContext[IO, String](
         TestingMessageContext("").canceled,
         new QueueMetrics(queueName, counter),
-        Tracer.noop)
+        spanOps)
       for {
         fiber <- context.nack().start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)
@@ -155,7 +157,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
       val context = new MeasuringMessageContext[IO, String](
         TestingMessageContext("").noop,
         new QueueMetrics(queueName, counter),
-        Tracer.noop)
+        spanOps)
       for {
         fiber <- context.extendLock().start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -176,7 +178,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
         new MeasuringMessageContext[IO, String](
           TestingMessageContext("").failing(new Exception),
           new QueueMetrics(queueName, counter),
-          Tracer.noop)
+          spanOps)
       for {
         fiber <- context.extendLock().start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -196,7 +198,7 @@ class MeasuringMessageContextSuite extends CatsEffectSuite with TestMetrics {
       val context = new MeasuringMessageContext[IO, String](
         TestingMessageContext("").canceled,
         new QueueMetrics(queueName, counter),
-        Tracer.noop)
+        spanOps)
       for {
         fiber <- context.extendLock().start
         _ <- assertIO(fiber.join.map(_.isCanceled), true)

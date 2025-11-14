@@ -30,6 +30,8 @@ import java.net.URI
 
 private class SQSClient[F[_]](client: SqsAsyncClient)(implicit F: Async[F]) extends UnsealedQueueClient[F] {
 
+  def systemName: String = "aws_sqs"
+
   private def getQueueUrl(name: String): F[String] =
     F.fromCompletableFuture {
       F.delay {
