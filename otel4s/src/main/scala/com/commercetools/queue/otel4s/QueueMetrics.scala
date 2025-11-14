@@ -60,13 +60,15 @@ private class QueueMetrics[F[_]: Applicative](
   }
 
   val send: Resource[F, Unit] =
-    operationDuration.recordDuration(TimeUnit.SECONDS, Attributes(InternalMessagingAttributes.Send))
+    operationDuration.recordDuration(TimeUnit.SECONDS, buildAttributes(Attributes(InternalMessagingAttributes.Send), _))
 
   def sent(batch: Long, exitCase: ExitCase): F[Unit] =
     sentMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Send), exitCase))
 
   val receive: Resource[F, Unit] =
-    operationDuration.recordDuration(TimeUnit.SECONDS, InternalMessagingAttributes.Receive)
+    operationDuration.recordDuration(
+      TimeUnit.SECONDS,
+      buildAttributes(Attributes(InternalMessagingAttributes.Receive), _))
 
   def consume(batch: Long): F[Unit] =
     consumedMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Receive), ExitCase.Succeeded))
@@ -74,20 +76,22 @@ private class QueueMetrics[F[_]: Applicative](
   val ack: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Ack))
+      buildAttributes(Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Ack), _))
 
   val nack: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Nack))
+      buildAttributes(Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Nack), _))
 
   val extendLock: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.ExtendLock))
+      buildAttributes(Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.ExtendLock), _))
 
   val process: Resource[F, Unit] =
-    processDuration.recordDuration(TimeUnit.SECONDS, InternalMessagingAttributes.Process)
+    processDuration.recordDuration(
+      TimeUnit.SECONDS,
+      buildAttributes(Attributes(InternalMessagingAttributes.Process), _))
 
 }
 
