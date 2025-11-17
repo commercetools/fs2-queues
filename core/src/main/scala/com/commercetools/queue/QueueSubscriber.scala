@@ -184,7 +184,7 @@ sealed abstract class QueueSubscriber[F[_], T](implicit F: Concurrent[F]) {
    * Messages in a batch are processed in parallel but result is emitted in order the messages were received,
    * with the exclusion of the messages that have been dropped.
    */
-  def processWithImmediateDecision[Res](
+  final def processWithImmediateDecision[Res](
     batchSize: Int,
     waitingTime: FiniteDuration
   )(handler: MessageHandler[F, T, Res, ImmediateDecision]

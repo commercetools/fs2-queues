@@ -17,9 +17,11 @@
 package com.commercetools.queue.otel4s
 
 import cats.effect.{Resource, Temporal}
-import com.commercetools.queue.{Decision, ImmediateDecision, Message, MessageHandler, QueuePublisher, QueuePuller, QueueSubscriber, UnsealedQueueSubscriber}
+import cats.syntax.all._
+import com.commercetools.queue.{Decision, Message, MessageHandler, QueuePublisher, QueuePuller, QueueSubscriber, UnsealedQueueSubscriber}
 import org.typelevel.otel4s.Attributes
-import org.typelevel.otel4s.trace.{SpanKind, Tracer}
+import org.typelevel.otel4s.semconv.attributes.ErrorAttributes
+import org.typelevel.otel4s.trace.{SpanKind, StatusCode, Tracer}
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -97,21 +99,17 @@ private class MeasuringQueueSubscriber[F[_], T](
   ): fs2.Stream[F, Either[Throwable, Res]] =
     super.process(batchSize, waitingTime, publisherForReenqueue) { msg =>
       metrics.process.surround {
-        processSpanOps.surround {
-          handler.handle(msg)
-        }
-      }
-    }
-
-  override def processWithImmediateDecision[Res](
-    batchSize: Int,
-    waitingTime: FiniteDuration
-  )(handler: MessageHandler[F, T, Res, ImmediateDecision]
-  ): fs2.Stream[F, Either[Throwable, Res]] =
-    super.processWithImmediateDecision(batchSize, waitingTime) { msg =>
-      metrics.process.surround {
-        processSpanOps.surround {
-          handler.handle(msg)
+        processSpanOps.use { span =>
+          handler.handle(msg).flatTap {
+            case Decision.Fail(t, _) =>
+              for {
+                _ <- span.setStatus(StatusCode.Error)
+                _ <- span.addAttribute(ErrorAttributes.ErrorType(t.getClass().getName()))
+                _ <- span.recordException(t)
+              } yield ()
+            case _ =>
+              F.unit
+          }
         }
       }
     }
