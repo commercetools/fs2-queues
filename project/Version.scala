@@ -5,4 +5,5 @@ object Versions {
   val munitCatsEffect = "2.1.0"
   val circe = "0.14.15"
   val circeGenericExtras = "0.14.3"
+  val otel4s = "0.14.0"
 }

@@ -1,6 +1,6 @@
 # Otel4s
 
-The otel4s provides an integration with the [otel4s][otel4s] library.
+The otel4s provides an integration with the [otel4s][otel4s] library implementing the [semantic conventions for messaging systems][semconv].
 
 ```scala
 libraryDependencies += "com.commercetools" %% "fs2-queues-otel4s" % "@VERSION@"
@@ -24,21 +24,14 @@ val rawClient: QueueClient[IO] = ???
 implicit val meter: Meter[IO] = ???
 implicit val tracer: Tracer[IO] = ???
 
-val withMetrics = rawClient.withMetrics()
+val withMetrics = rawClient.withMetrics
 
 val withTracing = rawClient.withTraces
 
-val withBoth = rawClient.withMetricsAndTraces()
-```
-
-The extension methods adding metrics take an optional parameter indicating the name of the counter that counts the calls to the queue system. The default is defined in `MeasuringQueueClient.defaultRequestMetricsName`.
-
-```scala mdoc
-import com.commercetools.queue.otel4s.MeasuringQueueClient
-
-MeasuringQueueClient.defaultRequestMetricsName
+val withBoth = rawClient.withMetricsAndTraces
 ```
 
 [otel4s]: https://typelevel.org/otel4s/
 [otel4s-tracing]: https://typelevel.org/otel4s/instrumentation/tracing.html
 [otel4s-metrics]: https://typelevel.org/otel4s/instrumentation/metrics.html
+[semconv]: https://opentelemetry.io/docs/specs/semconv/messaging/

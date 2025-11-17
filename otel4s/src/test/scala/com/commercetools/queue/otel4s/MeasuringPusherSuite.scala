@@ -20,23 +20,27 @@ import cats.effect.IO
 import com.commercetools.queue.QueuePusher
 import com.commercetools.queue.testing.TestQueuePusher
 import munit.CatsEffectSuite
+import org.typelevel.otel4s.Attributes
+import org.typelevel.otel4s.semconv.attributes.ErrorAttributes
+import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
 import org.typelevel.otel4s.trace.Tracer
-import org.typelevel.otel4s.{Attribute, Attributes}
 
 class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   self =>
 
   val queueName = "test-queue"
 
-  val queueAttribute = Attribute("queue", queueName)
+  val queueAttribute = MessagingExperimentalAttributes.MessagingDestinationName(queueName)
+
+  val spanOps = Tracer.noop[IO].span("")
 
   def pusher(result: IO[Unit]): QueuePusher[IO, String] =
     TestQueuePusher.fromPush[String]((_, _, _) => result)
 
   test("Successfully pushing one message results in incrementing the counter") {
-    testkitCounter("push-counter").use { case (testkit, counter) =>
+    testkitMetrics.use { case (testkit, metrics) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.unit), metrics.forQueue(queueName), spanOps)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -44,17 +48,17 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
           testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
           List(
             CounterData(
-              "push-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.success)))))
+              QueueMetrics.SentMessagesCounterName,
+              Vector(CounterDataPoint(1L, Attributes(queueAttribute, InternalMessagingAttributes.Send)))))
         )
       } yield ()
     }
   }
 
   test("Successfully pushing several messages results in incrementing the counter") {
-    testkitCounter("push-counter").use { case (testkit, counter) =>
+    testkitMetrics.use { case (testkit, metrics) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.unit), new QueueMetrics(queueName, counter), Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.unit), metrics.forQueue(queueName), spanOps)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isSuccess), true)
@@ -62,20 +66,17 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
           testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
           List(
             CounterData(
-              "push-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.success)))))
+              QueueMetrics.SentMessagesCounterName,
+              Vector(CounterDataPoint(3L, Attributes(queueAttribute, InternalMessagingAttributes.Send)))))
         )
       } yield ()
     }
   }
 
   test("Failing to push one message results in incrementing the counter") {
-    testkitCounter("push-counter").use { case (testkit, counter) =>
+    testkitMetrics.use { case (testkit, metrics) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](
-          pusher(IO.raiseError(new Exception)),
-          new QueueMetrics(queueName, counter),
-          Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.raiseError(new Exception)), metrics.forQueue(queueName), spanOps)
       for {
         fiber <- measuringPusher.push("msg", Map.empty, None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -83,20 +84,24 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
           testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
           List(
             CounterData(
-              "push-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.failure)))))
+              QueueMetrics.SentMessagesCounterName,
+              Vector(
+                CounterDataPoint(
+                  1L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Send,
+                    ErrorAttributes.ErrorType("java.lang.Exception"))))
+            ))
         )
       } yield ()
     }
   }
 
   test("Failing to push several messages results in incrementing the counter") {
-    testkitCounter("push-counter").use { case (testkit, counter) =>
+    testkitMetrics.use { case (testkit, metrics) =>
       val measuringPusher =
-        new MeasuringQueuePusher[IO, String](
-          pusher(IO.raiseError(new Exception)),
-          new QueueMetrics(queueName, counter),
-          Tracer.noop)
+        new MeasuringQueuePusher[IO, String](pusher(IO.raiseError(new Exception)), metrics.forQueue(queueName), spanOps)
       for {
         fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
         _ <- assertIO(fiber.join.map(_.isError), true)
@@ -104,44 +109,15 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
           testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
           List(
             CounterData(
-              "push-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.failure)))))
-        )
-      } yield ()
-    }
-  }
-
-  test("Canceling pushing one message results in incrementing the counter") {
-    testkitCounter("push-counter").use { case (testkit, counter) =>
-      val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
-      for {
-        fiber <- measuringPusher.push("msg", Map.empty, None).start
-        _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(
-          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
-          List(
-            CounterData(
-              "push-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.cancelation)))))
-        )
-      } yield ()
-    }
-  }
-
-  test("Canceling pushing several messages results in incrementing the counter") {
-    testkitCounter("push-counter").use { case (testkit, counter) =>
-      val measuringPusher =
-        new MeasuringQueuePusher[IO, String](pusher(IO.canceled), new QueueMetrics(queueName, counter), Tracer.noop)
-      for {
-        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
-        _ <- assertIO(fiber.join.map(_.isCanceled), true)
-        _ <- assertIO(
-          testkit.collectMetrics.map(_.flatMap(CounterData.fromMetricData(_))),
-          List(
-            CounterData(
-              "push-counter",
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, QueueMetrics.send, QueueMetrics.cancelation)))))
+              QueueMetrics.SentMessagesCounterName,
+              Vector(
+                CounterDataPoint(
+                  3L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Send,
+                    ErrorAttributes.ErrorType("java.lang.Exception"))))
+            ))
         )
       } yield ()
     }
