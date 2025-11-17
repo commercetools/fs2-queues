@@ -102,15 +102,18 @@ private object QueueMetrics {
   val ConsumedMessagesCounterName = "messaging.client.consumed.messages"
   val ProcessDurationHistogramName = "messaging.process.duration"
 
+  // these buckets are calibrated to make sense with seconds, as per the convention
+  private val durationBuckets =
+    BucketBoundaries(0.005d, 0.01d, 0.025d, 0.05d, 0.075d, 0.1d, 0.25d, 0.5d, 0.75d, 1d, 2.5d, 5d, 7.5d, 10d)
+
   def apply[F[_]: Monad](commonAttributes: Attributes)(implicit meter: Meter[F]): F[QueueMetrics[F]] =
     for {
-      // seed https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientoperationduration
+      // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientoperationduration
       operationDuration <- meter
         .histogram[Double](OperationDurationHistogramName)
         .withDescription("Duration of messaging operation initiated by a producer or consumer client.")
         .withUnit("s")
-        .withExplicitBucketBoundaries(
-          BucketBoundaries(0.005d, 0.01d, 0.025d, 0.05d, 0.075d, 0.1d, 0.25d, 0.5d, 0.75d, 1d, 2.5d, 5d, 7.5d, 10d))
+        .withExplicitBucketBoundaries(durationBuckets)
         .create
       // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientsentmessages
       sentMessages <- meter
@@ -129,8 +132,7 @@ private object QueueMetrics {
         .histogram[Double](ProcessDurationHistogramName)
         .withDescription("Duration of processing operation.")
         .withUnit("s")
-        .withExplicitBucketBoundaries(
-          BucketBoundaries(0.005d, 0.01d, 0.025d, 0.05d, 0.075d, 0.1d, 0.25d, 0.5d, 0.75d, 1d, 2.5d, 5d, 7.5d, 10d))
+        .withExplicitBucketBoundaries(durationBuckets)
         .create
     } yield new QueueMetrics[F](commonAttributes, operationDuration, sentMessages, consumedMessages, processDuration)
 
