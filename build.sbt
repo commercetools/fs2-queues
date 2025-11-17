@@ -13,11 +13,10 @@ ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
-val Scala213 = "2.13.16"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.6")
+val Scala213 = "2.13.17"
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.7")
 ThisBuild / scalaVersion := Scala213
 
-ThisBuild / sonatypeCredentialHost := xerial.sbt.Sonatype.sonatypeCentralHost
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
 
 lazy val root =
@@ -138,7 +137,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.13"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.16"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -161,7 +160,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.32.33"
+      "software.amazon.awssdk" % "sqs" % "2.38.6"
     )
   )
   .dependsOn(core)
@@ -180,7 +179,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.143.1",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.71.0"
+      "com.google.cloud" % "google-cloud-monitoring" % "3.80.0"
     )
   )
   .dependsOn(core)
