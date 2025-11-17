@@ -110,7 +110,7 @@
       <main class="content">
 
         <h1 id="otel4s" class="title">Otel4s</h1>
-        <p>The otel4s provides an integration with the <a href="https://typelevel.org/otel4s/">otel4s</a> library.</p>
+        <p>The otel4s provides an integration with the <a href="https://typelevel.org/otel4s/">otel4s</a> library implementing the <a href="https://opentelemetry.io/docs/specs/semconv/messaging/">semantic conventions for messaging systems</a>.</p>
         <pre class="keep-together pdf epub"><code class="nohighlight"><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;com.commercetools&quot;</span><span> %% </span><span class="string-literal">&quot;fs2-queues-otel4s&quot;</span><span> % </span><span class="string-literal">&quot;0.7.0&quot;</span></code></pre>
         <p>It allows you to wrap an existing <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.7.0/com/commercetools/queue/QueueClient.html">QueueClient</a> into a <a class="api" href="https://www.javadoc.io/doc/com.commercetools/fs2-queues-docs_2.13/0.7.0/com/commercetools/queue/otel4s/MeasuringQueueClient$.html">MeasuringQueueClient</a>, which adds <a href="https://typelevel.org/otel4s/instrumentation/tracing.html">tracing</a> and <a href="https://typelevel.org/otel4s/instrumentation/metrics.html">metrics</a> on every call to the underlying queue system.</p>
         <p>You can opt-in for either one of them or both.</p>
@@ -127,16 +127,11 @@
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">meter</span><span>: </span><span class="type-name">Meter</span><span>[</span><span class="type-name">IO</span><span>] = ???
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">tracer</span><span>: </span><span class="type-name">Tracer</span><span>[</span><span class="type-name">IO</span><span>] = ???
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">withMetrics</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetrics</span><span>()
+</span><span class="keyword">val</span><span> </span><span class="identifier">withMetrics</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetrics</span><span>
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">withTracing</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withTraces</span><span>
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">withBoth</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetricsAndTraces</span><span>()</span></code></pre>
-        <p>The extension methods adding metrics take an optional parameter indicating the name of the counter that counts the calls to the queue system. The default is defined in <code>MeasuringQueueClient.defaultRequestMetricsName</code>.</p>
-        <pre class="keep-together pdf epub"><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">com</span><span>.</span><span class="identifier">commercetools</span><span>.</span><span class="identifier">queue</span><span>.</span><span class="identifier">otel4s</span><span>.</span><span class="type-name">MeasuringQueueClient</span><span>
-
-</span><span class="type-name">MeasuringQueueClient</span><span>.</span><span class="identifier">defaultRequestMetricsName</span><span>
-</span><span class="comment">// res1: String = &quot;queue.service.call&quot;</span></code></pre>
+</span><span class="keyword">val</span><span> </span><span class="identifier">withBoth</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetricsAndTraces</span></code></pre>
 
         
 <hr class="footer-rule"/>
