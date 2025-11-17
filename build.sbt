@@ -13,7 +13,7 @@ ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
-val Scala213 = "2.13.16"
+val Scala213 = "2.13.17"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.7")
 ThisBuild / scalaVersion := Scala213
 
