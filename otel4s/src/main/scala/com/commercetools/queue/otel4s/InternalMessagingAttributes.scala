@@ -34,6 +34,8 @@ private object InternalMessagingAttributes {
   val Process: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationType(
     MessagingExperimentalAttributes.MessagingOperationTypeValue.Process.value)
 
+  val SendOp: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("send")
+  val ReceiveOp: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("receive")
   val Ack: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("ack")
   val Nack: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("nack")
   val ExtendLock: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("extendLock")

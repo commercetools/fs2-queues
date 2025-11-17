@@ -24,6 +24,7 @@ import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.metrics.{BucketBoundaries, Counter, Histogram, Meter}
 import org.typelevel.otel4s.semconv.attributes.ErrorAttributes
 import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
+import org.typelevel.otel4s.semconv.experimental.metrics.MessagingExperimentalMetrics
 
 import java.util.concurrent.TimeUnit
 
@@ -60,18 +61,26 @@ private class QueueMetrics[F[_]: Applicative](
   }
 
   val send: Resource[F, Unit] =
-    operationDuration.recordDuration(TimeUnit.SECONDS, buildAttributes(Attributes(InternalMessagingAttributes.Send), _))
+    operationDuration.recordDuration(
+      TimeUnit.SECONDS,
+      buildAttributes(Attributes(InternalMessagingAttributes.Send, InternalMessagingAttributes.SendOp), _))
 
   def sent(batch: Long, exitCase: ExitCase): F[Unit] =
-    sentMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Send), exitCase))
+    sentMessages.add(
+      batch,
+      buildAttributes(Attributes(InternalMessagingAttributes.Send, InternalMessagingAttributes.SendOp), exitCase))
 
   val receive: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      buildAttributes(Attributes(InternalMessagingAttributes.Receive), _))
+      buildAttributes(Attributes(InternalMessagingAttributes.Receive, InternalMessagingAttributes.ReceiveOp), _))
 
   def consume(batch: Long): F[Unit] =
-    consumedMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Receive), ExitCase.Succeeded))
+    consumedMessages.add(
+      batch,
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Receive, InternalMessagingAttributes.ReceiveOp),
+        ExitCase.Succeeded))
 
   val ack: Resource[F, Unit] =
     operationDuration.recordDuration(
@@ -109,31 +118,13 @@ private object QueueMetrics {
   def apply[F[_]: Monad](commonAttributes: Attributes)(implicit meter: Meter[F]): F[QueueMetrics[F]] =
     for {
       // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientoperationduration
-      operationDuration <- meter
-        .histogram[Double](OperationDurationHistogramName)
-        .withDescription("Duration of messaging operation initiated by a producer or consumer client.")
-        .withUnit("s")
-        .withExplicitBucketBoundaries(durationBuckets)
-        .create
+      operationDuration <- MessagingExperimentalMetrics.ClientOperationDuration.create[F, Double](durationBuckets)
       // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientsentmessages
-      sentMessages <- meter
-        .counter[Long](SentMessagesCounterName)
-        .withDescription("Number of messages producer attempted to send to the broker.")
-        .withUnit("{message}")
-        .create
+      sentMessages <- MessagingExperimentalMetrics.ClientSentMessages.create[F, Long]
       // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientconsumedmessages
-      consumedMessages <- meter
-        .counter[Long](ConsumedMessagesCounterName)
-        .withDescription("Number of messages that were delivered to the application.")
-        .withUnit("{message}")
-        .create
+      consumedMessages <- MessagingExperimentalMetrics.ClientConsumedMessages.create[F, Long]
       // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingprocessduration
-      processDuration <- meter
-        .histogram[Double](ProcessDurationHistogramName)
-        .withDescription("Duration of processing operation.")
-        .withUnit("s")
-        .withExplicitBucketBoundaries(durationBuckets)
-        .create
+      processDuration <- MessagingExperimentalMetrics.ProcessDuration.create[F, Double](durationBuckets)
     } yield new QueueMetrics[F](commonAttributes, operationDuration, sentMessages, consumedMessages, processDuration)
 
 }
