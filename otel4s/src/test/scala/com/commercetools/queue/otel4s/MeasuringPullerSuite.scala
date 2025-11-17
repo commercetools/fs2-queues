@@ -24,6 +24,7 @@ import fs2.Chunk
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
+import org.typelevel.otel4s.semconv.experimental.metrics.MessagingExperimentalMetrics
 import org.typelevel.otel4s.trace.Tracer
 
 import scala.concurrent.duration.{Duration, FiniteDuration}
@@ -79,7 +80,10 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(CounterDataPoint(
+                4L,
+                Attributes(queueAttribute, InternalMessagingAttributes.Receive, InternalMessagingAttributes.ReceiveOp)))
+            ))
         )
       } yield ()
     }
@@ -109,9 +113,44 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(CounterDataPoint(
+                4L,
+                Attributes(queueAttribute, InternalMessagingAttributes.Receive, InternalMessagingAttributes.ReceiveOp)))
+            ))
         )
       } yield ()
+    }
+  }
+
+  test("metrics semantic test") {
+    val specs = List(
+      MessagingExperimentalMetrics.ClientOperationDuration,
+      MessagingExperimentalMetrics.ClientConsumedMessages
+    )
+
+    val commonAttributes = Attributes(MessagingExperimentalAttributes.MessagingSystem("internal"))
+
+    mkTestkitMetrics(commonAttributes).use { case (testkit, metrics) =>
+      val measuringPuller = new MeasuringQueuePuller[IO, String](
+        puller(
+          IO.pure(
+            Chunk.from(
+              List(
+                TestingMessageContext("first").noop,
+                TestingMessageContext("second").noop,
+                TestingMessageContext("third").noop,
+                TestingMessageContext("forth").noop)))),
+        metrics.forQueue(queueName),
+        spanOps,
+        spanOps,
+        spanBuilder
+      )
+
+      for {
+        fiber <- measuringPuller.pullMessageBatch(0, Duration.Zero).start
+        _ <- assertIO(fiber.join.map(_.isSuccess), true)
+        metrics <- testkit.collectMetrics
+      } yield specs.foreach(spec => specTest(metrics, spec))
     }
   }
 

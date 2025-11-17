@@ -18,20 +18,53 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.IO
 import cats.effect.kernel.Resource
+import munit.FunSuite
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.sdk.metrics.data.{MetricData, MetricPoints, PointData}
 import org.typelevel.otel4s.sdk.testkit.OpenTelemetrySdkTestkit
+import org.typelevel.otel4s.semconv.{MetricSpec, Requirement}
 
-trait TestMetrics {
+trait TestMetrics { self: FunSuite =>
 
   private[otel4s] val testkitMetrics: Resource[IO, (OpenTelemetrySdkTestkit[IO], QueueMetrics[IO])] =
+    mkTestkitMetrics(Attributes.empty)
+
+  private[otel4s] def mkTestkitMetrics(commonAttributes: Attributes) =
     OpenTelemetrySdkTestkit.inMemory[IO]().evalMap { testkit =>
       for {
         id <- IO.randomUUID
         meter <- testkit.meterProvider.get(s"test-meter-$id")
-        metrics <- QueueMetrics[IO](Attributes.empty)(IO.asyncForIO, meter)
+        metrics <- QueueMetrics[IO](commonAttributes)(IO.asyncForIO, meter)
       } yield (testkit, metrics)
     }
+
+  private[otel4s] def specTest(metrics: List[MetricData], spec: MetricSpec): Unit = {
+    val metric = metrics.find(_.name == spec.name)
+    assert(
+      metric.isDefined,
+      s"${spec.name} metric is missing. Available [${metrics.map(_.name).mkString(", ")}]"
+    )
+
+    val clue = s"[${spec.name}] has a mismatched property. $metric"
+
+    metric.foreach { md =>
+      assertEquals(md.name, spec.name, clue)
+      assertEquals(md.description, Some(spec.description), clue)
+      assertEquals(md.unit, Some(spec.unit), clue)
+
+      val required = spec.attributeSpecs
+        .filter(_.requirement.level == Requirement.Level.Required)
+        .map(_.key)
+        .toSet
+
+      val current = md.data.points.toVector
+        .flatMap(_.attributes.map(_.key))
+        .filter(key => required.contains(key))
+        .toSet
+
+      assertEquals(current, required, clue)
+    }
+  }
 
 }
 
