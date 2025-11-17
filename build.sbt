@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import sbtcrossproject.CrossProject
 
 import laika.config.PrettyURLs
@@ -6,7 +5,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.7"
+ThisBuild / tlBaseVersion := "0.8"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -55,9 +54,6 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
     name := "fs2-queues-core",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2
-    ),
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.systemName")
     )
   )
 
@@ -120,13 +116,6 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
-    ),
-    mimaBinaryIssueFilters ++= List(
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.systemName"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.*"),
-      ProblemFilters.exclude[MissingClassProblem]("com.commercetools.queue.otel4s.*"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("com.commercetools.queue.otel4s.*"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("com.commercetools.queue.otel4s.*.this")
     )
   )
   .dependsOn(core, testing % Test)
