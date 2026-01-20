@@ -20,7 +20,7 @@ import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
 import com.google.api.gax.core.CredentialsProvider
-import com.google.api.gax.rpc.{NotFoundException, TransportChannelProvider}
+import com.google.api.gax.rpc.{AlreadyExistsException, NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
 import com.google.protobuf.{Duration, FieldMask}
 import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, ExpirationPolicy, GetSubscriptionRequest, GetTopicRequest, Subscription, Topic, TopicName, UpdateSubscriptionRequest}
@@ -64,7 +64,10 @@ private class PubSubAdministration[F[_]](
         client
           .createTopicCallable()
           .futureCall(Topic.newBuilder().setName(topicName.toString()).build())
-      })
+      }).void.recover {
+        // ignore and continue so that the subscription can be created if it's not there yet
+        case _: AlreadyExistsException => ()
+      }
     } *> subscriptionClient.use { client =>
       wrapFuture(F.delay {
         client
