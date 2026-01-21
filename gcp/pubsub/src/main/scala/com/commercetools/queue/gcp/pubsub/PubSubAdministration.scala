@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.gcp.pubsub
 
+import cats.effect.instances.spawn._
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
@@ -172,13 +173,7 @@ private class PubSubAdministration[F[_]](
     }
 
   override def delete(name: String): F[Unit] = {
-    adminClient.use { client =>
-      wrapFuture(F.delay {
-        client
-          .deleteTopicCallable()
-          .futureCall(DeleteTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
-      })
-    } *> subscriptionClient.use { client =>
+    subscriptionClient.use { client =>
       wrapFuture(F.delay {
         client
           .deleteSubscriptionCallable()
@@ -188,22 +183,42 @@ private class PubSubAdministration[F[_]](
               .setSubscription(configs.subscriptionName(project, name).toString())
               .build())
       })
-    }.void
+    } *>
+      adminClient.use { client =>
+        wrapFuture(F.delay {
+          client
+            .deleteTopicCallable()
+            .futureCall(DeleteTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+        })
+      }.void
   }.adaptError(makeQueueException(_, name))
 
   override def exists(name: String): F[Boolean] =
-    adminClient
-      .use { client =>
+    (
+      adminClient
+        .use { client =>
+          wrapFuture(F.delay {
+            client
+              .getTopicCallable()
+              .futureCall(GetTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+          })
+            .as(true)
+            .recover { case _: NotFoundException => false }
+        }
+        .adaptError(makeQueueException(_, name)),
+      subscriptionClient.use { client =>
         wrapFuture(F.delay {
           client
-            .getTopicCallable()
-            .futureCall(GetTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+            .getSubscriptionCallable()
+            .futureCall(
+              GetSubscriptionRequest
+                .newBuilder()
+                .setSubscription(configs.subscriptionName(project, name).toString())
+                .build())
         })
           .as(true)
-          .recover { case _: NotFoundException =>
-            false
-          }
+          .recover { case _: NotFoundException => false }
       }
-      .adaptError(makeQueueException(_, name))
+    ).parMapN(_ && _)
 
 }
