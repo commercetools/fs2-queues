@@ -23,6 +23,7 @@ import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.semconv.attributes.ErrorAttributes
 import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
+import org.typelevel.otel4s.semconv.experimental.metrics.MessagingExperimentalMetrics
 import org.typelevel.otel4s.trace.Tracer
 
 class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
@@ -49,7 +50,11 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.SentMessagesCounterName,
-              Vector(CounterDataPoint(1L, Attributes(queueAttribute, InternalMessagingAttributes.Send)))))
+              Vector(
+                CounterDataPoint(
+                  1L,
+                  Attributes(queueAttribute, InternalMessagingAttributes.Send, InternalMessagingAttributes.SendOp)))
+            ))
         )
       } yield ()
     }
@@ -67,7 +72,11 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.SentMessagesCounterName,
-              Vector(CounterDataPoint(3L, Attributes(queueAttribute, InternalMessagingAttributes.Send)))))
+              Vector(
+                CounterDataPoint(
+                  3L,
+                  Attributes(queueAttribute, InternalMessagingAttributes.Send, InternalMessagingAttributes.SendOp)))
+            ))
         )
       } yield ()
     }
@@ -91,6 +100,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
                   Attributes(
                     queueAttribute,
                     InternalMessagingAttributes.Send,
+                    InternalMessagingAttributes.SendOp,
                     ErrorAttributes.ErrorType("java.lang.Exception"))))
             ))
         )
@@ -116,10 +126,31 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
                   Attributes(
                     queueAttribute,
                     InternalMessagingAttributes.Send,
+                    InternalMessagingAttributes.SendOp,
                     ErrorAttributes.ErrorType("java.lang.Exception"))))
             ))
         )
       } yield ()
+    }
+  }
+
+  test("metrics semantic test") {
+    val specs = List(
+      MessagingExperimentalMetrics.ClientOperationDuration,
+      MessagingExperimentalMetrics.ClientSentMessages
+    )
+
+    val commonAttributes = Attributes(MessagingExperimentalAttributes.MessagingSystem("internal"))
+
+    mkTestkitMetrics(commonAttributes).use { case (testkit, metrics) =>
+      val measuringPusher =
+        new MeasuringQueuePusher[IO, String](pusher(IO.unit), metrics.forQueue(queueName), spanOps)
+
+      for {
+        fiber <- measuringPusher.push(List("msg1", "msg2", "msg3").map(x => (x, Map.empty)), None).start
+        _ <- assertIO(fiber.join.map(_.isSuccess), true)
+        metrics <- testkit.collectMetrics
+      } yield specs.foreach(spec => specTest(metrics, spec))
     }
   }
 
