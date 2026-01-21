@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.gcp.pubsub
 
+import cats.effect.instances.spawn._
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
@@ -218,6 +219,6 @@ private class PubSubAdministration[F[_]](
           .as(true)
           .recover { case _: NotFoundException => false }
       }
-    ).mapN(_ && _)
+    ).parMapN(_ && _)
 
 }
