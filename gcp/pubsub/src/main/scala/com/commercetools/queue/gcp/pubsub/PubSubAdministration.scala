@@ -172,13 +172,7 @@ private class PubSubAdministration[F[_]](
     }
 
   override def delete(name: String): F[Unit] = {
-    adminClient.use { client =>
-      wrapFuture(F.delay {
-        client
-          .deleteTopicCallable()
-          .futureCall(DeleteTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
-      })
-    } *> subscriptionClient.use { client =>
+    subscriptionClient.use { client =>
       wrapFuture(F.delay {
         client
           .deleteSubscriptionCallable()
@@ -188,7 +182,14 @@ private class PubSubAdministration[F[_]](
               .setSubscription(configs.subscriptionName(project, name).toString())
               .build())
       })
-    }.void
+    } *>
+      adminClient.use { client =>
+        wrapFuture(F.delay {
+          client
+            .deleteTopicCallable()
+            .futureCall(DeleteTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+        })
+      }.void
   }.adaptError(makeQueueException(_, name))
 
   override def exists(name: String): F[Boolean] =
