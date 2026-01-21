@@ -193,18 +193,31 @@ private class PubSubAdministration[F[_]](
   }.adaptError(makeQueueException(_, name))
 
   override def exists(name: String): F[Boolean] =
-    adminClient
-      .use { client =>
+    (
+      adminClient
+        .use { client =>
+          wrapFuture(F.delay {
+            client
+              .getTopicCallable()
+              .futureCall(GetTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+          })
+            .as(true)
+            .recover { case _: NotFoundException => false }
+        }
+        .adaptError(makeQueueException(_, name)),
+      subscriptionClient.use { client =>
         wrapFuture(F.delay {
           client
-            .getTopicCallable()
-            .futureCall(GetTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+            .getSubscriptionCallable()
+            .futureCall(
+              GetSubscriptionRequest
+                .newBuilder()
+                .setSubscription(configs.subscriptionName(project, name).toString())
+                .build())
         })
           .as(true)
-          .recover { case _: NotFoundException =>
-            false
-          }
+          .recover { case _: NotFoundException => false }
       }
-      .adaptError(makeQueueException(_, name))
+    ).mapN(_ && _)
 
 }
