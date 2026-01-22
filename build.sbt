@@ -1,3 +1,4 @@
+import com.typesafe.tools.mima.core._
 import sbtcrossproject.CrossProject
 
 import laika.config.PrettyURLs
@@ -116,6 +117,14 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
+    ),
+    mimaBinaryIssueFilters := List(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueClient.wrap"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.otel4s.MeasuringQueueClient.metricsOnly"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply")
     )
   )
   .dependsOn(core, testing % Test)

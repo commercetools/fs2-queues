@@ -61,22 +61,47 @@ object MeasuringQueueClient {
 
   final val defaultRequestMetricsName = "queue.service.call"
 
-  /** A client tracking only metrics. */
-  def metricsOnly[F[_]](inner: QueueClient[F])(implicit F: Temporal[F], meter: Meter[F]): F[QueueClient[F]] =
-    wrap(inner)(F = F, meter = meter, tracer = Tracer.noop)
+  /**
+   * A client tracking only metrics.
+   *
+   * If `fixedAttributes` is set to `true`, then the metrics always have the same number of attributes set,
+   * with value `N/A` when there was otherwise no value. This can be used with legacy systems that expect metrics to always
+   * have the same attributes set.
+   */
+  def metricsOnly[F[_]](
+    inner: QueueClient[F],
+    fixedAttributes: Boolean = false
+  )(implicit
+    F: Temporal[F],
+    meter: Meter[F]
+  ): F[QueueClient[F]] =
+    wrap(inner, fixedAttributes)(F = F, meter = meter, tracer = Tracer.noop)
 
   /** A client tracking only traces. */
   def tracesOnly[F[_]](inner: QueueClient[F])(implicit F: Temporal[F], tracer: Tracer[F]): F[QueueClient[F]] =
     wrap(inner)(F = F, meter = Meter.noop, tracer = tracer)
 
-  /** A client tracking metrics and traces according to the provided `meter` and `tracer`. */
-  def wrap[F[_]](inner: QueueClient[F])(implicit F: Temporal[F], meter: Meter[F], tracer: Tracer[F])
-    : F[QueueClient[F]] =
+  /**
+   * A client tracking metrics and traces according to the provided `meter` and `tracer`.
+   *
+   * If `fixedMetricsAttributes` is set to `true`, then the metrics always have the same number of attributes set,
+   * with value `N/A` when there was otherwise no value. This can be used with legacy systems that expect metrics to always
+   * have the same attributes set.
+   */
+  def wrap[F[_]](
+    inner: QueueClient[F],
+    fixedMetricsAttributes: Boolean = false
+  )(implicit
+    F: Temporal[F],
+    meter: Meter[F],
+    tracer: Tracer[F]
+  ): F[QueueClient[F]] =
     inner match {
       case inner: MeasuringQueueClient[F] => wrap(inner.underlying)
       case _ =>
         val commonAttributes = Attributes(MessagingExperimentalAttributes.MessagingSystem(inner.systemName))
-        QueueMetrics[F](commonAttributes).map(new MeasuringQueueClient[F](inner, commonAttributes, _, tracer))
+        QueueMetrics[F](fixedMetricsAttributes, commonAttributes).map(
+          new MeasuringQueueClient[F](inner, commonAttributes, _, tracer))
     }
 
 }

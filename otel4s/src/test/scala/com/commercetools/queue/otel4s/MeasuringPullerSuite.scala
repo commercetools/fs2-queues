@@ -56,7 +56,7 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
   }
 
   test("Successful pulling results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -79,14 +79,21 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(
+                CounterDataPoint(
+                  4L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Receive,
+                    InternalMessagingAttributes.ReceiveName)))
+            ))
         )
       } yield ()
     }
   }
 
   test("Successful batch pulling results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -109,7 +116,14 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(
+                CounterDataPoint(
+                  4L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Receive,
+                    InternalMessagingAttributes.ReceiveName)))
+            ))
         )
       } yield ()
     }

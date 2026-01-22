@@ -24,12 +24,13 @@ import org.typelevel.otel4s.sdk.testkit.OpenTelemetrySdkTestkit
 
 trait TestMetrics {
 
-  private[otel4s] val testkitMetrics: Resource[IO, (OpenTelemetrySdkTestkit[IO], QueueMetrics[IO])] =
+  private[otel4s] def testkitMetrics(fixedAttributes: Boolean = false)
+    : Resource[IO, (OpenTelemetrySdkTestkit[IO], QueueMetrics[IO])] =
     OpenTelemetrySdkTestkit.inMemory[IO]().evalMap { testkit =>
       for {
         id <- IO.randomUUID
         meter <- testkit.meterProvider.get(s"test-meter-$id")
-        metrics <- QueueMetrics[IO](Attributes.empty)(IO.asyncForIO, meter)
+        metrics <- QueueMetrics[IO](fixedAttributes, Attributes.empty)(IO.asyncForIO, meter)
       } yield (testkit, metrics)
     }
 
