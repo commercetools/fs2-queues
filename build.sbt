@@ -124,7 +124,15 @@ lazy val otel4s = crossProject(JVMPlatform)
         "com.commercetools.queue.otel4s.MeasuringQueueClient.metricsOnly"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply"),
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply")
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.otel4s.package#ClientOps.withMetrics"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.otel4s.package#ClientOps.withMetricsAndTraces"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.otel4s.package#ClientOps.withMetrics$extension"),
+      ProblemFilters.exclude[DirectMissingMethodProblem](
+        "com.commercetools.queue.otel4s.package#ClientOps.withMetricsAndTraces$extension")
     )
   )
   .dependsOn(core, testing % Test)

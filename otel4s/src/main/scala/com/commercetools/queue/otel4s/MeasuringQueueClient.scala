@@ -97,7 +97,7 @@ object MeasuringQueueClient {
     tracer: Tracer[F]
   ): F[QueueClient[F]] =
     inner match {
-      case inner: MeasuringQueueClient[F] => wrap(inner.underlying)
+      case inner: MeasuringQueueClient[F] => wrap(inner.underlying, fixedMetricsAttributes)
       case _ =>
         val commonAttributes = Attributes(MessagingExperimentalAttributes.MessagingSystem(inner.systemName))
         QueueMetrics[F](fixedMetricsAttributes, commonAttributes).map(
