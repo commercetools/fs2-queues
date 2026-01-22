@@ -127,11 +127,11 @@
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">meter</span><span>: </span><span class="type-name">Meter</span><span>[</span><span class="type-name">IO</span><span>] = ???
 </span><span class="keyword">implicit</span><span> </span><span class="keyword">val</span><span> </span><span class="identifier">tracer</span><span>: </span><span class="type-name">Tracer</span><span>[</span><span class="type-name">IO</span><span>] = ???
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">withMetrics</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetrics</span><span>
+</span><span class="keyword">val</span><span> </span><span class="identifier">withMetrics</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetrics</span><span>()
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">withTracing</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withTraces</span><span>
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">withBoth</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetricsAndTraces</span></code></pre>
+</span><span class="keyword">val</span><span> </span><span class="identifier">withBoth</span><span> = </span><span class="identifier">rawClient</span><span>.</span><span class="identifier">withMetricsAndTraces</span><span>()</span></code></pre>
 
         
 <hr class="footer-rule"/>
