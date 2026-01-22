@@ -79,7 +79,14 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(
+                CounterDataPoint(
+                  4L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Receive,
+                    InternalMessagingAttributes.ReceiveName)))
+            ))
         )
       } yield ()
     }
@@ -109,7 +116,14 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(
+                CounterDataPoint(
+                  4L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Receive,
+                    InternalMessagingAttributes.ReceiveName)))
+            ))
         )
       } yield ()
     }
