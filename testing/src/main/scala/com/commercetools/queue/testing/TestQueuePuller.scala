@@ -18,7 +18,7 @@ package com.commercetools.queue.testing
 
 import cats.effect.IO
 import cats.syntax.foldable._
-import com.commercetools.queue.{Message, MessageBatch, MessageContext, MessageId, QueuePuller, UnsealedMessageBatch, UnsealedQueuePuller}
+import com.commercetools.queue._
 import fs2.Chunk
 
 import scala.concurrent.duration.FiniteDuration
@@ -39,8 +39,8 @@ final private class TestQueuePuller[T](queue: TestQueue[T]) extends UnsealedQueu
     pullBatch(batchSize, waitingTime).map { batch =>
       new UnsealedMessageBatch[IO, T] {
         override def messages: Chunk[Message[IO, T]] = batch
-        override def ackAll: IO[List[MessageId]] = batch.traverse_(_.ack()).map(_ => List())
-        override def nackAll: IO[List[MessageId]] = batch.traverse_(_.nack()).map(_ => List())
+        override def ackAll: IO[Unit] = batch.traverse_(_.ack())
+        override def nackAll: IO[Unit] = batch.traverse_(_.nack())
       }
     }
 }
@@ -67,8 +67,8 @@ object TestQueuePuller {
         pullBatch(batchSize, waitingTime).map { batch =>
           new UnsealedMessageBatch[IO, T] {
             override def messages: Chunk[Message[IO, T]] = batch
-            override def ackAll: IO[List[MessageId]] = batch.traverse_(_.ack()).map(_ => List())
-            override def nackAll: IO[List[MessageId]] = batch.traverse_(_.nack()).map(_ => List())
+            override def ackAll: IO[Unit] = batch.traverse_(_.ack())
+            override def nackAll: IO[Unit] = batch.traverse_(_.nack())
           }
         }
     }

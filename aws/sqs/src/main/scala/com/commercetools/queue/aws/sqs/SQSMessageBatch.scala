@@ -17,13 +17,10 @@
 package com.commercetools.queue.aws.sqs
 
 import cats.effect.Async
-import cats.implicits.toFunctorOps
-import com.commercetools.queue.{Message, MessageId, UnsealedMessageBatch}
+import com.commercetools.queue.{Message, UnsealedMessageBatch}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model._
-
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 private class SQSMessageBatch[F[_], T](
   payload: Chunk[SQSMessageContext[F, T]],
@@ -34,31 +31,30 @@ private class SQSMessageBatch[F[_], T](
 
   override def messages: Chunk[Message[F, T]] = payload
 
-  override def ackAll: F[List[MessageId]] = if (payload.isEmpty) {
-    F.pure(List.empty[MessageId])
-  } else {
-    F.fromCompletableFuture {
-      F.delay {
-        client.deleteMessageBatch(
-          DeleteMessageBatchRequest
-            .builder()
-            .queueUrl(queueUrl)
-            .entries(payload.map { m =>
-              DeleteMessageBatchRequestEntry
-                .builder()
-                .receiptHandle(m.receiptHandle)
-                .id(m.messageId.value)
-                .build()
-            }.asJava)
-            .build()
-        )
+  override def ackAll: F[Unit] =
+    F.whenA(payload.nonEmpty) {
+      F.fromCompletableFuture {
+        F.delay {
+          client.deleteMessageBatch(
+            DeleteMessageBatchRequest
+              .builder()
+              .queueUrl(queueUrl)
+              .entries(
+                payload
+                  .map(m =>
+                    DeleteMessageBatchRequestEntry
+                      .builder()
+                      .receiptHandle(m.receiptHandle)
+                      .id(m.messageId.value)
+                      .build())
+                  .asJava)
+              .build()
+          )
+        }
       }
-    }.map(res => res.failed().asScala.map(message => MessageId(message.id())).toList)
-  }
+    }
 
-  override def nackAll: F[List[MessageId]] = if (payload.isEmpty) {
-    F.pure(List.empty[MessageId])
-  } else {
+  override def nackAll: F[Unit] = F.whenA(payload.nonEmpty) {
     F.fromCompletableFuture {
       F.delay {
         client.changeMessageVisibilityBatch(
@@ -66,18 +62,19 @@ private class SQSMessageBatch[F[_], T](
             .builder()
             .queueUrl(queueUrl)
             .entries(
-              payload.map { m =>
-                ChangeMessageVisibilityBatchRequestEntry
-                  .builder()
-                  .id(m.messageId.value)
-                  .receiptHandle(m.receiptHandle)
-                  .visibilityTimeout(0)
-                  .build()
-              }.asJava
+              payload
+                .map(m =>
+                  ChangeMessageVisibilityBatchRequestEntry
+                    .builder()
+                    .id(m.messageId.value)
+                    .receiptHandle(m.receiptHandle)
+                    .visibilityTimeout(0)
+                    .build())
+                .asJava
             )
             .build()
         )
       }
-    }.map(res => res.failed().asScala.map(message => MessageId(message.id())).toList)
+    }
   }
 }
