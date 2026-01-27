@@ -145,10 +145,9 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
     } yield ()
   }
 
-  withQueue.test("messageBatch ackAll/nackAll marks batch") { queueName =>
+  withQueue.test("messageBatch ackAll/nackAll marks entire batch") { queueName =>
     val client = clientFixture()
-    val totalMessages = 10
-    val batchSize = 5
+    val totalMessages = 5
     client.subscribe(queueName).puller.use { puller =>
       for {
         _ <- Stream
@@ -157,14 +156,16 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
           .compile
           .drain
         _ <- IO.sleep(3.seconds)
-        msgBatch <- puller.pullMessageBatch(batchSize, waitingTime)
-        _ = assert(msgBatch.messages.size <= batchSize, msgBatch.messages.size >= 1)
-        notNackedMessages <- msgBatch.nackAll
-        _ = assertEquals(notNackedMessages.size, 0)
-        msgBatchNack <- puller.pullMessageBatch(batchSize, waitingTime)
-        _ = assert(msgBatchNack.messages.size <= batchSize, msgBatchNack.messages.size >= 1)
-        notAckedMessages <- msgBatchNack.ackAll
-        _ = assertEquals(notAckedMessages.size, 0)
+        msgBatch <- puller.pullMessageBatch(totalMessages, waitingTime)
+        _ = assertEquals(msgBatch.messages.size, totalMessages)
+        _ <- msgBatch.nackAll
+        _ <- IO.sleep(3.seconds)
+        msgBatchNack <- puller.pullMessageBatch(totalMessages, waitingTime)
+        _ = assertEquals(msgBatchNack.messages.size, totalMessages)
+        _ <- msgBatchNack.ackAll
+        _ <- assertIOBoolean(
+          puller.pullMessageBatch(6, waitingTime).map(_.messages.isEmpty)
+        )
       } yield ()
     }
   }
