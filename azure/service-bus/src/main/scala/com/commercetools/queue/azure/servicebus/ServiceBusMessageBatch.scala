@@ -17,7 +17,7 @@
 package com.commercetools.queue.azure.servicebus
 
 import cats.effect.Async
-import cats.implicits.toFoldableOps
+import cats.syntax.foldable._
 import com.azure.messaging.servicebus.ServiceBusReceiverClient
 import com.commercetools.queue.{Message, UnsealedMessageBatch}
 import fs2.Chunk

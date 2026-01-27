@@ -18,8 +18,8 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.IO
 import cats.syntax.foldable._
-import com.commercetools.queue.testing.TestingMessageContext
 import com.commercetools.queue._
+import com.commercetools.queue.testing.TestingMessageContext
 import fs2.Chunk
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attributes
