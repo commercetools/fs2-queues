@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core._
 import sbtcrossproject.CrossProject
 
 import laika.config.PrettyURLs
@@ -6,7 +5,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.8"
+ThisBuild / tlBaseVersion := "0.9"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -117,22 +116,6 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
-    ),
-    mimaBinaryIssueFilters := List(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.MeasuringQueueClient.wrap"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.MeasuringQueueClient.metricsOnly"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.package#ClientOps.withMetrics"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.package#ClientOps.withMetricsAndTraces"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.package#ClientOps.withMetrics$extension"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.package#ClientOps.withMetricsAndTraces$extension")
     )
   )
   .dependsOn(core, testing % Test)
