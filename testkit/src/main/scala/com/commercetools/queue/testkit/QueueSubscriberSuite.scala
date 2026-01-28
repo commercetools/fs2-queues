@@ -145,9 +145,9 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
     } yield ()
   }
 
-  withQueue.test("messageBatch ackAll/nackAll marks entire batch") { queueName =>
+  withQueue.test("messageBatch nackAll marks entire batch") { queueName =>
     val client = clientFixture()
-    val totalMessages = 5
+    val totalMessages = 10
     client.subscribe(queueName).puller.use { puller =>
       for {
         _ <- Stream
@@ -155,17 +155,53 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
           .through(client.publish(queueName).sink(batchSize = totalMessages))
           .compile
           .drain
-        _ <- IO.sleep(3.seconds)
-        msgBatch <- puller.pullMessageBatch(totalMessages, waitingTime)
-        _ = assertEquals(msgBatch.messages.size, totalMessages)
+        msgBatch <- puller.pullMessageBatch(10, waitingTime)
+
+        // not all message brokers will send you the full batch (e.g. AWS SQS), even if messages are actually there
+        _ = assert(msgBatch.messages.size >= 1)
         _ <- msgBatch.nackAll
-        _ <- IO.sleep(3.seconds)
-        msgBatchNack <- puller.pullMessageBatch(totalMessages, waitingTime)
-        _ = assertEquals(msgBatchNack.messages.size, totalMessages)
-        _ <- msgBatchNack.ackAll
-        _ <- assertIOBoolean(
-          puller.pullMessageBatch(6, waitingTime).map(_.messages.isEmpty)
-        )
+
+        // count the messages that were still in the queue
+        n <- client
+          .subscribe(queueName)
+          .puller
+          .use(
+            _.pullBatch(1, waitingTime)
+              .map(_.size)
+              .replicateA(totalMessages)
+              .map(_.sum))
+      } yield assertEquals(n, totalMessages, "all the messages should still be in the queue after the nack")
+    }
+  }
+
+  withQueue.test("messageBatch ackAll marks entire batch") { queueName =>
+    val client = clientFixture()
+    val totalMessages = 10
+    client.subscribe(queueName).puller.use { puller =>
+      for {
+        _ <- Stream
+          .emits(List.fill(totalMessages)((s"msg", Map.empty[String, String])))
+          .through(client.publish(queueName).sink(batchSize = totalMessages))
+          .compile
+          .drain
+        msgBatch <- puller.pullMessageBatch(totalMessages, waitingTime)
+        receivedBatchSize = msgBatch.messages.size
+        // not all message brokers will send you the full batch (e.g. AWS SQS), even if messages are actually there
+        _ = assert(receivedBatchSize >= 1)
+        _ <- msgBatch.ackAll
+        // count the messages that were still in the queue
+        n <- client
+          .subscribe(queueName)
+          .puller
+          .use(
+            _.pullBatch(1, waitingTime)
+              .map(_.size)
+              .replicateA(totalMessages)
+              .map(_.sum))
+        _ = assertEquals(
+          n,
+          totalMessages - receivedBatchSize,
+          "all the messages received in the batch and acked shouldn't be in the queue anymore")
       } yield ()
     }
   }
