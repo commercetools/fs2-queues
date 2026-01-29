@@ -1,4 +1,3 @@
-import com.typesafe.tools.mima.core.{DirectMissingMethodProblem, IncompatibleResultTypeProblem, ProblemFilters}
 import sbtcrossproject.CrossProject
 import laika.config.PrettyURLs
 import laika.config.LinkConfig
@@ -182,33 +181,6 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.143.1",
       "com.google.cloud" % "google-cloud-monitoring" % "3.80.0"
-    ),
-    mimaBinaryIssueFilters := List(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubAdministration.this"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged$default$6"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.apply$default$6"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.apply$default$5"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.apply$default$4"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.apply"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.apply"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.apply$default$4"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.apply$default$5"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.apply$default$6"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem](
-        "com.commercetools.queue.gcp.pubsub.PubSubClient.unmanaged$default$6"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubPublisher.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubStatistics.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubSubscriber.this")
     )
   )
   .dependsOn(core)
