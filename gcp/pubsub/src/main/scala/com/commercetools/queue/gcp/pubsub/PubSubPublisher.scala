@@ -18,7 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
-import com.google.api.gax.core.CredentialsProvider
+import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcPublisherStub, PublisherStubSettings}
 import com.google.pubsub.v1.TopicName
@@ -28,6 +28,7 @@ private class PubSubPublisher[F[_], T](
   topicName: TopicName,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
+  executorProvider: Option[ExecutorProvider],
   endpoint: Option[String]
 )(implicit
   F: Async[F],
@@ -43,6 +44,7 @@ private class PubSubPublisher[F[_], T](
               .newBuilder()
               .setCredentialsProvider(credentials)
               .setTransportChannelProvider(channelProvider)
+          executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
           endpoint.foreach(builder.setEndpoint(_))
           GrpcPublisherStub.create(builder.build())
         }
