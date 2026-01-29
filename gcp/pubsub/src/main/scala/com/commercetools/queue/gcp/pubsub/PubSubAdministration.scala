@@ -20,7 +20,7 @@ import cats.effect.instances.spawn._
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
-import com.google.api.gax.core.CredentialsProvider
+import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.{AlreadyExistsException, NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
 import com.google.protobuf.{Duration, FieldMask}
@@ -32,6 +32,7 @@ private class PubSubAdministration[F[_]](
   project: String,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
+  executorProvider: Option[ExecutorProvider],
   endpoint: Option[String],
   configs: PubSubConfig
 )(implicit F: Async[F])
@@ -43,6 +44,7 @@ private class PubSubAdministration[F[_]](
         .newBuilder()
         .setCredentialsProvider(credentials)
         .setTransportChannelProvider(channelProvider)
+    executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
     endpoint.foreach(builder.setEndpoint(_))
     TopicAdminClient.create(builder.build())
   })
@@ -53,6 +55,7 @@ private class PubSubAdministration[F[_]](
         .newBuilder()
         .setCredentialsProvider(credentials)
         .setTransportChannelProvider(channelProvider)
+    executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
     endpoint.foreach(builder.setEndpoint(_))
     SubscriptionAdminClient.create(builder.build())
   })
