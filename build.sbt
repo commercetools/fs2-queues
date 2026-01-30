@@ -1,11 +1,10 @@
 import sbtcrossproject.CrossProject
-
 import laika.config.PrettyURLs
 import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.9"
+ThisBuild / tlBaseVersion := "0.10"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"

@@ -19,7 +19,7 @@ package com.commercetools.queue.gcp.pubsub
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue._
-import com.google.api.gax.core.CredentialsProvider
+import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.grpc.GrpcTransportChannel
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
 import com.google.pubsub.v1.TopicName
@@ -30,6 +30,7 @@ private class PubSubClient[F[_]: Async] private (
   channelProvider: TransportChannelProvider,
   monitoringChannelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
+  executorProvider: Option[ExecutorProvider],
   endpoint: Option[String],
   configs: PubSubConfig)
   extends UnsealedQueueClient[F] {
@@ -37,7 +38,7 @@ private class PubSubClient[F[_]: Async] private (
   def systemName: String = "gcp_pubsub"
 
   override def administration: QueueAdministration[F] =
-    new PubSubAdministration[F](project, channelProvider, credentials, endpoint, configs)
+    new PubSubAdministration[F](project, channelProvider, credentials, executorProvider, endpoint, configs)
 
   override def statistics(name: String): QueueStatistics[F] =
     new PubSubStatistics(
@@ -45,13 +46,26 @@ private class PubSubClient[F[_]: Async] private (
       configs.subscriptionName(project, name),
       monitoringChannelProvider,
       credentials,
+      executorProvider,
       endpoint)
 
   override def publish[T: Serializer](name: String): QueuePublisher[F, T] =
-    new PubSubPublisher[F, T](name, TopicName.of(project, name), channelProvider, credentials, endpoint)
+    new PubSubPublisher[F, T](
+      name,
+      TopicName.of(project, name),
+      channelProvider,
+      credentials,
+      executorProvider,
+      endpoint)
 
   override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
-    new PubSubSubscriber[F, T](name, configs.subscriptionName(project, name), channelProvider, credentials, endpoint)
+    new PubSubSubscriber[F, T](
+      name,
+      configs.subscriptionName(project, name),
+      channelProvider,
+      credentials,
+      executorProvider,
+      endpoint)
 
 }
 
@@ -82,6 +96,7 @@ object PubSubClient {
   def apply[F[_]](
     project: String,
     credentials: CredentialsProvider,
+    executorProvider: Option[ExecutorProvider] = None,
     endpoint: Option[String] = None,
     mkTransportChannel: Option[String] => GrpcTransportChannel = makeDefaultTransportChannel,
     mkMonitoringTransportChannel: => GrpcTransportChannel = makeDefaultMonitoringTransportChannel,
@@ -97,6 +112,7 @@ object PubSubClient {
           channelProvider = FixedTransportChannelProvider.create(channel),
           monitoringChannelProvider = FixedTransportChannelProvider.create(monitoringChannel),
           credentials = credentials,
+          executorProvider = executorProvider,
           endpoint = endpoint,
           configs = configs
         )
@@ -107,6 +123,7 @@ object PubSubClient {
     credentials: CredentialsProvider,
     channelProvider: TransportChannelProvider,
     monitoringChannelProvider: TransportChannelProvider,
+    executorProvider: Option[ExecutorProvider] = None,
     endpoint: Option[String] = None,
     configs: PubSubConfig = PubSubConfig.default
   )(implicit F: Async[F]
@@ -116,6 +133,7 @@ object PubSubClient {
       channelProvider = channelProvider,
       monitoringChannelProvider = monitoringChannelProvider,
       credentials = credentials,
+      executorProvider = executorProvider,
       endpoint = endpoint,
       configs = configs
     )
