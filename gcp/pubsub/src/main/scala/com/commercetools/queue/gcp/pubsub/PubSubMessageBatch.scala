@@ -19,6 +19,7 @@ package com.commercetools.queue.gcp.pubsub
 import cats.effect.Async
 import cats.implicits.toFunctorOps
 import com.commercetools.queue.{Message, UnsealedMessageBatch}
+import com.google.api.gax.grpc.GrpcCallContext
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
 import com.google.pubsub.v1.{AcknowledgeRequest, ModifyAckDeadlineRequest, SubscriptionName}
 import fs2.Chunk
@@ -44,7 +45,10 @@ private class PubSubMessageBatch[F[_], T](
                 .newBuilder()
                 .setSubscription(subscriptionName.toString)
                 .addAllAckIds(payload.toList.map(_.underlying.getAckId).asJava)
-                .build()
+                .build(),
+              GrpcCallContext
+                .createDefault()
+                .withRetrySettings(ackRetrySettings)
             )
         )
       ).void)
@@ -61,7 +65,10 @@ private class PubSubMessageBatch[F[_], T](
                 .setSubscription(subscriptionName.toString)
                 .setAckDeadlineSeconds(0)
                 .addAllAckIds(payload.toList.map(_.underlying.getAckId).asJava)
-                .build()
+                .build(),
+              GrpcCallContext
+                .createDefault()
+                .withRetrySettings(ackRetrySettings)
             )
         )
       ).void

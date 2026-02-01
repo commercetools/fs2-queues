@@ -20,6 +20,7 @@ import cats.effect.Async
 import cats.syntax.functor._
 import cats.syntax.monadError._
 import com.commercetools.queue.{Action, MessageId, UnsealedMessageContext}
+import com.google.api.gax.grpc.GrpcCallContext
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
 import com.google.pubsub.v1.{AcknowledgeRequest, ModifyAckDeadlineRequest, ReceivedMessage, SubscriptionName}
 
@@ -58,7 +59,11 @@ private class PubSubMessageContext[F[_], T](
               .newBuilder()
               .setSubscription(subscriptionName.toString())
               .addAckIds(underlying.getAckId())
-              .build()))).void
+              .build(),
+            GrpcCallContext
+              .createDefault()
+              .withRetrySettings(ackRetrySettings)
+          ))).void
       .adaptError(makeMessageException(_, queueName, messageId, Action.Ack))
 
   override def nack(): F[Unit] =
@@ -72,7 +77,11 @@ private class PubSubMessageContext[F[_], T](
               .setSubscription(subscriptionName.toString())
               .setAckDeadlineSeconds(0)
               .addAckIds(underlying.getAckId())
-              .build()))).void
+              .build(),
+            GrpcCallContext
+              .createDefault()
+              .withRetrySettings(ackRetrySettings)
+          ))).void
       .adaptError(makeMessageException(_, queueName, messageId, Action.Ack))
 
   override def extendLock(): F[Unit] =
@@ -86,7 +95,11 @@ private class PubSubMessageContext[F[_], T](
               .setSubscription(subscriptionName.toString())
               .setAckDeadlineSeconds(lockDurationSeconds)
               .addAckIds(underlying.getAckId())
-              .build()))).void
+              .build(),
+            GrpcCallContext
+              .createDefault()
+              .withRetrySettings(ackRetrySettings)
+          ))).void
       .adaptError(makeMessageException(_, queueName, messageId, Action.Ack))
 
 }
