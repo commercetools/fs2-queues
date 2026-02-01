@@ -19,12 +19,14 @@ package com.commercetools.queue.gcp
 import cats.effect.Async
 import cats.syntax.either._
 import cats.syntax.functor._
-import com.commercetools.queue.{Action, CannotPullException, CannotPushException, MessageException, MessageId, QueueAlreadyExistException, QueueDoesNotExistException, QueueException, UnknownQueueException}
+import com.commercetools.queue._
 import com.google.api.core.{ApiFuture, ApiFutureCallback, ApiFutures}
+import com.google.api.gax.retrying.RetrySettings
 import com.google.api.gax.rpc.{AlreadyExistsException, NotFoundException}
 import com.google.common.util.concurrent.MoreExecutors
 
-import java.time.Instant
+import java.time.{Duration, Instant}
+import scala.concurrent.duration._
 
 package object pubsub {
 
@@ -76,4 +78,11 @@ package object pubsub {
       case _ => new MessageException(msgId = msgId, action = action, inner = makeQueueException(t, queueName))
     }
 
+  private[pubsub] val ackRetrySettings: RetrySettings =
+    RetrySettings
+      .newBuilder()
+      .setInitialRpcTimeoutDuration(Duration.ofMillis(10.seconds.toMillis))
+      .setMaxRpcTimeoutDuration(Duration.ofMillis(30.seconds.toMillis))
+      .setTotalTimeoutDuration(Duration.ofMillis(30.seconds.toMillis))
+      .build()
 }
