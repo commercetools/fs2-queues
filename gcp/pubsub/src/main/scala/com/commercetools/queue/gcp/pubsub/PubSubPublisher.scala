@@ -26,7 +26,7 @@ import com.google.pubsub.v1.TopicName
 private class PubSubPublisher[F[_], T](
   val queueName: String,
   topicName: TopicName,
-  channelProvider: TransportChannelProvider,
+  mkChannelProvider: Resource[F, TransportChannelProvider],
   credentials: CredentialsProvider,
   executorProvider: Option[ExecutorProvider],
   endpoint: Option[String]
@@ -36,19 +36,21 @@ private class PubSubPublisher[F[_], T](
   extends UnsealedQueuePublisher[F, T] {
 
   override def pusher: Resource[F, QueuePusher[F, T]] =
-    Resource
-      .fromAutoCloseable {
-        F.blocking {
-          val builder =
-            PublisherStubSettings
-              .newBuilder()
-              .setCredentialsProvider(credentials)
-              .setTransportChannelProvider(channelProvider)
-          executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
-          endpoint.foreach(builder.setEndpoint(_))
-          GrpcPublisherStub.create(builder.build())
-        }
-      }
+    mkChannelProvider
+      .flatMap(channelProvider =>
+        Resource
+          .fromAutoCloseable {
+            F.blocking {
+              val builder =
+                PublisherStubSettings
+                  .newBuilder()
+                  .setCredentialsProvider(credentials)
+                  .setTransportChannelProvider(channelProvider)
+              executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
+              endpoint.foreach(builder.setEndpoint(_))
+              GrpcPublisherStub.create(builder.build())
+            }
+          })
       .map(new PubSubPusher[F, T](queueName, topicName, _))
 
 }

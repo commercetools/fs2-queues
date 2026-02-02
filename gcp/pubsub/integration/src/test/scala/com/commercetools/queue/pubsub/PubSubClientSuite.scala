@@ -16,16 +16,50 @@
 
 package com.commercetools.queue.pubsub
 
-import cats.effect.{IO, Resource}
+import cats.effect.{IO, Resource, Sync}
 import com.commercetools.queue.QueueClient
 import com.commercetools.queue.gcp.pubsub.{PubSubClient, PubSubConfig}
 import com.commercetools.queue.testkit.QueueClientSuite
 import com.google.api.gax.core.{CredentialsProvider, GoogleCredentialsProvider, NoCredentialsProvider}
+import com.google.api.gax.grpc.GrpcTransportChannel
+import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
+import io.grpc.netty.shaded.io.grpc.netty.{GrpcSslContexts, NettyChannelBuilder}
 
 import scala.concurrent.duration.{Duration, DurationInt}
 import scala.jdk.CollectionConverters._
 
 class PubSubClientSuite extends QueueClientSuite {
+
+  private def makeDefaultTransportChannel[F[_]: Sync](
+    endpoint: Option[String]
+  ): Resource[F, TransportChannelProvider] =
+    Resource
+      .fromAutoCloseable(Sync[F].blocking {
+        val builder = endpoint match {
+          case Some(value) =>
+            NettyChannelBuilder
+              .forTarget(value)
+              .usePlaintext()
+          case None =>
+            NettyChannelBuilder
+              .forTarget("pubsub.googleapis.com:443")
+              .sslContext(GrpcSslContexts.forClient().build())
+        }
+        GrpcTransportChannel.create(builder.build)
+      })
+      .map(FixedTransportChannelProvider.create)
+
+  private def makeDefaultMonitoringTransportChannel[F[_]](implicit F: Sync[F]): Resource[F, TransportChannelProvider] =
+    Resource
+      .fromAutoCloseable(F.blocking {
+        GrpcTransportChannel.create(
+          NettyChannelBuilder
+            .forTarget("monitoring.googleapis.com:443")
+            .sslContext(GrpcSslContexts.forClient().build())
+            .build
+        )
+      })
+      .map(FixedTransportChannelProvider.create)
 
   private def isEmulatorDefault = true
   private def isEmulatorEnvVar = "GCP_PUBSUB_USE_EMULATOR"
@@ -61,7 +95,14 @@ class PubSubClientSuite extends QueueClientSuite {
 
   override def client: Resource[IO, QueueClient[IO]] =
     config.toResource.flatMap { case (project, credentials, endpoint, configs) =>
-      PubSubClient(project, credentials, endpoint = endpoint, configs = configs)
+      PubSubClient(
+        project = project,
+        credentials = credentials,
+        endpoint = endpoint,
+        mkTransportChannelProvider = makeDefaultTransportChannel[IO],
+        mkMonitoringTransportChannelProvider = makeDefaultMonitoringTransportChannel[IO],
+        configs = configs
+      )
     }
 
 }

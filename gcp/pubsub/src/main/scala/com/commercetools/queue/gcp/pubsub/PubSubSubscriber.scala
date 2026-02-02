@@ -27,7 +27,7 @@ import com.google.pubsub.v1.{GetSubscriptionRequest, SubscriptionName}
 private class PubSubSubscriber[F[_], T](
   val queueName: String,
   subscriptionName: SubscriptionName,
-  channelProvider: TransportChannelProvider,
+  mkChannelProvider: Resource[F, TransportChannelProvider],
   credentials: CredentialsProvider,
   executorProvider: Option[ExecutorProvider],
   endpoint: Option[String]
@@ -37,19 +37,21 @@ private class PubSubSubscriber[F[_], T](
   extends UnsealedQueueSubscriber[F, T] {
 
   override def puller: Resource[F, QueuePuller[F, T]] =
-    Resource
-      .fromAutoCloseable {
-        F.blocking {
-          val builder =
-            SubscriberStubSettings
-              .newBuilder()
-              .setCredentialsProvider(credentials)
-              .setTransportChannelProvider(channelProvider)
-          executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
-          endpoint.foreach(builder.setEndpoint(_))
-          GrpcSubscriberStub.create(builder.build())
-        }
-      }
+    mkChannelProvider
+      .flatMap(channelProvider =>
+        Resource
+          .fromAutoCloseable {
+            F.blocking {
+              val builder =
+                SubscriberStubSettings
+                  .newBuilder()
+                  .setCredentialsProvider(credentials)
+                  .setTransportChannelProvider(channelProvider)
+              executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
+              endpoint.foreach(builder.setEndpoint(_))
+              GrpcSubscriberStub.create(builder.build())
+            }
+          })
       .evalMap { subscriber =>
         wrapFuture(
           F.delay(subscriber

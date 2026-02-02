@@ -26,7 +26,7 @@ import com.google.pubsub.v1.SubscriptionName
 private class PubSubStatistics[F[_]](
   val queueName: String,
   subscriptionName: SubscriptionName,
-  channelProvider: TransportChannelProvider,
+  mkChannelProvider: Resource[F, TransportChannelProvider],
   credentials: CredentialsProvider,
   executorProvider: Option[ExecutorProvider],
   endpoint: Option[String]
@@ -34,18 +34,20 @@ private class PubSubStatistics[F[_]](
   extends UnsealedQueueStatistics[F] {
 
   override def fetcher: Resource[F, QueueStatsFetcher[F]] =
-    Resource
-      .fromAutoCloseable {
-        F.blocking {
-          val builder = MetricServiceStubSettings
-            .newBuilder()
-            .setCredentialsProvider(credentials)
-            .setTransportChannelProvider(channelProvider)
-          executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
-          endpoint.foreach(builder.setEndpoint)
-          GrpcMetricServiceStub.create(builder.build())
-        }
-      }
+    mkChannelProvider
+      .flatMap(channelProvider =>
+        Resource
+          .fromAutoCloseable {
+            F.blocking {
+              val builder = MetricServiceStubSettings
+                .newBuilder()
+                .setCredentialsProvider(credentials)
+                .setTransportChannelProvider(channelProvider)
+              executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
+              endpoint.foreach(builder.setEndpoint)
+              GrpcMetricServiceStub.create(builder.build())
+            }
+          })
       .map(new PubSubStatsFetcher(queueName, subscriptionName, _))
 
 }

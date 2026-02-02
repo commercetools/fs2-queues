@@ -30,7 +30,7 @@ import scala.concurrent.duration._
 
 private class PubSubAdministration[F[_]](
   project: String,
-  channelProvider: TransportChannelProvider,
+  mkChannelProvider: Resource[F, TransportChannelProvider],
   credentials: CredentialsProvider,
   executorProvider: Option[ExecutorProvider],
   endpoint: Option[String],
@@ -38,27 +38,29 @@ private class PubSubAdministration[F[_]](
 )(implicit F: Async[F])
   extends UnsealedQueueAdministration[F] {
 
-  private val adminClient = Resource.fromAutoCloseable(F.delay {
-    val builder =
-      TopicAdminSettings
-        .newBuilder()
-        .setCredentialsProvider(credentials)
-        .setTransportChannelProvider(channelProvider)
-    executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
-    endpoint.foreach(builder.setEndpoint(_))
-    TopicAdminClient.create(builder.build())
-  })
+  private val adminClient = mkChannelProvider.flatMap(channelProvider =>
+    Resource.fromAutoCloseable(F.delay {
+      val builder =
+        TopicAdminSettings
+          .newBuilder()
+          .setCredentialsProvider(credentials)
+          .setTransportChannelProvider(channelProvider)
+      executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
+      endpoint.foreach(builder.setEndpoint(_))
+      TopicAdminClient.create(builder.build())
+    }))
 
-  private val subscriptionClient = Resource.fromAutoCloseable(F.delay {
-    val builder =
-      SubscriptionAdminSettings
-        .newBuilder()
-        .setCredentialsProvider(credentials)
-        .setTransportChannelProvider(channelProvider)
-    executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
-    endpoint.foreach(builder.setEndpoint(_))
-    SubscriptionAdminClient.create(builder.build())
-  })
+  private val subscriptionClient = mkChannelProvider.flatMap(channelProvider =>
+    Resource.fromAutoCloseable(F.delay {
+      val builder =
+        SubscriptionAdminSettings
+          .newBuilder()
+          .setCredentialsProvider(credentials)
+          .setTransportChannelProvider(channelProvider)
+      executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
+      endpoint.foreach(builder.setEndpoint(_))
+      SubscriptionAdminClient.create(builder.build())
+    }))
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] = {
     val topicName = TopicName.of(project, name)
