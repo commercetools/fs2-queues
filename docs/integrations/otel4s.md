@@ -24,11 +24,11 @@ val rawClient: QueueClient[IO] = ???
 implicit val meter: Meter[IO] = ???
 implicit val tracer: Tracer[IO] = ???
 
-val withMetrics = rawClient.withMetrics
+val withMetrics = rawClient.withMetrics()
 
 val withTracing = rawClient.withTraces
 
-val withBoth = rawClient.withMetricsAndTraces
+val withBoth = rawClient.withMetricsAndTraces()
 ```
 
 [otel4s]: https://typelevel.org/otel4s/

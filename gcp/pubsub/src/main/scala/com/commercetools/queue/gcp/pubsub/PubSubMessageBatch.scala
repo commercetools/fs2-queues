@@ -17,8 +17,8 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.Async
-import cats.implicits.{catsSyntaxApplicativeError, toFlatMapOps, toFunctorOps}
-import com.commercetools.queue.{Message, MessageId, UnsealedMessageBatch}
+import cats.implicits.toFunctorOps
+import com.commercetools.queue.{Message, UnsealedMessageBatch}
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
 import com.google.pubsub.v1.{AcknowledgeRequest, ModifyAckDeadlineRequest, SubscriptionName}
 import fs2.Chunk
@@ -33,28 +33,26 @@ private class PubSubMessageBatch[F[_], T](
   extends UnsealedMessageBatch[F, T] {
   override def messages: Chunk[Message[F, T]] = payload
 
-  override def ackAll: F[List[MessageId]] =
-    payload.toList.foldLeft(F.pure(List[MessageId]())) { (accF, message) =>
-      accF.flatMap { acc =>
-        F.delay {
+  override def ackAll: F[Unit] =
+    F.whenA(payload.nonEmpty)(
+      wrapFuture(
+        F.delay(
           subscriber
             .acknowledgeCallable()
             .futureCall(
               AcknowledgeRequest
                 .newBuilder()
                 .setSubscription(subscriptionName.toString)
-                .addAllAckIds(List(message.underlying.getAckId).asJava)
+                .addAllAckIds(payload.toList.map(_.underlying.getAckId).asJava)
                 .build()
             )
-        }.as(acc)
-          .handleError(_ => acc :+ MessageId(message.underlying.getMessage.getMessageId))
-      }
-    }
+        )
+      ).void)
 
-  override def nackAll: F[List[MessageId]] =
-    payload.toList.foldLeft(F.pure(List[MessageId]())) { (accF, message) =>
-      accF.flatMap { acc =>
-        F.delay {
+  override def nackAll: F[Unit] =
+    F.whenA(payload.nonEmpty)(
+      wrapFuture(
+        F.delay(
           subscriber
             .modifyAckDeadlineCallable()
             .futureCall(
@@ -62,12 +60,11 @@ private class PubSubMessageBatch[F[_], T](
                 .newBuilder()
                 .setSubscription(subscriptionName.toString)
                 .setAckDeadlineSeconds(0)
-                .addAllAckIds(List(message.underlying.getAckId).asJava)
+                .addAllAckIds(payload.toList.map(_.underlying.getAckId).asJava)
                 .build()
             )
-        }.as(acc)
-          .handleError(_ => acc :+ MessageId(message.underlying.getMessage.getMessageId))
-      }
-    }
+        )
+      ).void
+    )
 
 }

@@ -32,7 +32,7 @@ case class QueueDoesNotExistException(name: String, inner: Throwable)
   extends QueueException(show"Queue $name does not exist", inner)
 
 case class QueueAlreadyExistException(name: String, inner: Throwable)
-  extends QueueException(show"Queue $name does not exist", inner)
+  extends QueueException(show"Queue $name already exists", inner)
 
 case class CannotPushException(name: String, inner: Throwable)
   extends QueueException(show"Cannot push messages to queue $name", inner)

@@ -16,11 +16,12 @@
 
 package com.commercetools.queue.gcp.pubsub
 
+import cats.effect.instances.spawn._
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{QueueConfiguration, UnsealedQueueAdministration}
-import com.google.api.gax.core.CredentialsProvider
-import com.google.api.gax.rpc.{NotFoundException, TransportChannelProvider}
+import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
+import com.google.api.gax.rpc.{AlreadyExistsException, NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
 import com.google.protobuf.{Duration, FieldMask}
 import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, ExpirationPolicy, GetSubscriptionRequest, GetTopicRequest, Subscription, Topic, TopicName, UpdateSubscriptionRequest}
@@ -31,6 +32,7 @@ private class PubSubAdministration[F[_]](
   project: String,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
+  executorProvider: Option[ExecutorProvider],
   endpoint: Option[String],
   configs: PubSubConfig
 )(implicit F: Async[F])
@@ -42,6 +44,7 @@ private class PubSubAdministration[F[_]](
         .newBuilder()
         .setCredentialsProvider(credentials)
         .setTransportChannelProvider(channelProvider)
+    executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
     endpoint.foreach(builder.setEndpoint(_))
     TopicAdminClient.create(builder.build())
   })
@@ -52,6 +55,7 @@ private class PubSubAdministration[F[_]](
         .newBuilder()
         .setCredentialsProvider(credentials)
         .setTransportChannelProvider(channelProvider)
+    executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
     endpoint.foreach(builder.setEndpoint(_))
     SubscriptionAdminClient.create(builder.build())
   })
@@ -64,7 +68,10 @@ private class PubSubAdministration[F[_]](
         client
           .createTopicCallable()
           .futureCall(Topic.newBuilder().setName(topicName.toString()).build())
-      })
+      }).void.recover {
+        // ignore and continue so that the subscription can be created if it's not there yet
+        case _: AlreadyExistsException => ()
+      }
     } *> subscriptionClient.use { client =>
       wrapFuture(F.delay {
         client
@@ -169,13 +176,7 @@ private class PubSubAdministration[F[_]](
     }
 
   override def delete(name: String): F[Unit] = {
-    adminClient.use { client =>
-      wrapFuture(F.delay {
-        client
-          .deleteTopicCallable()
-          .futureCall(DeleteTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
-      })
-    } *> subscriptionClient.use { client =>
+    subscriptionClient.use { client =>
       wrapFuture(F.delay {
         client
           .deleteSubscriptionCallable()
@@ -185,22 +186,42 @@ private class PubSubAdministration[F[_]](
               .setSubscription(configs.subscriptionName(project, name).toString())
               .build())
       })
-    }.void
+    } *>
+      adminClient.use { client =>
+        wrapFuture(F.delay {
+          client
+            .deleteTopicCallable()
+            .futureCall(DeleteTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+        })
+      }.void
   }.adaptError(makeQueueException(_, name))
 
   override def exists(name: String): F[Boolean] =
-    adminClient
-      .use { client =>
+    (
+      adminClient
+        .use { client =>
+          wrapFuture(F.delay {
+            client
+              .getTopicCallable()
+              .futureCall(GetTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+          })
+            .as(true)
+            .recover { case _: NotFoundException => false }
+        }
+        .adaptError(makeQueueException(_, name)),
+      subscriptionClient.use { client =>
         wrapFuture(F.delay {
           client
-            .getTopicCallable()
-            .futureCall(GetTopicRequest.newBuilder().setTopic(TopicName.of(project, name).toString()).build())
+            .getSubscriptionCallable()
+            .futureCall(
+              GetSubscriptionRequest
+                .newBuilder()
+                .setSubscription(configs.subscriptionName(project, name).toString())
+                .build())
         })
           .as(true)
-          .recover { case _: NotFoundException =>
-            false
-          }
+          .recover { case _: NotFoundException => false }
       }
-      .adaptError(makeQueueException(_, name))
+    ).parMapN(_ && _)
 
 }
