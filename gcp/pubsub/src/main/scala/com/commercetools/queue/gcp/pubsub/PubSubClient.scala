@@ -16,14 +16,11 @@
 
 package com.commercetools.queue.gcp.pubsub
 
-import cats.effect.{Async, Resource, ResourceIO, Sync}
-import cats.syntax.all._
+import cats.effect.{Async, Resource}
 import com.commercetools.queue._
 import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
-import com.google.api.gax.grpc.GrpcTransportChannel
-import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
+import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.pubsub.v1.TopicName
-import io.grpc.netty.shaded.io.grpc.netty.{GrpcSslContexts, NettyChannelBuilder}
 
 private class PubSubClient[F[_]: Async] private (
   project: String,
