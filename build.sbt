@@ -114,7 +114,7 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-core" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
-      "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
+      "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4sSdk % Test
     )
   )
   .dependsOn(core, testing % Test)
