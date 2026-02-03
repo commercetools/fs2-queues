@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.gcp.pubsub
 
+import cats.effect.IO.catsSyntaxTuple2Parallel
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
@@ -36,8 +37,8 @@ private class PubSubSubscriber[F[_], T](
   deserializer: Deserializer[T])
   extends UnsealedQueueSubscriber[F, T] {
 
-  override def puller: Resource[F, QueuePuller[F, T]] =
-    mkChannelProvider
+  override def puller: Resource[F, QueuePuller[F, T]] = {
+    val provider = mkChannelProvider
       .flatMap(channelProvider =>
         Resource
           .fromAutoCloseable {
@@ -52,15 +53,17 @@ private class PubSubSubscriber[F[_], T](
               GrpcSubscriberStub.create(builder.build())
             }
           })
-      .evalMap { subscriber =>
+    (provider, provider).parTupled
+      .evalMap { case (subscriber, acker) =>
         wrapFuture(
           F.delay(subscriber
             .getSubscriptionCallable()
             .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build()))).map(
-          sub => (subscriber, sub))
+          sub => (subscriber, sub, acker))
       }
-      .map { case (subscriber, subscription) =>
-        new PubSubPuller[F, T](queueName, subscriptionName, subscriber, subscription.getAckDeadlineSeconds())
+      .map { case (subscriber, subscription, acker) =>
+        new PubSubPuller[F, T](queueName, subscriptionName, subscriber, acker, subscription.getAckDeadlineSeconds())
       }
+  }
 
 }

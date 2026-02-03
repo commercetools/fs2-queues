@@ -36,6 +36,7 @@ private class PubSubPuller[F[_], T](
   val queueName: String,
   subscriptionName: SubscriptionName,
   subscriber: SubscriberStub,
+  acker: SubscriberStub,
   lockTTLSeconds: Int
 )(implicit
   F: Async[F],
@@ -82,7 +83,7 @@ private class PubSubPuller[F[_], T](
               case Some(ToInstant(until)) if until.isAfter(now) =>
                 wrapFuture(
                   F.delay(
-                    subscriber
+                    acker
                       .modifyAckDeadlineCallable()
                       .futureCall(
                         ModifyAckDeadlineRequest
@@ -103,12 +104,12 @@ private class PubSubPuller[F[_], T](
             deserializer
               .deserializeF[F](msg.getMessage().getData().toStringUtf8())
               .memoize
-              .map(new PubSubMessageContext(subscriber, subscriptionName, msg, lockTTLSeconds, _, queueName))
+              .map(new PubSubMessageContext(acker, subscriptionName, msg, lockTTLSeconds, _, queueName))
           }
       }
       .adaptError(makePullQueueException(_, queueName))
 
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]] =
     pullBatchInternal(batchSize, waitingTime).map(payload =>
-      new PubSubMessageBatch[F, T](payload, subscriptionName, subscriber))
+      new PubSubMessageBatch[F, T](payload, subscriptionName, acker))
 }

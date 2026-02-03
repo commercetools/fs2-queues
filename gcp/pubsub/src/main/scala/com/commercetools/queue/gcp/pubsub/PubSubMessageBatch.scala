@@ -28,7 +28,7 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
 private class PubSubMessageBatch[F[_], T](
   payload: Chunk[PubSubMessageContext[F, T]],
   subscriptionName: SubscriptionName,
-  subscriber: SubscriberStub
+  acker: SubscriberStub
 )(implicit F: Async[F])
   extends UnsealedMessageBatch[F, T] {
   override def messages: Chunk[Message[F, T]] = payload
@@ -37,7 +37,7 @@ private class PubSubMessageBatch[F[_], T](
     F.whenA(payload.nonEmpty)(
       wrapFuture(
         F.delay(
-          subscriber
+          acker
             .acknowledgeCallable()
             .futureCall(
               AcknowledgeRequest
@@ -53,7 +53,7 @@ private class PubSubMessageBatch[F[_], T](
     F.whenA(payload.nonEmpty)(
       wrapFuture(
         F.delay(
-          subscriber
+          acker
             .modifyAckDeadlineCallable()
             .futureCall(
               ModifyAckDeadlineRequest

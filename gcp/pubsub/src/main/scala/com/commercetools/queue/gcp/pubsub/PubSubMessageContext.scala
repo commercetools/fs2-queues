@@ -27,7 +27,7 @@ import java.time.Instant
 import scala.jdk.CollectionConverters._
 
 private class PubSubMessageContext[F[_], T](
-  subscriber: SubscriberStub,
+  acker: SubscriberStub,
   subscriptionName: SubscriptionName,
   val underlying: ReceivedMessage,
   lockDurationSeconds: Int,
@@ -51,7 +51,7 @@ private class PubSubMessageContext[F[_], T](
   override def ack(): F[Unit] =
     wrapFuture(
       F.delay(
-        subscriber
+        acker
           .acknowledgeCallable()
           .futureCall(
             AcknowledgeRequest
@@ -64,7 +64,7 @@ private class PubSubMessageContext[F[_], T](
   override def nack(): F[Unit] =
     wrapFuture(
       F.delay(
-        subscriber
+        acker
           .modifyAckDeadlineCallable()
           .futureCall(
             ModifyAckDeadlineRequest
@@ -78,7 +78,7 @@ private class PubSubMessageContext[F[_], T](
   override def extendLock(): F[Unit] =
     wrapFuture(
       F.delay(
-        subscriber
+        acker
           .modifyAckDeadlineCallable()
           .futureCall(
             ModifyAckDeadlineRequest
