@@ -20,7 +20,7 @@ import cats.effect.Async
 import cats.effect.syntax.concurrent._
 import cats.syntax.all._
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
-import com.google.api.gax.grpc.GrpcCallContext
+import com.google.api.gax.httpjson.HttpJsonCallContext
 import com.google.api.gax.retrying.RetrySettings
 import com.google.api.gax.rpc.{ApiCallContext, DeadlineExceededException}
 import com.google.cloud.pubsub.v1.stub.SubscriberStub
@@ -45,7 +45,7 @@ private class PubSubPuller[F[_], T](
   private val maxAckDeadlineSeconds = 600
 
   private def callContext(waitingTime: FiniteDuration): ApiCallContext =
-    GrpcCallContext
+    HttpJsonCallContext
       .createDefault()
       .withRetrySettings(RetrySettings.newBuilder().setLogicalTimeout(Duration.ofMillis(waitingTime.toMillis)).build())
 

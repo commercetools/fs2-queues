@@ -45,7 +45,7 @@ class PubSubClientSuite extends QueueClientSuite {
         (
           "test-project",
           NoCredentialsProvider.create(),
-          Some("localhost:8042"),
+          Some("http://localhost:8042"),
           PubSubConfig(Some("test-suite-"), Some("-sub")))),
       ifFalse = for {
         project <- string("GCP_PUBSUB_PROJECT")

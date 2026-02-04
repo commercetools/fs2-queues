@@ -17,10 +17,10 @@
 package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
-import cats.syntax.all._
 import com.commercetools.queue._
 import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.grpc.GrpcTransportChannel
+import com.google.api.gax.httpjson.InstantiatingHttpJsonChannelProvider
 import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelProvider}
 import com.google.pubsub.v1.TopicName
 import io.grpc.netty.shaded.io.grpc.netty.{GrpcSslContexts, NettyChannelBuilder}
@@ -71,26 +71,20 @@ private class PubSubClient[F[_]: Async] private (
 
 object PubSubClient {
 
-  private def makeDefaultTransportChannel(endpoint: Option[String]): GrpcTransportChannel = {
-    val builder = endpoint match {
-      case Some(value) =>
-        NettyChannelBuilder
-          .forTarget(value)
-          .usePlaintext()
-      case None =>
-        NettyChannelBuilder
-          .forTarget("pubsub.googleapis.com:443")
-          .sslContext(GrpcSslContexts.forClient().build())
-    }
-    GrpcTransportChannel.create(builder.build)
+  private def makeDefaultTransportChannelProvider(endpoint: Option[String]): TransportChannelProvider = {
+    val builder = InstantiatingHttpJsonChannelProvider.newBuilder()
+    endpoint.foreach(builder.setEndpoint)
+    builder.build()
   }
 
-  private def makeDefaultMonitoringTransportChannel: GrpcTransportChannel =
-    GrpcTransportChannel.create(
-      NettyChannelBuilder
-        .forTarget("monitoring.googleapis.com:443")
-        .sslContext(GrpcSslContexts.forClient().build())
-        .build
+  private def makeDefaultMonitoringTransportChannelProvider: TransportChannelProvider =
+    FixedTransportChannelProvider.create(
+      GrpcTransportChannel.create(
+        NettyChannelBuilder
+          .forTarget("monitoring.googleapis.com:443")
+          .sslContext(GrpcSslContexts.forClient().build())
+          .build
+      )
     )
 
   def apply[F[_]](
@@ -98,25 +92,22 @@ object PubSubClient {
     credentials: CredentialsProvider,
     executorProvider: Option[ExecutorProvider] = None,
     endpoint: Option[String] = None,
-    mkTransportChannel: Option[String] => GrpcTransportChannel = makeDefaultTransportChannel,
-    mkMonitoringTransportChannel: => GrpcTransportChannel = makeDefaultMonitoringTransportChannel,
+    mkTransportChannelProvider: Option[String] => TransportChannelProvider = makeDefaultTransportChannelProvider,
+    mkMonitoringTransportChannelProvider: => TransportChannelProvider = makeDefaultMonitoringTransportChannelProvider,
     configs: PubSubConfig = PubSubConfig.default
   )(implicit F: Async[F]
   ): Resource[F, QueueClient[F]] =
-    (
-      Resource.fromAutoCloseable(F.blocking(mkTransportChannel(endpoint))),
-      Resource.fromAutoCloseable(F.blocking(mkMonitoringTransportChannel)))
-      .mapN { (channel, monitoringChannel) =>
-        new PubSubClient[F](
-          project = project,
-          channelProvider = FixedTransportChannelProvider.create(channel),
-          monitoringChannelProvider = FixedTransportChannelProvider.create(monitoringChannel),
-          credentials = credentials,
-          executorProvider = executorProvider,
-          endpoint = endpoint,
-          configs = configs
-        )
-      }
+    Resource.pure(
+      new PubSubClient[F](
+        project = project,
+        channelProvider = mkTransportChannelProvider(endpoint),
+        monitoringChannelProvider = mkMonitoringTransportChannelProvider,
+        credentials = credentials,
+        executorProvider = executorProvider,
+        endpoint = endpoint,
+        configs = configs
+      )
+    )
 
   def unmanaged[F[_]](
     project: String,

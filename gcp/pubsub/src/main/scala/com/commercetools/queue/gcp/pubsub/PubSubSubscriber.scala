@@ -21,7 +21,7 @@ import cats.syntax.functor._
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.TransportChannelProvider
-import com.google.cloud.pubsub.v1.stub.{GrpcSubscriberStub, SubscriberStubSettings}
+import com.google.cloud.pubsub.v1.stub.{HttpJsonSubscriberStub, SubscriberStubSettings}
 import com.google.pubsub.v1.{GetSubscriptionRequest, SubscriptionName}
 
 private class PubSubSubscriber[F[_], T](
@@ -42,12 +42,12 @@ private class PubSubSubscriber[F[_], T](
         F.blocking {
           val builder =
             SubscriberStubSettings
-              .newBuilder()
+              .newHttpJsonBuilder()
               .setCredentialsProvider(credentials)
               .setTransportChannelProvider(channelProvider)
           executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
           endpoint.foreach(builder.setEndpoint(_))
-          GrpcSubscriberStub.create(builder.build())
+          HttpJsonSubscriberStub.create(builder.build())
         }
       }
       .evalMap { subscriber =>
