@@ -18,6 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
+import cats.syntax.monadError._
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.TransportChannelProvider
@@ -54,8 +55,9 @@ private class PubSubSubscriber[F[_], T](
         wrapFuture(
           F.delay(subscriber
             .getSubscriptionCallable()
-            .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build()))).map(
-          sub => (subscriber, sub))
+            .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())))
+          .map(sub => (subscriber, sub))
+          .adaptError(makePullQueueException(_, queueName))
       }
       .map { case (subscriber, subscription) =>
         new PubSubPuller[F, T](queueName, subscriptionName, subscriber, subscription.getAckDeadlineSeconds())
