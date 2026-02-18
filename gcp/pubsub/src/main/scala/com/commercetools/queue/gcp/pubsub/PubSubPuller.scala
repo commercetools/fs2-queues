@@ -16,8 +16,8 @@
 
 package com.commercetools.queue.gcp.pubsub
 
-import cats.effect.Async
-import cats.effect.syntax.concurrent._
+import cats.effect.syntax.all._
+import cats.effect.{Async, Poll}
 import cats.syntax.all._
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
 import com.google.api.gax.grpc.GrpcCallContext
@@ -50,65 +50,90 @@ private class PubSubPuller[F[_], T](
       .withRetrySettings(RetrySettings.newBuilder().setLogicalTimeout(Duration.ofMillis(waitingTime.toMillis)).build())
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
-    pullBatchInternal(batchSize, waitingTime).widen[Chunk[MessageContext[F, T]]]
+    F.uncancelable { poll =>
+      pullBatchInternal(poll, batchSize, waitingTime).widen[Chunk[MessageContext[F, T]]]
+    }
 
-  private def pullBatchInternal(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[PubSubMessageContext[F, T]]] =
-    wrapFuture(F.delay {
+  private def pullBatchInternal(poll: Poll[F], batchSize: Int, waitingTime: FiniteDuration)
+    : F[Chunk[PubSubMessageContext[F, T]]] =
+    poll(wrapFuture(F.delay {
       subscriber
         .pullCallable()
         .withDefaultCallContext(callContext(waitingTime))
         .futureCall(
           PullRequest.newBuilder().setMaxMessages(batchSize).setSubscription(subscriptionName.toString()).build())
-    }).map(response => Chunk.from(response.getReceivedMessagesList().asScala))
+    }))
+      .map(response => Chunk.from(response.getReceivedMessagesList().asScala))
       .recover { case _: DeadlineExceededException =>
         // no messages were available during the configured waiting time
         Chunk.empty
       }
       .flatMap { (msgs: Chunk[ReceivedMessage]) =>
-        // PubSub does not support delayed messages
-        // Instead in this case, we set a custom attribute when publishing
-        // with a delay. The attribute contains the earliest delivery date
-        // according to the delay.
-        // If the `Puller` gets a message with this attribute, we check wether
-        // it is in the future.
-        // If it is the case, the ack deadline is modified to be the amount of
-        // remaining seconds until this date.
-        // This way, the message will not be delivered until this expires.
-        // The message is ignored (filtered out of the batch)
-        msgs.traverseFilter[F, ReceivedMessage] { msg =>
-          val attrs = msg.getMessage().getAttributesMap().asScala
-          F.realTimeInstant.flatMap { now =>
-            attrs.get(delayAttribute) match {
-              case Some(ToInstant(until)) if until.isAfter(now) =>
-                wrapFuture(
-                  F.delay(
-                    subscriber
-                      .modifyAckDeadlineCallable()
-                      .futureCall(
-                        ModifyAckDeadlineRequest
-                          .newBuilder()
-                          .addAckIds(msg.getAckId())
-                          .setSubscription(subscriptionName.toString())
-                          .setAckDeadlineSeconds(
-                            Math.min(time.Duration.between(now, until).getSeconds().toInt, maxAckDeadlineSeconds))
-                          .build()))).as(None)
-              case _ => F.pure(Some(msg))
+        poll {
+          // PubSub does not support delayed messages
+          // Instead in this case, we set a custom attribute when publishing
+          // with a delay. The attribute contains the earliest delivery date
+          // according to the delay.
+          // If the `Puller` gets a message with this attribute, we check wether
+          // it is in the future.
+          // If it is the case, the ack deadline is modified to be the amount of
+          // remaining seconds until this date.
+          // This way, the message will not be delivered until this expires.
+          // The message is ignored (filtered out of the batch)
+          msgs
+            .traverseFilter[F, ReceivedMessage] { msg =>
+              val attrs = msg.getMessage().getAttributesMap().asScala
+              F.realTimeInstant.flatMap { now =>
+                attrs.get(delayAttribute) match {
+                  case Some(ToInstant(until)) if until.isAfter(now) =>
+                    wrapFuture(
+                      F.delay(
+                        subscriber
+                          .modifyAckDeadlineCallable()
+                          .futureCall(
+                            ModifyAckDeadlineRequest
+                              .newBuilder()
+                              .addAckIds(msg.getAckId())
+                              .setSubscription(subscriptionName.toString())
+                              .setAckDeadlineSeconds(
+                                Math.min(time.Duration.between(now, until).getSeconds().toInt, maxAckDeadlineSeconds))
+                              .build()))).as(None)
+                  case _ => F.pure(Some(msg))
+                }
+              }
             }
-          }
+            .flatMap { (msgs: Chunk[ReceivedMessage]) =>
+              msgs
+                .traverse { msg =>
+                  deserializer
+                    .deserializeF[F](msg.getMessage().getData().toStringUtf8())
+                    .memoize
+                    .map(new PubSubMessageContext(subscriber, subscriptionName, msg, lockTTLSeconds, _, queueName))
+                }
+            }
         }
-      }
-      .flatMap { (msgs: Chunk[ReceivedMessage]) =>
-        msgs
-          .traverse { msg =>
-            deserializer
-              .deserializeF[F](msg.getMessage().getData().toStringUtf8())
-              .memoize
-              .map(new PubSubMessageContext(subscriber, subscriptionName, msg, lockTTLSeconds, _, queueName))
-          }
+          .onCancel(nackAll(msgs))
       }
       .adaptError(makePullQueueException(_, queueName))
 
+  private def nackAll(msgs: Chunk[ReceivedMessage]): F[Unit] =
+    wrapFuture {
+      F.delay {
+        subscriber
+          .modifyAckDeadlineCallable()
+          .futureCall(
+            ModifyAckDeadlineRequest
+              .newBuilder()
+              .addAllAckIds(msgs.map(_.getAckId()).asJava)
+              .setAckDeadlineSeconds(0)
+              .build())
+
+      }
+    }.void
+
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]] =
-    pullBatchInternal(batchSize, waitingTime).map(payload =>
-      new PubSubMessageBatch[F, T](payload, subscriptionName, subscriber))
+    F.uncancelable { poll =>
+      pullBatchInternal(poll, batchSize, waitingTime).map(payload =>
+        new PubSubMessageBatch[F, T](payload, subscriptionName, subscriber))
+    }
 }
