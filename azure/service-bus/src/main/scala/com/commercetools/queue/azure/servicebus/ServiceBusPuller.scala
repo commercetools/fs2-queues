@@ -16,12 +16,10 @@
 
 package com.commercetools.queue.azure.servicebus
 
-import cats.effect.Async
-import cats.effect.syntax.concurrent._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
-import cats.syntax.monadError._
-import com.azure.messaging.servicebus.ServiceBusReceiverClient
+import cats.effect.syntax.all._
+import cats.effect.{Async, Poll}
+import cats.syntax.all._
+import com.azure.messaging.servicebus.{ServiceBusReceivedMessage, ServiceBusReceiverClient}
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, UnsealedQueuePuller}
 import fs2.Chunk
 
@@ -38,26 +36,38 @@ private class ServiceBusPuller[F[_], Data](
   extends UnsealedQueuePuller[F, Data] {
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, Data]]] =
-    pullBatchInternal(batchSize, waitingTime).widen[Chunk[MessageContext[F, Data]]]
+    F.uncancelable { poll =>
+      pullBatchInternal(poll, batchSize, waitingTime).widen[Chunk[MessageContext[F, Data]]]
+    }
 
-  private def pullBatchInternal(batchSize: Int, waitingTime: FiniteDuration)
+  private def pullBatchInternal(poll: Poll[F], batchSize: Int, waitingTime: FiniteDuration)
     : F[Chunk[ServiceBusMessageContext[F, Data]]] = F
     .blocking {
       Chunk
         .iterator(receiver.receiveMessages(batchSize, Duration.ofMillis(waitingTime.toMillis)).iterator().asScala)
     }
     .flatMap { chunk =>
-      chunk.traverse { sbMessage =>
-        deserializer
-          .deserializeF(sbMessage.getBody().toString())
-          .memoize
-          .map { data =>
-            new ServiceBusMessageContext(data, sbMessage, receiver)
+      poll {
+        chunk
+          .traverse { sbMessage =>
+            deserializer
+              .deserializeF(sbMessage.getBody().toString())
+              .memoize
+              .map { data =>
+                new ServiceBusMessageContext(data, sbMessage, receiver)
+              }
           }
       }
+        .onCancel(nackAll(chunk))
     }
     .adaptError(makePullQueueException(_, queueName))
 
+  private def nackAll(chunk: Chunk[ServiceBusReceivedMessage]): F[Unit] =
+    chunk.traverse_(m => F.blocking(receiver.abandon(m)))
+
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, Data]] =
-    pullBatchInternal(batchSize, waitingTime).map(payload => new ServiceBusMessageBatch[F, Data](payload, receiver))
+    F.uncancelable { poll =>
+      pullBatchInternal(poll, batchSize, waitingTime).map(payload =>
+        new ServiceBusMessageBatch[F, Data](payload, receiver))
+    }
 }
