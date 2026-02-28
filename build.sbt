@@ -179,7 +179,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.147.0",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.149.0",
       "com.google.cloud" % "google-cloud-monitoring" % "3.80.0"
     )
   )
