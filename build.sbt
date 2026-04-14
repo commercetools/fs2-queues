@@ -92,7 +92,8 @@ ThisBuild / githubWorkflowBuildPreamble := List(
   WorkflowStep.Use(
     UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "v0.2.3"),
     name = Some("Install localstack"),
-    params = Map("image-tag" -> "latest"),
+    // Pinned to 4.14.0; later versions require a license
+    params = Map("image-tag" -> "4.14.0", "use-pro" -> "false"),
     env = Map("SERVICES" -> "sqs")
   ),
   WorkflowStep.Use(

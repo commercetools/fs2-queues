@@ -65,7 +65,8 @@ jobs:
           SERVICES: sqs
         uses: LocalStack/setup-localstack@v0.2.3
         with:
-          image-tag: latest
+          image-tag: 4.14.0
+          use-pro: false
 
       - name: Install gcloud
         uses: google-github-actions/setup-gcloud@v2
