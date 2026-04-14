@@ -28,6 +28,7 @@ import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimenta
 import java.util.concurrent.TimeUnit
 
 private class QueueMetrics[F[_]: Applicative](
+  fixedAttributes: Boolean,
   commonAttributes: Attributes,
   operationDuration: Histogram[F, Double],
   sentMessages: Counter[F, Long],
@@ -36,6 +37,7 @@ private class QueueMetrics[F[_]: Applicative](
 
   def forQueue(name: String): QueueMetrics[F] =
     new QueueMetrics[F](
+      fixedAttributes,
       commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)),
       operationDuration,
       sentMessages,
@@ -43,55 +45,84 @@ private class QueueMetrics[F[_]: Applicative](
       processDuration
     )
 
-  private def buildAttributes(baseAttributes: Attributes, exitCase: Resource.ExitCase): Attributes = {
+  private def buildAttributes(baseAttributes: Attributes, exitCase: Resource.ExitCase, forceErrorType: Boolean)
+    : Attributes = {
     val builder = Attributes.newBuilder
 
     builder ++= commonAttributes
     builder ++= baseAttributes
 
     exitCase match {
-      case Resource.ExitCase.Succeeded => // nothing to do
+      case Resource.ExitCase.Succeeded =>
+        if (forceErrorType)
+          builder.addOne(InternalMessagingAttributes.NoErrorType)
       case Resource.ExitCase.Errored(t) =>
         builder.addOne(ErrorAttributes.ErrorType(t.getClass().getName()))
       case Resource.ExitCase.Canceled =>
+        builder.addOne(ErrorAttributes.ErrorType("canceled"))
     }
 
     builder.result()
   }
 
   val send: Resource[F, Unit] =
-    operationDuration.recordDuration(TimeUnit.SECONDS, buildAttributes(Attributes(InternalMessagingAttributes.Send), _))
+    operationDuration.recordDuration(
+      TimeUnit.SECONDS,
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Send, InternalMessagingAttributes.SendName),
+        _,
+        fixedAttributes))
 
   def sent(batch: Long, exitCase: ExitCase): F[Unit] =
-    sentMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Send), exitCase))
+    sentMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Send), exitCase, fixedAttributes))
 
   val receive: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      buildAttributes(Attributes(InternalMessagingAttributes.Receive), _))
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Receive, InternalMessagingAttributes.ReceiveName),
+        _,
+        fixedAttributes))
 
   def consume(batch: Long): F[Unit] =
-    consumedMessages.add(batch, buildAttributes(Attributes(InternalMessagingAttributes.Receive), ExitCase.Succeeded))
+    consumedMessages.add(
+      batch,
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Receive, InternalMessagingAttributes.ReceiveName),
+        ExitCase.Succeeded,
+        false))
 
   val ack: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      buildAttributes(Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Ack), _))
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Ack),
+        _,
+        fixedAttributes))
 
   val nack: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      buildAttributes(Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Nack), _))
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.Nack),
+        _,
+        fixedAttributes))
 
   val extendLock: Resource[F, Unit] =
     operationDuration.recordDuration(
       TimeUnit.SECONDS,
-      buildAttributes(Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.ExtendLock), _))
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Settle, InternalMessagingAttributes.ExtendLock),
+        _,
+        fixedAttributes))
 
   val process: Resource[F, Unit] =
     processDuration.recordDuration(
       TimeUnit.SECONDS,
-      buildAttributes(Attributes(InternalMessagingAttributes.Process), _))
+      buildAttributes(
+        Attributes(InternalMessagingAttributes.Process, InternalMessagingAttributes.ProcessName),
+        _,
+        fixedAttributes))
 
 }
 
@@ -106,7 +137,8 @@ private object QueueMetrics {
   private val durationBuckets =
     BucketBoundaries(0.005d, 0.01d, 0.025d, 0.05d, 0.075d, 0.1d, 0.25d, 0.5d, 0.75d, 1d, 2.5d, 5d, 7.5d, 10d)
 
-  def apply[F[_]: Monad](commonAttributes: Attributes)(implicit meter: Meter[F]): F[QueueMetrics[F]] =
+  def apply[F[_]: Monad](fixedAttributes: Boolean, commonAttributes: Attributes)(implicit meter: Meter[F])
+    : F[QueueMetrics[F]] =
     for {
       // see https://opentelemetry.io/docs/specs/semconv/messaging/messaging-metrics/#metric-messagingclientoperationduration
       operationDuration <- meter
@@ -134,6 +166,12 @@ private object QueueMetrics {
         .withUnit("s")
         .withExplicitBucketBoundaries(durationBuckets)
         .create
-    } yield new QueueMetrics[F](commonAttributes, operationDuration, sentMessages, consumedMessages, processDuration)
+    } yield new QueueMetrics[F](
+      fixedAttributes,
+      commonAttributes,
+      operationDuration,
+      sentMessages,
+      consumedMessages,
+      processDuration)
 
 }

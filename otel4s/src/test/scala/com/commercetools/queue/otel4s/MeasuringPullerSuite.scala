@@ -18,8 +18,8 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.IO
 import cats.syntax.foldable._
+import com.commercetools.queue._
 import com.commercetools.queue.testing.TestingMessageContext
-import com.commercetools.queue.{Message, MessageBatch, MessageContext, MessageId, UnsealedMessageBatch, UnsealedQueuePuller}
 import fs2.Chunk
 import munit.CatsEffectSuite
 import org.typelevel.otel4s.Attributes
@@ -49,14 +49,14 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
       pullBatch(batchSize, waitingTime).map { batch =>
         new UnsealedMessageBatch[IO, String] {
           override def messages: Chunk[Message[IO, String]] = batch
-          override def ackAll: IO[List[MessageId]] = batch.traverse_(_.ack()).map(_ => List())
-          override def nackAll: IO[List[MessageId]] = batch.traverse_(_.nack()).map(_ => List())
+          override def ackAll: IO[Unit] = batch.traverse_(_.ack())
+          override def nackAll: IO[Unit] = batch.traverse_(_.nack())
         }
       }
   }
 
   test("Successful pulling results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -79,14 +79,21 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(
+                CounterDataPoint(
+                  4L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Receive,
+                    InternalMessagingAttributes.ReceiveName)))
+            ))
         )
       } yield ()
     }
   }
 
   test("Successful batch pulling results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPuller = new MeasuringQueuePuller[IO, String](
         puller(
           IO.pure(
@@ -109,7 +116,14 @@ class MeasuringPullerSuite extends CatsEffectSuite with TestMetrics {
           List(
             CounterData(
               QueueMetrics.ConsumedMessagesCounterName,
-              Vector(CounterDataPoint(4L, Attributes(queueAttribute, InternalMessagingAttributes.Receive)))))
+              Vector(
+                CounterDataPoint(
+                  4L,
+                  Attributes(
+                    queueAttribute,
+                    InternalMessagingAttributes.Receive,
+                    InternalMessagingAttributes.ReceiveName)))
+            ))
         )
       } yield ()
     }

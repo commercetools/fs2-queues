@@ -16,15 +16,13 @@
 
 package com.commercetools.queue.aws.sqs
 
-import cats.effect.Async
-import cats.effect.syntax.concurrent._
-import cats.syntax.flatMap._
-import cats.syntax.functor._
-import cats.syntax.monadError._
+import cats.effect.syntax.all._
+import cats.effect.{Async, Poll}
+import cats.syntax.all._
 import com.commercetools.queue.{Deserializer, MessageBatch, MessageContext, MessageId, UnsealedQueuePuller}
 import fs2.Chunk
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{MessageSystemAttributeName, ReceiveMessageRequest}
+import software.amazon.awssdk.services.sqs.model.{ChangeMessageVisibilityBatchRequest, ChangeMessageVisibilityBatchRequestEntry, MessageSystemAttributeName, ReceiveMessageRequest, ReceiveMessageResponse}
 
 import java.time.Instant
 import scala.annotation.nowarn
@@ -42,10 +40,13 @@ private class SQSPuller[F[_], T](
   extends UnsealedQueuePuller[F, T] {
 
   override def pullBatch(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[MessageContext[F, T]]] =
-    pullInternal(batchSize, waitingTime).widen[Chunk[MessageContext[F, T]]]
+    F.uncancelable { poll =>
+      pullInternal(poll, batchSize, waitingTime).widen[Chunk[MessageContext[F, T]]]
+    }
 
-  private def pullInternal(batchSize: Int, waitingTime: FiniteDuration): F[Chunk[SQSMessageContext[F, T]]] =
-    F.fromCompletableFuture {
+  private def pullInternal(poll: Poll[F], batchSize: Int, waitingTime: FiniteDuration)
+    : F[Chunk[SQSMessageContext[F, T]]] =
+    poll(F.fromCompletableFuture {
       F.delay {
         // visibility timeout is at queue creation time
         client.receiveMessage(
@@ -59,41 +60,70 @@ private class SQSPuller[F[_], T](
             .build(): @nowarn("msg=method attributeNamesWithStrings in trait Builder is deprecated")
         )
       }
-    }.flatMap { response =>
-      Chunk
-        .iterator(response.messages().iterator().asScala)
-        .traverse { message =>
-          val body = message.body()
-          deserializer
-            .deserializeF(body)
-            .memoize
-            .map { payload =>
-              new SQSMessageContext(
-                payload = payload,
-                rawPayload = body,
-                enqueuedAt = Instant.ofEpochMilli(
-                  message
-                    .attributes()
-                    .get(MessageSystemAttributeName.SENT_TIMESTAMP)
-                    .toLong),
-                metadata = message
-                  .messageAttributes()
-                  .asScala
-                  .view
-                  .collect { case (k, v) if v.dataType() == "String" => (k, v.stringValue()) }
-                  .toMap,
-                receiptHandle = message.receiptHandle(),
-                messageId = MessageId(message.messageId()),
-                lockTTL = lockTTL,
-                queueName = queueName,
-                queueUrl = queueUrl,
-                client = client
-              )
-            }
-        }
+    }).flatMap { response =>
+      poll {
+        Chunk
+          .iterator(response.messages().iterator().asScala)
+          .traverse { message =>
+            val body = message.body()
+            deserializer
+              .deserializeF(body)
+              .memoize
+              .map { payload =>
+                new SQSMessageContext(
+                  payload = payload,
+                  rawPayload = body,
+                  enqueuedAt = Instant.ofEpochMilli(
+                    message
+                      .attributes()
+                      .get(MessageSystemAttributeName.SENT_TIMESTAMP)
+                      .toLong),
+                  metadata = message
+                    .messageAttributes()
+                    .asScala
+                    .view
+                    .collect { case (k, v) if v.dataType() == "String" => (k, v.stringValue()) }
+                    .toMap,
+                  receiptHandle = message.receiptHandle(),
+                  messageId = MessageId(message.messageId()),
+                  lockTTL = lockTTL,
+                  queueName = queueName,
+                  queueUrl = queueUrl,
+                  client = client
+                )
+              }
+          }
+      }
+        .onCancel(nackAll(response))
     }.adaptError(makePullQueueException(_, queueName))
 
+  private def nackAll(response: ReceiveMessageResponse): F[Unit] =
+    F.fromCompletableFuture {
+      F.delay {
+        client.changeMessageVisibilityBatch(
+          ChangeMessageVisibilityBatchRequest
+            .builder()
+            .queueUrl(queueUrl)
+            .entries(
+              response
+                .messages()
+                .asScala
+                .map { m =>
+                  ChangeMessageVisibilityBatchRequestEntry
+                    .builder()
+                    .id(m.messageId)
+                    .receiptHandle(m.receiptHandle)
+                    .visibilityTimeout(0)
+                    .build()
+                }
+                .asJava)
+            .build())
+      }
+    }.void
+
   override def pullMessageBatch(batchSize: Int, waitingTime: FiniteDuration): F[MessageBatch[F, T]] =
-    pullInternal(batchSize, waitingTime)
-      .map(new SQSMessageBatch[F, T](_, client, queueUrl))
+    F.uncancelable { poll =>
+      pullInternal(poll, batchSize, waitingTime)
+        .map(new SQSMessageBatch[F, T](_, client, queueUrl))
+    }
 }

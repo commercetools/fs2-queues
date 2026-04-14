@@ -18,7 +18,7 @@ package com.commercetools.queue.otel4s
 
 import cats.effect.Temporal
 import cats.syntax.flatMap._
-import com.commercetools.queue.{Message, MessageBatch, MessageId, UnsealedMessageBatch}
+import com.commercetools.queue.{Message, MessageBatch, UnsealedMessageBatch}
 import fs2.Chunk
 import org.typelevel.otel4s.trace.SpanOps
 
@@ -33,7 +33,7 @@ private class MeasuringMessageBatch[F[_], T](
   /**
    * Acknowledges all the messages in the chunk. It returns a list of messageIds for which the ack operation failed.
    */
-  override def ackAll: F[List[MessageId]] = metrics.ack.surround {
+  override def ackAll: F[Unit] = metrics.ack.surround {
     settleSpanOps
       .use { span =>
         span.addAttributes(InternalMessagingAttributes.Ack) >>
@@ -44,7 +44,7 @@ private class MeasuringMessageBatch[F[_], T](
   /**
    * Mark all messages from the chunk as non acknowledged. It returns a list of messageIds for which the nack operation failed..
    */
-  override def nackAll: F[List[MessageId]] = metrics.nack.surround {
+  override def nackAll: F[Unit] = metrics.nack.surround {
     settleSpanOps
       .use { span =>
         span.addAttribute(InternalMessagingAttributes.Nack) >>

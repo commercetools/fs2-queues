@@ -18,7 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import com.commercetools.queue.{QueueStatsFetcher, UnsealedQueueStatistics}
-import com.google.api.gax.core.CredentialsProvider
+import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.monitoring.v3.stub.{GrpcMetricServiceStub, MetricServiceStubSettings}
 import com.google.pubsub.v1.SubscriptionName
@@ -28,6 +28,7 @@ private class PubSubStatistics[F[_]](
   subscriptionName: SubscriptionName,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
+  executorProvider: Option[ExecutorProvider],
   endpoint: Option[String]
 )(implicit F: Async[F])
   extends UnsealedQueueStatistics[F] {
@@ -40,6 +41,7 @@ private class PubSubStatistics[F[_]](
             .newBuilder()
             .setCredentialsProvider(credentials)
             .setTransportChannelProvider(channelProvider)
+          executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
           endpoint.foreach(builder.setEndpoint)
           GrpcMetricServiceStub.create(builder.build())
         }

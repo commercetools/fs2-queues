@@ -17,6 +17,7 @@
 package com.commercetools.queue.otel4s
 
 import org.typelevel.otel4s.Attribute
+import org.typelevel.otel4s.semconv.attributes.ErrorAttributes
 import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
 
 private object InternalMessagingAttributes {
@@ -34,8 +35,16 @@ private object InternalMessagingAttributes {
   val Process: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationType(
     MessagingExperimentalAttributes.MessagingOperationTypeValue.Process.value)
 
+  val SendName: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName(
+    MessagingExperimentalAttributes.MessagingOperationTypeValue.Send.value)
+  val ReceiveName: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName(
+    MessagingExperimentalAttributes.MessagingOperationTypeValue.Receive.value)
+  val ProcessName: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName(
+    MessagingExperimentalAttributes.MessagingOperationTypeValue.Process.value)
   val Ack: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("ack")
   val Nack: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("nack")
   val ExtendLock: Attribute[String] = MessagingExperimentalAttributes.MessagingOperationName("extendLock")
+
+  val NoErrorType: Attribute[String] = ErrorAttributes.ErrorType("N/A")
 
 }

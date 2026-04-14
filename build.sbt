@@ -1,11 +1,10 @@
 import sbtcrossproject.CrossProject
-
 import laika.config.PrettyURLs
 import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.8"
+ThisBuild / tlBaseVersion := "0.10"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -13,7 +12,7 @@ ThisBuild / startYear := Some(2024)
 ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
-val Scala213 = "2.13.17"
+val Scala213 = "2.13.18"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.7")
 ThisBuild / scalaVersion := Scala213
 
@@ -115,7 +114,7 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-core" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
-      "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4s % Test
+      "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4sSdk % Test
     )
   )
   .dependsOn(core, testing % Test)
@@ -162,7 +161,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.38.6"
+      "software.amazon.awssdk" % "sqs" % "2.38.9"
     )
   )
   .dependsOn(core)
@@ -180,7 +179,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.143.1",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.147.0",
       "com.google.cloud" % "google-cloud-monitoring" % "3.80.0"
     )
   )

@@ -38,7 +38,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
     TestQueuePusher.fromPush[String]((_, _, _) => result)
 
   test("Successfully pushing one message results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.unit), metrics.forQueue(queueName), spanOps)
       for {
@@ -56,7 +56,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   }
 
   test("Successfully pushing several messages results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.unit), metrics.forQueue(queueName), spanOps)
       for {
@@ -74,7 +74,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   }
 
   test("Failing to push one message results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.raiseError(new Exception)), metrics.forQueue(queueName), spanOps)
       for {
@@ -99,7 +99,7 @@ class MeasuringPusherSuite extends CatsEffectSuite with TestMetrics {
   }
 
   test("Failing to push several messages results in incrementing the counter") {
-    testkitMetrics.use { case (testkit, metrics) =>
+    testkitMetrics().use { case (testkit, metrics) =>
       val measuringPusher =
         new MeasuringQueuePusher[IO, String](pusher(IO.raiseError(new Exception)), metrics.forQueue(queueName), spanOps)
       for {
