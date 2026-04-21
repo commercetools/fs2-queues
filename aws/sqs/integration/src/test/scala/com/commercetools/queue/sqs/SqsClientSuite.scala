@@ -19,17 +19,21 @@ package com.commercetools.queue.sqs
 import cats.effect.{IO, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.QueueClient
-import com.commercetools.queue.aws.sqs.SQSClient
+import com.commercetools.queue.aws.sqs.{SQSClient, SQSConfig}
 import com.commercetools.queue.testkit.QueueClientSuite
-import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsSessionCredentials, StaticCredentialsProvider}
+import software.amazon.awssdk.auth.credentials.{AnonymousCredentialsProvider, AwsCredentialsProvider, AwsSessionCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.sqs.SqsAsyncClient
+import software.amazon.awssdk.services.sqs.model.{GetQueueUrlRequest, ListQueueTagsRequest}
 
 import java.net.URI
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters._
 
 class SqsClientSuite extends QueueClientSuite {
 
-  private def config =
+  private val testTags: Map[String, String] = Map("project" -> "fs2-queues", "env" -> "test")
+
+  private def config: IO[(Region, AwsCredentialsProvider, Option[URI])] =
     booleanOrDefault("AWS_SQS_USE_EMULATOR", default = true).ifM(
       ifTrue =
         IO.pure((Region.EU_WEST_1, AnonymousCredentialsProvider.create(), Some(new URI("http://localhost:4566")))),
@@ -52,11 +56,35 @@ class SqsClientSuite extends QueueClientSuite {
 
   override def client: Resource[IO, QueueClient[IO]] =
     config.toResource.flatMap { case (region, credentials, endpoint) =>
-      SQSClient[IO](
-        region,
-        credentials,
-        endpoint = endpoint
-      )
+      SQSClient[IO](region, credentials, endpoint = endpoint, config = SQSConfig(testTags))
     }
+
+  private def assertQueueTags(queueName: String, expectedTags: Map[String, String]): IO[Unit] =
+    config.flatMap { case (region, credentials, endpoint) =>
+      Resource
+        .fromAutoCloseable(IO.delay {
+          val builder = SqsAsyncClient.builder().region(region).credentialsProvider(credentials)
+          endpoint.foreach(builder.endpointOverride(_))
+          builder.build()
+        })
+        .use { rawClient =>
+          for {
+            urlResp <- IO.fromCompletableFuture(
+              IO.delay(rawClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build())))
+            tagsResp <- IO.fromCompletableFuture(
+              IO.delay(rawClient.listQueueTags(ListQueueTagsRequest.builder().queueUrl(urlResp.queueUrl()).build())))
+            _ <- IO(assertEquals(tagsResp.tags().asScala.toMap, expectedTags))
+          } yield ()
+        }
+    }
+
+  withQueue.test("queue should have the configured tags") { queueName =>
+    assertQueueTags(queueName, testTags)
+  }
+
+  withQueue.test("queue should have the configured tags after update") { queueName =>
+    clientFixture().administration.update(queueName, None, None) >>
+      assertQueueTags(queueName, testTags)
+  }
 
 }
