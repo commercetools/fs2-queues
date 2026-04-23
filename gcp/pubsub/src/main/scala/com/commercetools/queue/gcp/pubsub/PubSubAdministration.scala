@@ -64,7 +64,7 @@ private class PubSubAdministration[F[_]](
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] = {
     val topicName = TopicName.of(project, name)
     val ttl = Duration.newBuilder().setSeconds(messageTTL.toSeconds).build()
-    val allLabels = configs.tags.asJava
+    val allLabels = configs.labels.asJava
     adminClient.use { client =>
       wrapFuture(F.delay {
         client
@@ -103,10 +103,10 @@ private class PubSubAdministration[F[_]](
   override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] = {
     val topicName = TopicName.of(project, name)
     val subscriptionName = configs.subscriptionName(project, name)
-    val allLabels = configs.tags.asJava
+    val allLabels = configs.labels.asJava
 
     val topicUpdate =
-      if (configs.tags.nonEmpty)
+      if (configs.labels.nonEmpty)
         adminClient.use { client =>
           wrapFuture(F.delay {
             client
@@ -130,7 +130,7 @@ private class PubSubAdministration[F[_]](
     val subPaths = List(
       messageTTL.as("message_retention_duration"),
       lockTTL.as("ack_deadline_seconds"),
-      Option.when(configs.tags.nonEmpty)("labels")
+      Option.when(configs.labels.nonEmpty)("labels")
     ).flatten
 
     val subUpdate =
@@ -139,7 +139,7 @@ private class PubSubAdministration[F[_]](
         messageTTL.foreach(mttl =>
           subBuilder.setMessageRetentionDuration(Duration.newBuilder().setSeconds(mttl.toSeconds).build()))
         lockTTL.foreach(lttl => subBuilder.setAckDeadlineSeconds(lttl.toSeconds.toInt))
-        if (configs.tags.nonEmpty) { val _ = subBuilder.putAllLabels(allLabels) }
+        if (configs.labels.nonEmpty) { val _ = subBuilder.putAllLabels(allLabels) }
         subscriptionClient.use { client =>
           wrapFuture(F.delay {
             client

@@ -53,7 +53,7 @@ class PubSubClientSuite extends QueueClientSuite {
           "test-project",
           NoCredentialsProvider.create(),
           Some("localhost:8042"),
-          PubSubConfig(Some("test-suite-"), Some("-sub"), testLabels))),
+          PubSubConfig(Some("test-suite-"), Some("-sub")))),
       ifFalse = for {
         project <- string("GCP_PUBSUB_PROJECT")
         credentials = GoogleCredentialsProvider
@@ -63,12 +63,17 @@ class PubSubClientSuite extends QueueClientSuite {
             "https://www.googleapis.com/auth/monitoring.read" // monitoring (for fetching stats)
           ).asJava)
           .build()
-      } yield (project, credentials, None, PubSubConfig(Some("test-suite-"), Some("-sub"), testLabels))
+      } yield (project, credentials, None, PubSubConfig(Some("test-suite-"), Some("-sub")))
     )
 
   override def client: Resource[IO, QueueClient[IO]] =
     config.toResource.flatMap { case (project, credentials, endpoint, configs) =>
       PubSubClient(project, credentials, endpoint = endpoint, configs = configs)
+    }
+
+  override def clientWithTags: Resource[IO, QueueClient[IO]] =
+    config.toResource.flatMap { case (project, credentials, endpoint, configs) =>
+      PubSubClient(project, credentials, endpoint = endpoint, configs = configs.copy(labels = testLabels))
     }
 
   private def makeChannelResource(endpoint: Option[String]): Resource[IO, GrpcTransportChannel] =
@@ -133,22 +138,15 @@ class PubSubClientSuite extends QueueClientSuite {
       }
     }
 
-  withQueue.test("topic should have the configured labels") { queueName =>
-    assertTopicLabels(queueName, testLabels)
-  }
-
-  withQueue.test("subscription should have the configured labels") { queueName =>
-    assertSubscriptionLabels(queueName, testLabels)
-  }
-
-  withQueue.test("topic should have the configured labels after update") { queueName =>
-    clientFixture().administration.update(queueName, None, None) >>
-      assertTopicLabels(queueName, testLabels)
-  }
-
-  withQueue.test("subscription should have the configured labels after update") { queueName =>
-    clientFixture().administration.update(queueName, None, None) >>
+  withQueueWithTags.test("topic/subscription should have the configured labels on creation") { queueName =>
+    assertTopicLabels(queueName, testLabels) >>
       assertSubscriptionLabels(queueName, testLabels)
   }
 
+  withQueue.test("topic should have the configured labels on update") { queueName =>
+    assume(queueUpdateSupported, "this doesn't work on the emulator")
+    clientWithTagsFixture().administration.update(queueName, None, None) >>
+      assertTopicLabels(queueName, testLabels) >>
+      assertSubscriptionLabels(queueName, testLabels)
+  }
 }

@@ -20,7 +20,7 @@ import com.google.pubsub.v1.SubscriptionName
 case class PubSubConfig(
   subscriptionNamePrefix: Option[String],
   subscriptionNameSuffix: Option[String],
-  tags: Map[String, String] = Map.empty) {
+  labels: Map[String, String] = Map.empty) {
   def subscriptionName(project: String, name: String): SubscriptionName =
     SubscriptionName.of(project, subscriptionNamePrefix.getOrElse("") + name + subscriptionNameSuffix.getOrElse(""))
 }

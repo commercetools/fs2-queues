@@ -56,6 +56,10 @@ class SqsClientSuite extends QueueClientSuite {
 
   override def client: Resource[IO, QueueClient[IO]] =
     config.toResource.flatMap { case (region, credentials, endpoint) =>
+      SQSClient[IO](region, credentials, endpoint = endpoint)
+    }
+  override def clientWithTags: Resource[IO, QueueClient[IO]] =
+    config.toResource.flatMap { case (region, credentials, endpoint) =>
       SQSClient[IO](region, credentials, endpoint = endpoint, config = SQSConfig(testTags))
     }
 
@@ -78,13 +82,16 @@ class SqsClientSuite extends QueueClientSuite {
         }
     }
 
-  withQueue.test("queue should have the configured tags") { queueName =>
+  withQueueWithTags.test("queue should have the configured tags on creation") { queueName =>
     assertQueueTags(queueName, testTags)
   }
 
   withQueue.test("queue should have the configured tags after update") { queueName =>
-    clientFixture().administration.update(queueName, None, None) >>
-      assertQueueTags(queueName, testTags)
+    clientWithTags
+      .use(
+        _.administration.update(queueName, None, None) >>
+          assertQueueTags(queueName, testTags)
+      )
   }
 
 }
