@@ -3,6 +3,7 @@ import laika.config.PrettyURLs
 import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
+import com.typesafe.tools.mima.core._
 
 ThisBuild / tlBaseVersion := "0.10"
 
@@ -84,16 +85,12 @@ lazy val testkit = crossProject(JVMPlatform)
   .dependsOn(core)
 
 // for sqs integration test, start a localstack with sqs
+// pinned to 4.4.0 — last version under the old open-source license
 ThisBuild / githubWorkflowBuildPreamble := List(
-  WorkflowStep.Use(
-    UseRef.Public(owner = "actions", repo = "setup-python", ref = "v5"),
-    name = Some("Install Python 3.10"),
-    params = Map("python-version" -> "3.10.15")),
-  WorkflowStep.Use(
-    UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "v0.2.3"),
-    name = Some("Install localstack"),
-    params = Map("image-tag" -> "latest"),
-    env = Map("SERVICES" -> "sqs")
+  WorkflowStep.Run(
+    commands =
+      List("docker run -d -p 127.0.0.1:4566:4566 -e SERVICES=sqs --name localstack localstack/localstack:4.14"),
+    name = Some("Start LocalStack")
   ),
   WorkflowStep.Use(
     UseRef.Public(owner = "google-github-actions", repo = "setup-gcloud", ref = "v2"),
@@ -138,7 +135,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.16"
+      "com.azure" % "azure-messaging-servicebus" % "7.17.17"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -162,6 +159,12 @@ lazy val awsSQS = crossProject(JVMPlatform)
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.38.9"
+    ),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSAdministration.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSClient.fromClient"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSClient.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSClient.this")
     )
   )
   .dependsOn(core)
@@ -181,6 +184,11 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.147.0",
       "com.google.cloud" % "google-cloud-monitoring" % "3.92.0"
+    ),
+    mimaBinaryIssueFilters ++= Seq(
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubConfig.apply"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubConfig.copy"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubConfig.this")
     )
   )
   .dependsOn(core)
