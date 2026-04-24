@@ -24,9 +24,10 @@ import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.{AlreadyExistsException, NotFoundException, TransportChannelProvider}
 import com.google.cloud.pubsub.v1.{SubscriptionAdminClient, SubscriptionAdminSettings, TopicAdminClient, TopicAdminSettings}
 import com.google.protobuf.{Duration, FieldMask}
-import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, ExpirationPolicy, GetSubscriptionRequest, GetTopicRequest, Subscription, Topic, TopicName, UpdateSubscriptionRequest}
+import com.google.pubsub.v1.{DeleteSubscriptionRequest, DeleteTopicRequest, ExpirationPolicy, GetSubscriptionRequest, GetTopicRequest, Subscription, Topic, TopicName, UpdateSubscriptionRequest, UpdateTopicRequest}
 
 import scala.concurrent.duration._
+import scala.jdk.CollectionConverters._
 
 private class PubSubAdministration[F[_]](
   project: String,
@@ -63,11 +64,18 @@ private class PubSubAdministration[F[_]](
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] = {
     val topicName = TopicName.of(project, name)
     val ttl = Duration.newBuilder().setSeconds(messageTTL.toSeconds).build()
+    val allLabels = configs.labels.asJava
     adminClient.use { client =>
       wrapFuture(F.delay {
         client
           .createTopicCallable()
-          .futureCall(Topic.newBuilder().setName(topicName.toString()).build())
+          .futureCall(
+            Topic
+              .newBuilder()
+              .setName(topicName.toString)
+              .putAllLabels(allLabels)
+              .build()
+          )
       }).void.recover {
         // ignore and continue so that the subscription can be created if it's not there yet
         case _: AlreadyExistsException => ()
@@ -79,12 +87,13 @@ private class PubSubAdministration[F[_]](
           .futureCall(
             Subscription
               .newBuilder()
-              .setTopic(topicName.toString())
-              .setName(configs.subscriptionName(project, name).toString())
+              .setTopic(topicName.toString)
+              .setName(configs.subscriptionName(project, name).toString)
               .setAckDeadlineSeconds(lockTTL.toSeconds.toInt)
               .setMessageRetentionDuration(ttl)
               // An empty expiration policy (no TTL set) ensures the subscription is never deleted
               .setExpirationPolicy(ExpirationPolicy.newBuilder().build())
+              .putAllLabels(allLabels)
               .build())
       })
     }.void
@@ -92,67 +101,60 @@ private class PubSubAdministration[F[_]](
     .adaptError(makeQueueException(_, name))
 
   override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] = {
+    val topicName = TopicName.of(project, name)
     val subscriptionName = configs.subscriptionName(project, name)
-    val updateSubscriptionRequest = (messageTTL, lockTTL) match {
-      case (Some(messageTTL), Some(lockTTL)) =>
-        val mttl = Duration.newBuilder().setSeconds(messageTTL.toSeconds).build()
+    val allLabels = configs.labels.asJava
 
-        Some(
-          UpdateSubscriptionRequest
-            .newBuilder()
-            .setSubscription(
-              Subscription
-                .newBuilder()
-                .setName(subscriptionName.toString())
-                .setMessageRetentionDuration(mttl)
-                .setAckDeadlineSeconds(lockTTL.toSeconds.toInt)
-                .build())
-            .setUpdateMask(
-              FieldMask
-                .newBuilder()
-                .addPaths("message_retention_duration")
-                .addPaths("ack_deadline_seconds")
-                .build())
-            .build())
-      case (Some(messageTTL), None) =>
-        val mttl = Duration.newBuilder().setSeconds(messageTTL.toSeconds).build()
-        Some(
-          UpdateSubscriptionRequest
-            .newBuilder()
-            .setSubscription(
-              Subscription
-                .newBuilder()
-                .setName(subscriptionName.toString())
-                .setMessageRetentionDuration(mttl)
-                .build())
-            .setUpdateMask(FieldMask
-              .newBuilder()
-              .addPaths("message_retention_duration")
-              .build())
-            .build())
-      case (None, Some(lockTTL)) =>
-        Some(
-          UpdateSubscriptionRequest
-            .newBuilder()
-            .setSubscription(
-              Subscription
-                .newBuilder()
-                .setName(subscriptionName.toString())
-                .setAckDeadlineSeconds(lockTTL.toSeconds.toInt)
-                .build())
-            .setUpdateMask(FieldMask
-              .newBuilder()
-              .addPaths("ack_deadline_seconds")
-              .build())
-            .build())
-      case (None, None) =>
-        None
-    }
-    updateSubscriptionRequest.traverse_ { req =>
-      subscriptionClient.use { client =>
-        wrapFuture(F.delay(client.updateSubscriptionCallable().futureCall(req)))
-      }
-    }
+    val topicUpdate =
+      if (configs.labels.nonEmpty)
+        adminClient.use { client =>
+          wrapFuture(F.delay {
+            client
+              .updateTopicCallable()
+              .futureCall(
+                UpdateTopicRequest
+                  .newBuilder()
+                  .setTopic(
+                    Topic
+                      .newBuilder()
+                      .setName(topicName.toString)
+                      .putAllLabels(allLabels)
+                      .build()
+                  )
+                  .setUpdateMask(FieldMask.newBuilder().addPaths("labels").build())
+                  .build())
+          })
+        }.void
+      else F.unit
+
+    val subPaths = List(
+      messageTTL.as("message_retention_duration"),
+      lockTTL.as("ack_deadline_seconds"),
+      Option.when(configs.labels.nonEmpty)("labels")
+    ).flatten
+
+    val subUpdate =
+      if (subPaths.nonEmpty) {
+        val subBuilder = Subscription.newBuilder().setName(subscriptionName.toString)
+        messageTTL.foreach(mttl =>
+          subBuilder.setMessageRetentionDuration(Duration.newBuilder().setSeconds(mttl.toSeconds).build()))
+        lockTTL.foreach(lttl => subBuilder.setAckDeadlineSeconds(lttl.toSeconds.toInt))
+        if (configs.labels.nonEmpty) { val _ = subBuilder.putAllLabels(allLabels) }
+        subscriptionClient.use { client =>
+          wrapFuture(F.delay {
+            client
+              .updateSubscriptionCallable()
+              .futureCall(
+                UpdateSubscriptionRequest
+                  .newBuilder()
+                  .setSubscription(subBuilder.build())
+                  .setUpdateMask(FieldMask.newBuilder().addAllPaths(subPaths.asJava).build())
+                  .build())
+          })
+        }.void
+      } else F.unit
+
+    topicUpdate >> subUpdate
   }
 
   override def configuration(name: String): F[QueueConfiguration] =

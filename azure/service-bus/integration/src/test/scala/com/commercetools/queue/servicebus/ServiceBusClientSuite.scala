@@ -34,4 +34,6 @@ class ServiceBusClientSuite extends QueueClientSuite {
         credentials = new AzureCliCredentialBuilder().build()
       )
     }
+
+  override def clientWithTags: Resource[IO, QueueClient[IO]] = client // Azure doesn't support this
 }
