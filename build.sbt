@@ -38,7 +38,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.6.3" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.7.0" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
@@ -158,7 +158,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.38.9"
+      "software.amazon.awssdk" % "sqs" % "2.42.39"
     ),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSAdministration.this"),
@@ -182,7 +182,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.147.0",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.150.1",
       "com.google.cloud" % "google-cloud-monitoring" % "3.92.0"
     ),
     mimaBinaryIssueFilters ++= Seq(
@@ -218,7 +218,7 @@ lazy val docs = project
     tlFatalWarnings := false,
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1",
-      "org.typelevel" %% "cats-effect-testkit" % "3.6.3"
+      "org.typelevel" %% "cats-effect-testkit" % "3.7.0"
     )
   )
   .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testing.jvm)
