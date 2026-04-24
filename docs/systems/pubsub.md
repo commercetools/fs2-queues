@@ -23,8 +23,7 @@ PubSubClient[IO]( project= project, credentials= credentials,configs= configs).u
 ```
 
 The client is managed, meaning that it uses a dedicated HTTP connection pool that will get shut down upon resource release.
-The client accepts a `PubSubConfig` object that allows you to configure the prefix for the subscription name. if not provided it will use the default prefix `fs2-queues-` to avoid collisions.
-You can also omit entirely the prefix by setting it to `None`.
+The client accepts a `PubSubConfig` object that allows you to configure the prefix (defaults to `fs2-queues-`) and the suffix (defaults to `-sub`) for the subscription name, and a map of labels to annotate each topic and subscription that is created and updated.
 
 ```scala mdoc:compile-only
 import cats.effect.IO

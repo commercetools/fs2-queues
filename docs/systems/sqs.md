@@ -23,6 +23,7 @@ SQSClient[IO](region, credentials).use { client =>
 ```
 
 The client is managed, meaning that it uses a dedicated HTTP connection pool that will get shut down upon resource release.
+The client accepts a `SQSConfig` object that allows you to configure a map of tags to annotate each queue.
 
 If integrating with an existing code base where you already have an instance of `SdkAsyncHttpClient` that you would like to share, you can pass the optional `httpClient` parameter. If passed explicitly, the client is not closed when the resource is released, and it is up to the caller to manage it.
 
