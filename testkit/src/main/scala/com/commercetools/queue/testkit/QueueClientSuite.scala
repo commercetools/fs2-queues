@@ -41,8 +41,12 @@ abstract class QueueClientSuite
 
   /** Provide a way to acquire a queue client for the provider under test. */
   def client: Resource[IO, QueueClient[IO]]
+  def clientWithTags: Resource[IO, QueueClient[IO]]
 
   final val clientFixture: IOFixture[QueueClient[IO]] = ResourceSuiteLocalFixture("queue-client", client)
+  final val clientWithTagsFixture: IOFixture[QueueClient[IO]] =
+    ResourceSuiteLocalFixture("queue-client-with-tags", clientWithTags)
+
   final lazy val withQueue: SyncIO[FunFixture[String]] =
     ResourceFunFixture(
       Resource.make(
@@ -52,7 +56,27 @@ abstract class QueueClientSuite
             clientFixture().administration
               .create(queueName, originalMessageTTL, originalLockTTL)
           })(queueName => clientFixture().administration.delete(queueName)))
-  final override def munitFixtures: List[IOFixture[QueueClient[IO]]] = List(clientFixture)
+  final lazy val withQueueWithLabels: SyncIO[FunFixture[String]] =
+    ResourceFunFixture(
+      Resource.make(
+        IO.randomUUID
+          .map(uuid => s"queue-$uuid")
+          .flatTap { queueName =>
+            clientFixture().administration
+              .create(queueName, originalMessageTTL, originalLockTTL)
+          })(queueName => clientFixture().administration.delete(queueName)))
+
+  final lazy val withQueueWithTags: SyncIO[FunFixture[String]] =
+    ResourceFunFixture(
+      Resource.make(
+        IO.randomUUID
+          .map(uuid => s"queue-$uuid")
+          .flatTap { queueName =>
+            clientWithTagsFixture().administration
+              .create(queueName, originalMessageTTL, originalLockTTL)
+          })(queueName => clientWithTagsFixture().administration.delete(queueName)))
+
+  final override def munitFixtures: List[IOFixture[QueueClient[IO]]] = List(clientFixture, clientWithTagsFixture)
 
   final def randomMessages(n: Int): IO[List[(String, Map[String, String])]] = for {
     random <- Random.scalaUtilRandom[IO]
