@@ -84,16 +84,12 @@ lazy val testkit = crossProject(JVMPlatform)
   .dependsOn(core)
 
 // for sqs integration test, start a localstack with sqs
+// pinned to 4.4.0 — last version under the old open-source license
 ThisBuild / githubWorkflowBuildPreamble := List(
-  WorkflowStep.Use(
-    UseRef.Public(owner = "actions", repo = "setup-python", ref = "v5"),
-    name = Some("Install Python 3.10"),
-    params = Map("python-version" -> "3.10.15")),
-  WorkflowStep.Use(
-    UseRef.Public(owner = "LocalStack", repo = "setup-localstack", ref = "v0.2.3"),
-    name = Some("Install localstack"),
-    params = Map("image-tag" -> "latest"),
-    env = Map("SERVICES" -> "sqs")
+  WorkflowStep.Run(
+    commands =
+      List("docker run -d -p 127.0.0.1:4566:4566 -e SERVICES=sqs --name localstack localstack/localstack:4.14"),
+    name = Some("Start LocalStack")
   ),
   WorkflowStep.Use(
     UseRef.Public(owner = "google-github-actions", repo = "setup-gcloud", ref = "v2"),
