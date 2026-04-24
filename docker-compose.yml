@@ -3,7 +3,7 @@ version: "3.8"
 services:
   localstack:
     container_name: fs2-queues-sqs
-    image: localstack/localstack:latest
+    image: localstack/localstack:4.14 # (latest version that doesn't require a license)
     ports:
       - "127.0.0.1:4566:4566"
     environment:
