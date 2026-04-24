@@ -28,7 +28,8 @@ import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest
 
 import java.net.URI
 
-private class SQSClient[F[_]](client: SqsAsyncClient)(implicit F: Async[F]) extends UnsealedQueueClient[F] {
+private class SQSClient[F[_]](client: SqsAsyncClient, config: SQSConfig)(implicit F: Async[F])
+  extends UnsealedQueueClient[F] {
 
   def systemName: String = "aws_sqs"
 
@@ -41,7 +42,7 @@ private class SQSClient[F[_]](client: SqsAsyncClient)(implicit F: Async[F]) exte
       .adaptError(makeQueueException(_, name))
 
   override def administration: QueueAdministration[F] =
-    new SQSAdministration(client, getQueueUrl(_))
+    new SQSAdministration(client, getQueueUrl(_), config)
 
   override def statistics(name: String): QueueStatistics[F] =
     new SQSStatistics(name, client, getQueueUrl(name))
@@ -67,7 +68,8 @@ object SQSClient {
     region: Region,
     credentials: AwsCredentialsProvider,
     endpoint: Option[URI] = None,
-    httpClient: Option[SdkAsyncHttpClient] = None
+    httpClient: Option[SdkAsyncHttpClient] = None,
+    config: SQSConfig = SQSConfig.default
   )(implicit F: Async[F]
   ): Resource[F, QueueClient[F]] =
     Resource
@@ -83,14 +85,15 @@ object SQSClient {
           builder.build()
         }
       }
-      .map(new SQSClient(_))
+      .map(new SQSClient(_, config))
 
   /**
    * Creates an SQS client from a given instance of `SqsAsyncClient`.
    *
    * It is upon the caller to ensure closing of the underlying client once appropriate.
    */
-  def fromClient[F[_]](client: SqsAsyncClient)(implicit F: Async[F]): QueueClient[F] =
-    new SQSClient(client)
+  def fromClient[F[_]](client: SqsAsyncClient, config: SQSConfig = SQSConfig.default)(implicit F: Async[F])
+    : QueueClient[F] =
+    new SQSClient(client, config)
 
 }
