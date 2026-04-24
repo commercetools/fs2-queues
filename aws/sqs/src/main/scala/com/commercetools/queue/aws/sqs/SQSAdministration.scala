@@ -26,13 +26,19 @@ import cats.syntax.option._
 import com.commercetools.queue.aws.sqs.makeQueueException
 import com.commercetools.queue.{MalformedQueueConfigurationException, QueueConfiguration, QueueDoesNotExistException, UnsealedQueueAdministration}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, GetQueueAttributesRequest, QueueAttributeName, SetQueueAttributesRequest}
+import software.amazon.awssdk.services.sqs.model.{CreateQueueRequest, DeleteQueueRequest, GetQueueAttributesRequest, QueueAttributeName, SetQueueAttributesRequest, TagQueueRequest}
 
 import scala.concurrent.duration._
 import scala.jdk.CollectionConverters._
 
-private class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: String => F[String])(implicit F: Async[F])
+private class SQSAdministration[F[_]](
+  client: SqsAsyncClient,
+  getQueueUrl: String => F[String],
+  config: SQSConfig
+)(implicit F: Async[F])
   extends UnsealedQueueAdministration[F] {
+
+  private val allTags = config.tags.asJava
 
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
     F.fromCompletableFuture {
@@ -41,12 +47,12 @@ private class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: Strin
           CreateQueueRequest
             .builder()
             .queueName(name)
-            .attributes(
-              Map(
-                QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.toSeconds.toString(),
-                QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.toSeconds.toString(),
-                QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS -> "20" // this is meant to enable long polling https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html (see: Receive message wait time)
-              ).asJava)
+            .attributes(Map(
+              QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.toSeconds.toString(),
+              QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.toSeconds.toString(),
+              QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS -> "20" // enables long polling https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html
+            ).asJava)
+            .tags(allTags)
             .build())
       }
     }.void
@@ -67,7 +73,17 @@ private class SQSAdministration[F[_]](client: SqsAsyncClient, getQueueUrl: Strin
                 ).flattenOption.asJava)
                 .build())
           }
-        }.void
+        }.void >>
+          F.fromCompletableFuture {
+            F.delay {
+              client.tagQueue(
+                TagQueueRequest
+                  .builder()
+                  .queueUrl(queueUrl)
+                  .tags(allTags)
+                  .build())
+            }
+          }.void
       }
       .adaptError(makeQueueException(_, name))
 
