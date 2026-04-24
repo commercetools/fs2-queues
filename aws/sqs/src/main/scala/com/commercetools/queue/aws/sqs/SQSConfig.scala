@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package com.commercetools.queue.gcp.pubsub
-import com.google.pubsub.v1.SubscriptionName
+package com.commercetools.queue.aws.sqs
 
-case class PubSubConfig(
-  subscriptionNamePrefix: Option[String],
-  subscriptionNameSuffix: Option[String],
-  labels: Map[String, String] = Map.empty) {
-  def subscriptionName(project: String, name: String): SubscriptionName =
-    SubscriptionName.of(project, subscriptionNamePrefix.getOrElse("") + name + subscriptionNameSuffix.getOrElse(""))
-}
+case class SQSConfig(tags: Map[String, String] = Map.empty)
 
-object PubSubConfig {
-  val default: PubSubConfig = PubSubConfig(Some("fs2-queue-"), Some("-sub"))
+object SQSConfig {
+  val default: SQSConfig = SQSConfig()
 }
