@@ -58,4 +58,21 @@ object TestQueuePusher {
 
     }
 
+  /** Creates a testing pusher based on a function to execute for each pushed message. and a function that executes on a message batch. */
+  def fromPushFull[T](
+    onPush: (T, Map[String, String], Option[FiniteDuration]) => IO[Unit]
+  )(onBatchPush: (List[(T, Map[String, String])], Option[FiniteDuration]) => IO[Unit]
+  ): QueuePusher[IO, T] =
+    new UnsealedQueuePusher[IO, T] {
+
+      override def queueName: String = "mock-queue"
+
+      override def push(message: T, metadata: Map[String, String], delay: Option[FiniteDuration]): IO[Unit] =
+        onPush(message, metadata, delay)
+
+      override def push(messages: List[(T, Map[String, String])], delay: Option[FiniteDuration]): IO[Unit] =
+        onBatchPush(messages, delay)
+
+    }
+
 }
