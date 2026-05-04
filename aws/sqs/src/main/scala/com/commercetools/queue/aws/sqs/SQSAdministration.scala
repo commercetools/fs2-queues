@@ -43,49 +43,54 @@ private class SQSAdministration[F[_]](
   override def create(name: String, messageTTL: FiniteDuration, lockTTL: FiniteDuration): F[Unit] =
     F.fromCompletableFuture {
       F.delay {
-        client.createQueue(
-          CreateQueueRequest
-            .builder()
-            .queueName(name)
-            .attributes(Map(
-              QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.toSeconds.toString(),
-              QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.toSeconds.toString(),
-              QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS -> "20" // enables long polling https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html
-            ).asJava)
-            .tags(allTags)
-            .build())
+        val req = CreateQueueRequest
+          .builder()
+          .queueName(name)
+          .attributes(Map(
+            QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.toSeconds.toString(),
+            QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.toSeconds.toString(),
+            QueueAttributeName.RECEIVE_MESSAGE_WAIT_TIME_SECONDS -> "20" // enables long polling https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-configure-queue-parameters.html
+          ).asJava)
+        val taggedReq = if (config.tags.nonEmpty) req.tags(allTags) else req
+        client.createQueue(taggedReq.build())
       }
     }.void
       .adaptError(makeQueueException(_, name))
 
-  override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] =
+  override def update(name: String, messageTTL: Option[FiniteDuration], lockTTL: Option[FiniteDuration]): F[Unit] = {
+    val attributes = Map(
+      QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.map(_.toSeconds.toString()),
+      QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.map(_.toSeconds.toString())
+    ).flattenOption
     getQueueUrl(name)
       .flatMap { queueUrl =>
-        F.fromCompletableFuture {
-          F.delay {
-            client.setQueueAttributes(
-              SetQueueAttributesRequest
-                .builder()
-                .queueUrl(queueUrl)
-                .attributes(Map(
-                  QueueAttributeName.MESSAGE_RETENTION_PERIOD -> messageTTL.map(_.toSeconds.toString()),
-                  QueueAttributeName.VISIBILITY_TIMEOUT -> lockTTL.map(_.toSeconds.toString())
-                ).flattenOption.asJava)
-                .build())
-          }
-        }.void >>
+        F.whenA(attributes.nonEmpty) {
           F.fromCompletableFuture {
             F.delay {
-              client.tagQueue(
-                TagQueueRequest
+              client.setQueueAttributes(
+                SetQueueAttributesRequest
                   .builder()
                   .queueUrl(queueUrl)
-                  .tags(allTags)
+                  .attributes(attributes.asJava)
                   .build())
             }
           }.void
+        } >>
+          F.whenA(config.tags.nonEmpty) {
+            F.fromCompletableFuture {
+              F.delay {
+                client.tagQueue(
+                  TagQueueRequest
+                    .builder()
+                    .queueUrl(queueUrl)
+                    .tags(allTags)
+                    .build())
+              }
+            }.void
+          }
       }
       .adaptError(makeQueueException(_, name))
+  }
 
   override def configuration(name: String): F[QueueConfiguration] =
     getQueueUrl(name)
