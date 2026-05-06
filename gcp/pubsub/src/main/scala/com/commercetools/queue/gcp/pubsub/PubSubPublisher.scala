@@ -18,6 +18,7 @@ package com.commercetools.queue.gcp.pubsub
 
 import cats.effect.{Async, Resource}
 import com.commercetools.queue.{QueuePusher, Serializer, UnsealedQueuePublisher}
+import com.google.api.gax.batching.BatchingSettings
 import com.google.api.gax.core.{CredentialsProvider, ExecutorProvider}
 import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcPublisherStub, PublisherStubSettings}
@@ -46,6 +47,10 @@ private class PubSubPublisher[F[_], T](
               .setTransportChannelProvider(channelProvider)
           executorProvider.foreach(builder.setBackgroundExecutorProvider(_))
           endpoint.foreach(builder.setEndpoint(_))
+          // make sure the pubsub library does not batch on its own
+          builder
+            .publishSettings()
+            .setBatchingSettings(BatchingSettings.newBuilder().setIsEnabled(false).build())
           GrpcPublisherStub.create(builder.build())
         }
       }
