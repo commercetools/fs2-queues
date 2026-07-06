@@ -6,5 +6,5 @@ object Versions {
   val circe = "0.14.15"
   val circeGenericExtras = "0.14.3"
   val otel4s = "1.0.1"
-  val otel4sSdk = "0.18.0"
+  val otel4sSdk = "0.19.0"
 }
