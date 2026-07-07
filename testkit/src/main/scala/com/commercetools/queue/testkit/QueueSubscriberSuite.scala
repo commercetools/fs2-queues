@@ -80,6 +80,43 @@ trait QueueSubscriberSuite extends CatsEffectSuite { self: QueueClientSuite =>
     }
   }
 
+  withQueue.test("subscriber uses the provided lockTTL when extending a message lock") { queueName =>
+    val client = clientFixture()
+    // The queue is created with `originalLockTTL` (1 minute). We subscribe with a longer, deliberately
+    // different lockTTL so that extending the lock keeps the message invisible *past* the entity's own lock
+    // duration. That extension is observable on every provider:
+    //  - SQS/PubSub: `extendLock` sets the visibility timeout / ack deadline to this exact value.
+    //  - Service Bus: `extendLock` auto-renews the lock for up to this duration (each renewal resets to the
+    //    entity lock duration), keeping the message locked beyond the 1 minute entity default.
+    val overriddenLockTTL = 90.seconds
+    client.publish(queueName).pusher.use { pusher =>
+      pusher.push("message", Map.empty, None)
+    } *> client.subscribe(queueName, lockTTL = Some(overriddenLockTTL)).puller.use { puller =>
+      for {
+        batch <- puller.pullBatch(1, waitingTime)
+        _ = assert(batch.nonEmpty, "expected a message to be pulled")
+        msg = batch.head.getOrElse(fail("expected a message to be pulled"))
+        _ <- msg.extendLock()
+        // Past the entity's 1 minute lock, but before the 90s override elapses: had the provided lockTTL not
+        // been applied, the message would already be back in the queue. It must still be locked here. A short
+        // poll wait is used so this check doesn't accidentally spill into the redelivery window.
+        _ <- IO.sleep(75.seconds)
+        _ <- assertIO(
+          puller.pullBatch(1, 1.second),
+          Chunk.empty,
+          "message should still be locked: the provided lockTTL must extend the lock past the entity default")
+        // And it must eventually reappear once the extended lock finally expires (generous upper bound to
+        // accommodate Service Bus, where the lock lingers up to one entity lock duration past the renewal window).
+        _ <- eventuallyBoolean(
+          puller.pullBatch(1, 2.seconds).map(_.nonEmpty),
+          "message should be redelivered after the extended lock expired",
+          retries = 30,
+          delay = 5.seconds
+        )
+      } yield ()
+    }
+  }
+
   withQueue.test("processWithAutoAck receives and acks all the messages") { queueName =>
     for {
       messages <- randomMessages(10)

@@ -29,7 +29,8 @@ import scala.jdk.CollectionConverters._
 
 private class ServiceBusPuller[F[_], Data](
   val queueName: String,
-  receiver: ServiceBusReceiverClient
+  receiver: ServiceBusReceiverClient,
+  lockTTL: Option[FiniteDuration]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[Data])
@@ -54,7 +55,7 @@ private class ServiceBusPuller[F[_], Data](
               .deserializeF(sbMessage.getBody().toString())
               .memoize
               .map { data =>
-                new ServiceBusMessageContext(data, sbMessage, receiver)
+                new ServiceBusMessageContext(data, sbMessage, receiver, lockTTL)
               }
           }
       }

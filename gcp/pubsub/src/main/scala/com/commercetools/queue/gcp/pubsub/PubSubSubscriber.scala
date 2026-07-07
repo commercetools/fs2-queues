@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.gcp.pubsub
 
+import cats.data.OptionT
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
 import cats.syntax.monadError._
@@ -25,13 +26,16 @@ import com.google.api.gax.rpc.TransportChannelProvider
 import com.google.cloud.pubsub.v1.stub.{GrpcSubscriberStub, SubscriberStubSettings}
 import com.google.pubsub.v1.{GetSubscriptionRequest, SubscriptionName}
 
+import scala.concurrent.duration.FiniteDuration
+
 private class PubSubSubscriber[F[_], T](
   val queueName: String,
   subscriptionName: SubscriptionName,
   channelProvider: TransportChannelProvider,
   credentials: CredentialsProvider,
   executorProvider: Option[ExecutorProvider],
-  endpoint: Option[String]
+  endpoint: Option[String],
+  lockTTL: Option[FiniteDuration]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
@@ -52,15 +56,18 @@ private class PubSubSubscriber[F[_], T](
         }
       }
       .evalMap { subscriber =>
-        wrapFuture(
-          F.delay(subscriber
-            .getSubscriptionCallable()
-            .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())))
-          .map(sub => (subscriber, sub))
-          .adaptError(makePullQueueException(_, queueName))
-      }
-      .map { case (subscriber, subscription) =>
-        new PubSubPuller[F, T](queueName, subscriptionName, subscriber, subscription.getAckDeadlineSeconds())
+        OptionT
+          .fromOption(lockTTL)
+          .map(_.toSeconds.toInt)
+          .getOrElseF(
+            wrapFuture(
+              F.delay(subscriber
+                .getSubscriptionCallable()
+                .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())))
+              .map(_.getAckDeadlineSeconds)
+              .adaptError(makePullQueueException(_, queueName))
+          )
+          .map(new PubSubPuller[F, T](queueName, subscriptionName, subscriber, _))
       }
 
 }
