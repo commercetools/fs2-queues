@@ -16,16 +16,20 @@
 
 package com.commercetools.queue.aws.sqs
 
+import cats.data.OptionT
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import software.amazon.awssdk.services.sqs.model.{GetQueueAttributesRequest, QueueAttributeName}
 
+import scala.concurrent.duration.FiniteDuration
+
 private class SQSSubscriber[F[_], T](
   val queueName: String,
   client: SqsAsyncClient,
-  getQueueUrl: F[String]
+  getQueueUrl: F[String],
+  lockTTL: Option[FiniteDuration]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[T])
@@ -48,8 +52,8 @@ private class SQSSubscriber[F[_], T](
     Resource.eval {
       for {
         queueUrl <- getQueueUrl
-        lockTTL <- getLockTTL(queueUrl)
-      } yield new SQSPuller(queueName, client, queueUrl, lockTTL)
+        lockTTLSeconds <- OptionT.fromOption(lockTTL).map(_.toSeconds.toInt).getOrElseF(getLockTTL(queueUrl))
+      } yield new SQSPuller(queueName, client, queueUrl, lockTTLSeconds)
     }
 
 }

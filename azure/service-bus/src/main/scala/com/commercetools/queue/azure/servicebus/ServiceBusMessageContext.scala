@@ -16,18 +16,21 @@
 
 package com.commercetools.queue.azure.servicebus
 
+import cats.data.OptionT
 import cats.effect.Async
 import cats.syntax.functor._
 import com.azure.messaging.servicebus.{ServiceBusReceivedMessage, ServiceBusReceiverClient}
 import com.commercetools.queue.{MessageId, UnsealedMessageContext}
 
-import java.time.Instant
+import java.time.{Duration => JDuration, Instant}
+import scala.concurrent.duration.FiniteDuration
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 private class ServiceBusMessageContext[F[_], T](
   val payload: F[T],
   val underlying: ServiceBusReceivedMessage,
-  receiver: ServiceBusReceiverClient
+  receiver: ServiceBusReceiverClient,
+  lockTTL: Option[FiniteDuration]
 )(implicit F: Async[F])
   extends UnsealedMessageContext[F, T] {
 
@@ -47,7 +50,10 @@ private class ServiceBusMessageContext[F[_], T](
     F.blocking(receiver.abandon(underlying)).void
 
   override def extendLock(): F[Unit] =
-    F.blocking(receiver.renewMessageLock(underlying)).void
+    OptionT
+      .fromOption(lockTTL)
+      .semiflatMap(ttl => F.blocking(receiver.renewMessageLock(underlying, JDuration.ofNanos(ttl.toNanos), null)).void)
+      .getOrElseF(F.blocking(receiver.renewMessageLock(underlying)).void)
 
   override val messageId: MessageId = MessageId(underlying.getMessageId())
 

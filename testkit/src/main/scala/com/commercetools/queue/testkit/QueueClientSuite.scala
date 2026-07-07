@@ -37,7 +37,7 @@ abstract class QueueClientSuite
   val waitingTime: FiniteDuration = 20.seconds
 
   final val originalMessageTTL: FiniteDuration = 10.minutes
-  final val originalLockTTL: FiniteDuration = 2.minutes
+  final val originalLockTTL: FiniteDuration = 1.minute
 
   /** Provide a way to acquire a queue client for the provider under test. */
   def client: Resource[IO, QueueClient[IO]]
