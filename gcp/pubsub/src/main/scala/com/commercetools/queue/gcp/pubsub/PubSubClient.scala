@@ -25,6 +25,8 @@ import com.google.api.gax.rpc.{FixedTransportChannelProvider, TransportChannelPr
 import com.google.pubsub.v1.TopicName
 import io.grpc.netty.shaded.io.grpc.netty.{GrpcSslContexts, NettyChannelBuilder}
 
+import scala.concurrent.duration.FiniteDuration
+
 private class PubSubClient[F[_]: Async] private (
   project: String,
   channelProvider: TransportChannelProvider,
@@ -58,14 +60,15 @@ private class PubSubClient[F[_]: Async] private (
       executorProvider,
       endpoint)
 
-  override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
+  override def subscribe[T: Deserializer](name: String, lockTTL: Option[FiniteDuration] = None): QueueSubscriber[F, T] =
     new PubSubSubscriber[F, T](
       name,
       configs.subscriptionName(project, name),
       channelProvider,
       credentials,
       executorProvider,
-      endpoint)
+      endpoint,
+      lockTTL)
 
 }
 
