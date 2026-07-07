@@ -16,10 +16,10 @@
 
 package com.commercetools.queue.otel4s
 
+import cats.Monad
 import cats.effect.Resource
 import cats.effect.Resource.ExitCase
 import cats.syntax.all._
-import cats.{Applicative, Monad}
 import org.typelevel.otel4s.Attributes
 import org.typelevel.otel4s.metrics.{BucketBoundaries, Counter, Histogram, Meter}
 import org.typelevel.otel4s.semconv.attributes.ErrorAttributes
@@ -27,7 +27,7 @@ import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimenta
 
 import java.util.concurrent.TimeUnit
 
-private class QueueMetrics[F[_]: Applicative](
+private class QueueMetrics[F[_]](
   fixedAttributes: Boolean,
   commonAttributes: Attributes,
   operationDuration: Histogram[F, Double],

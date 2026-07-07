@@ -119,7 +119,8 @@ lazy val otel4s = crossProject(JVMPlatform)
     ),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.MeasuringQueueClient.subscribe")
+        "com.commercetools.queue.otel4s.MeasuringQueueClient.subscribe"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this")
     )
   )
   .dependsOn(core, testing % Test)
