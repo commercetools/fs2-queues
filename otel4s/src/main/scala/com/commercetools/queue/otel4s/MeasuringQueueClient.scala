@@ -24,6 +24,8 @@ import org.typelevel.otel4s.metrics.Meter
 import org.typelevel.otel4s.semconv.experimental.attributes.MessagingExperimentalAttributes
 import org.typelevel.otel4s.trace.Tracer
 
+import scala.concurrent.duration.FiniteDuration
+
 private class MeasuringQueueClient[F[_]](
   private val underlying: QueueClient[F],
   commonAttributes: Attributes,
@@ -47,12 +49,13 @@ private class MeasuringQueueClient[F[_]](
       tracer,
       commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)))
 
-  override def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T] =
+  override def subscribe[T: Deserializer](name: String, lockTTL: Option[FiniteDuration] = None): QueueSubscriber[F, T] =
     new MeasuringQueueSubscriber[F, T](
-      underlying.subscribe(name),
+      underlying.subscribe(name, lockTTL),
       metrics.forQueue(name),
       tracer,
-      commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name)))
+      commonAttributes.added(MessagingExperimentalAttributes.MessagingDestinationName(name))
+    )
 
 }
 
