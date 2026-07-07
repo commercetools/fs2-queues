@@ -14,7 +14,7 @@ ThisBuild / licenses := Seq(License.Apache2)
 ThisBuild / tlCiDependencyGraphJob := false
 
 val Scala213 = "2.13.18"
-ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.7")
+ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.8")
 ThisBuild / scalaVersion := Scala213
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
@@ -119,7 +119,8 @@ lazy val otel4s = crossProject(JVMPlatform)
     ),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.MeasuringQueueClient.subscribe")
+        "com.commercetools.queue.otel4s.MeasuringQueueClient.subscribe"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this")
     )
   )
   .dependsOn(core, testing % Test)
