@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.aws.sqs
 
+import cats.data.OptionT
 import cats.effect.{Async, Resource}
 import cats.syntax.all._
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
@@ -51,7 +52,7 @@ private class SQSSubscriber[F[_], T](
     Resource.eval {
       for {
         queueUrl <- getQueueUrl
-        lockTTLSeconds <- lockTTL.map(ttl => F.pure(ttl.toSeconds.toInt)).getOrElse(getLockTTL(queueUrl))
+        lockTTLSeconds <- OptionT.fromOption(lockTTL).map(_.toSeconds.toInt).getOrElseF(getLockTTL(queueUrl))
       } yield new SQSPuller(queueName, client, queueUrl, lockTTLSeconds)
     }
 

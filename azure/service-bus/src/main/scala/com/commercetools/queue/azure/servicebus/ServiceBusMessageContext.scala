@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.azure.servicebus
 
+import cats.data.OptionT
 import cats.effect.Async
 import cats.syntax.functor._
 import com.azure.messaging.servicebus.{ServiceBusReceivedMessage, ServiceBusReceiverClient}
@@ -49,9 +50,10 @@ private class ServiceBusMessageContext[F[_], T](
     F.blocking(receiver.abandon(underlying)).void
 
   override def extendLock(): F[Unit] =
-    lockTTL
-      .map(ttl => F.blocking(receiver.renewMessageLock(underlying, JDuration.ofNanos(ttl.toNanos), null)).void)
-      .getOrElse(F.blocking(receiver.renewMessageLock(underlying)).void)
+    OptionT
+      .fromOption(lockTTL)
+      .semiflatMap(ttl => F.blocking(receiver.renewMessageLock(underlying, JDuration.ofNanos(ttl.toNanos), null)).void)
+      .getOrElseF(F.blocking(receiver.renewMessageLock(underlying)).void)
 
   override val messageId: MessageId = MessageId(underlying.getMessageId())
 

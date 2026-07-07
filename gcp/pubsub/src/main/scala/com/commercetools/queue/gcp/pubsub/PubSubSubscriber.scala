@@ -16,6 +16,7 @@
 
 package com.commercetools.queue.gcp.pubsub
 
+import cats.data.OptionT
 import cats.effect.{Async, Resource}
 import cats.syntax.functor._
 import cats.syntax.monadError._
@@ -55,16 +56,17 @@ private class PubSubSubscriber[F[_], T](
         }
       }
       .evalMap { subscriber =>
-        lockTTL
-          .map(ttl => F.pure(ttl.toSeconds.toInt))
-          .getOrElse {
+        OptionT
+          .fromOption(lockTTL)
+          .map(_.toSeconds.toInt)
+          .getOrElseF(
             wrapFuture(
               F.delay(subscriber
                 .getSubscriptionCallable()
                 .futureCall(GetSubscriptionRequest.newBuilder().setSubscription(subscriptionName.toString()).build())))
               .map(_.getAckDeadlineSeconds)
               .adaptError(makePullQueueException(_, queueName))
-          }
+          )
           .map(new PubSubPuller[F, T](queueName, subscriptionName, subscriber, _))
       }
 
