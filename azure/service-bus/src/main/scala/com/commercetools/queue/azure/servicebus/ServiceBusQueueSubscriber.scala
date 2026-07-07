@@ -21,9 +21,12 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder
 import com.azure.messaging.servicebus.models.ServiceBusReceiveMode
 import com.commercetools.queue.{Deserializer, QueuePuller, UnsealedQueueSubscriber}
 
+import scala.concurrent.duration.FiniteDuration
+
 private class ServiceBusQueueSubscriber[F[_], Data](
   val queueName: String,
-  builder: ServiceBusClientBuilder
+  builder: ServiceBusClientBuilder,
+  lockTTL: Option[FiniteDuration]
 )(implicit
   F: Async[F],
   deserializer: Deserializer[Data])
@@ -41,7 +44,7 @@ private class ServiceBusQueueSubscriber[F[_], Data](
       }
     }
     .map { receiver =>
-      new ServiceBusPuller(queueName, receiver)
+      new ServiceBusPuller(queueName, receiver, lockTTL)
     }
 
 }

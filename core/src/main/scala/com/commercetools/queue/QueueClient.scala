@@ -15,6 +15,7 @@
  */
 
 package com.commercetools.queue
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * The entry point to using queues.
@@ -45,8 +46,9 @@ sealed trait QueueClient[F[_]] {
 
   /**
    * Gives access to the subscription API.
+   * @param lockTTL allows to specify a custom lockTTL, that may differ from the one specified on the queue.
    */
-  def subscribe[T: Deserializer](name: String): QueueSubscriber[F, T]
+  def subscribe[T: Deserializer](name: String, lockTTL: Option[FiniteDuration] = None): QueueSubscriber[F, T]
 
 }
 
