@@ -199,7 +199,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.150.2",
+      "com.google.cloud" % "google-cloud-pubsub" % "1.155.0",
       "com.google.cloud" % "google-cloud-monitoring" % "3.92.0"
     ),
     mimaBinaryIssueFilters ++= Seq(
