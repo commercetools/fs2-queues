@@ -200,7 +200,7 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.150.2",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.92.0"
+      "com.google.cloud" % "google-cloud-monitoring" % "3.98.0"
     ),
     mimaBinaryIssueFilters ++= Seq(
       ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.subscribe"),
