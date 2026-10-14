@@ -5,7 +5,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.11"
+ThisBuild / tlBaseVersion := "0.12"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -54,10 +54,6 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
     name := "fs2-queues-core",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueueClient.subscribe"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.subscribe")
     )
   )
 
@@ -116,11 +112,6 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4sSdk % Test
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.MeasuringQueueClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this")
     )
   )
   .dependsOn(core, testing % Test)
@@ -145,16 +136,6 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
       "com.azure" % "azure-messaging-servicebus" % "7.17.19"
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusMessageContext.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusPuller.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusQueueSubscriber.this")
     )
   )
   .dependsOn(core, testkit % Test)
@@ -178,10 +159,6 @@ lazy val awsSQS = crossProject(JVMPlatform)
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
       "software.amazon.awssdk" % "sqs" % "2.46.21"
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSSubscriber.this")
     )
   )
   .dependsOn(core)
@@ -201,10 +178,6 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
     libraryDependencies ++= List(
       "com.google.cloud" % "google-cloud-pubsub" % "1.150.2",
       "com.google.cloud" % "google-cloud-monitoring" % "3.92.0"
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubSubscriber.this")
     )
   )
   .dependsOn(core)
