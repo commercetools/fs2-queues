@@ -5,7 +5,7 @@ import laika.config.LinkConfig
 import laika.config.ApiLinks
 import laika.config.SourceLinks
 
-ThisBuild / tlBaseVersion := "0.11"
+ThisBuild / tlBaseVersion := "0.12"
 
 ThisBuild / organization := "com.commercetools"
 ThisBuild / organizationName := "Commercetools GmbH"
@@ -17,7 +17,8 @@ val Scala213 = "2.13.18"
 ThisBuild / crossScalaVersions := Seq(Scala213, "3.3.8")
 ThisBuild / scalaVersion := Scala213
 
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("11"))
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
+ThisBuild / tlJdkRelease := Some(17)
 
 lazy val root =
   tlCrossRootProject.aggregate(
@@ -38,7 +39,7 @@ val commonSettings = List(
   libraryDependencies ++= Seq(
     "org.scalameta" %%% "munit" % Versions.munit % Test,
     "org.typelevel" %%% "munit-cats-effect" % Versions.munitCatsEffect % Test,
-    "org.typelevel" %%% "cats-effect-testkit" % "3.7.0" % Test
+    "org.typelevel" %%% "cats-effect-testkit" % "3.7.1" % Test
   ),
   scalacOptions += (scalaVersion.value match {
     case Scala213 => "-Wunused"
@@ -54,10 +55,6 @@ lazy val core: CrossProject = crossProject(JVMPlatform)
     name := "fs2-queues-core",
     libraryDependencies ++= List(
       "co.fs2" %%% "fs2-core" % Versions.fs2
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.QueueClient.subscribe"),
-      ProblemFilters.exclude[ReversedMissingMethodProblem]("com.commercetools.queue.QueueClient.subscribe")
     )
   )
 
@@ -116,11 +113,6 @@ lazy val otel4s = crossProject(JVMPlatform)
       "org.typelevel" %%% "otel4s-semconv" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-semconv-experimental" % Versions.otel4s,
       "org.typelevel" %%% "otel4s-sdk-testkit" % Versions.otel4sSdk % Test
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.otel4s.MeasuringQueueClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.otel4s.QueueMetrics.this")
     )
   )
   .dependsOn(core, testing % Test)
@@ -144,17 +136,7 @@ lazy val azureServiceBus = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-azure-service-bus",
     libraryDependencies ++= List(
-      "com.azure" % "azure-messaging-servicebus" % "7.17.19"
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusMessageContext.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusPuller.this"),
-      ProblemFilters.exclude[DirectMissingMethodProblem](
-        "com.commercetools.queue.azure.servicebus.ServiceBusQueueSubscriber.this")
+      "com.azure" % "azure-messaging-servicebus" % "7.17.20"
     )
   )
   .dependsOn(core, testkit % Test)
@@ -177,11 +159,7 @@ lazy val awsSQS = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-aws-sqs",
     libraryDependencies ++= List(
-      "software.amazon.awssdk" % "sqs" % "2.46.21"
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.aws.sqs.SQSSubscriber.this")
+      "software.amazon.awssdk" % "sqs" % "2.56.0"
     )
   )
   .dependsOn(core)
@@ -199,12 +177,8 @@ lazy val gcpPubSub = crossProject(JVMPlatform)
   .settings(
     name := "fs2-queues-gcp-pubsub",
     libraryDependencies ++= List(
-      "com.google.cloud" % "google-cloud-pubsub" % "1.150.2",
-      "com.google.cloud" % "google-cloud-monitoring" % "3.92.0"
-    ),
-    mimaBinaryIssueFilters ++= Seq(
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubClient.subscribe"),
-      ProblemFilters.exclude[DirectMissingMethodProblem]("com.commercetools.queue.gcp.pubsub.PubSubSubscriber.this")
+      "com.google.cloud" % "google-cloud-pubsub" % "1.157.0",
+      "com.google.cloud" % "google-cloud-monitoring" % "3.100.0"
     )
   )
   .dependsOn(core)
@@ -234,7 +208,7 @@ lazy val docs = project
     tlFatalWarnings := false,
     libraryDependencies ++= List(
       "com.azure" % "azure-identity" % "1.11.1",
-      "org.typelevel" %% "cats-effect-testkit" % "3.7.0"
+      "org.typelevel" %% "cats-effect-testkit" % "3.7.1"
     )
   )
   .dependsOn(circe.jvm, azureServiceBus.jvm, awsSQS.jvm, gcpPubSub.jvm, otel4s.jvm, testing.jvm)
