@@ -1,7 +1,7 @@
 object Versions {
   val fs2 = "3.14.0"
   val http4s = "0.23.25"
-  val munit = "1.3.3"
+  val munit = "1.3.6"
   val munitCatsEffect = "2.2.1"
   val circe = "0.14.17"
   val circeGenericExtras = "0.14.3"
